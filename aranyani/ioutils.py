@@ -89,3 +89,15 @@ def read_features(flname):
     fl.close()
     return features
     
+def get_group_indices(inbase):
+    groups = read_groups(inbase)
+    individuals = read_individuals(inbase)
+
+    leftover_rows = set(xrange(len(individuals)))
+    groups_rows = []
+    for group_name, ids in groups.iteritems():
+        group_rows = tuple([i for i, id in enumerate(individuals) if id in ids])
+        groups_rows.append((group_name, group_rows))
+        leftover_rows.difference_update(group_rows)
+
+    return groups_rows, tuple(leftover_rows)
