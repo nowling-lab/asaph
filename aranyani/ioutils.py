@@ -65,4 +65,27 @@ def open_feature_matrix(basename):
                                 shape=(n_individuals, n_features))
 
     return feature_matrix
+
+def read_groups(flname):
+    groups = dict()
+    fl = open(flname)
+    for ln in fl:
+        cols = ln.split(",")
+        group = cols[0]
+        ids = cols[1:]
+        groups[group] = ids
+    fl.close()
+    return groups
+
+def read_individuals(flname):
+    fl = open(flname)
+    individuals = fl.readlines()
+    fl.close()
+    return individuals
+
+def read_features(flname):
+    fl = open(flname)
+    features = fl.readlines()
+    fl.close()
+    return features
     
