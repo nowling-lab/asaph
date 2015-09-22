@@ -18,6 +18,8 @@ import sys
 
 import numpy as np
 
+from ioutils import create_feature_matrix
+
 DEFAULT_COLUMNS = {'CHROM' : 0, 'POS' : 1, 'ID' : 2, 'REF' : 3, 'ALT' : 4, 'QUAL' : 5, 'FILTER' : 6, 'INFO' : 7, 'FORMAT' : 8}
 
 def vcf_line_to_seq(ln):
@@ -109,10 +111,9 @@ def convert(inflname, outbase):
     print n_individuals, n_features
 
     write_individuals(outbase, individual_ids)
-    
-    feature_matrix = np.memmap(filename=outbase + ".npy", dtype="float32", \
-                               mode="w+", shape=(n_individuals, n_features))
 
+    feature_matrix = create_feature_matrix(outbase, n_individuals, n_features)
+    
     features_fl = open(outbase + ".features", "w")
 
     feature_idx = 0
