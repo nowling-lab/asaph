@@ -66,20 +66,20 @@ def open_feature_matrix(basename):
 
     return feature_matrix
 
-def read_groups(flname):
+def read_groups(inbase):
     groups = dict()
-    fl = open(flname)
+    fl = open(inbase + ".groups")
     for ln in fl:
-        cols = ln.split(",")
+        cols = ln.strip().split(",")
         group = cols[0]
         ids = cols[1:]
         groups[group] = ids
     fl.close()
     return groups
 
-def read_individuals(flname):
-    fl = open(flname)
-    individuals = fl.readlines()
+def read_individuals(inbase):
+    fl = open(inbase + ".individuals")
+    individuals = [ln.strip() for ln in fl]
     fl.close()
     return individuals
 
