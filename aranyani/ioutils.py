@@ -20,15 +20,18 @@ import struct
 FORMAT_STRING = "ii"
 HEADER_SIZE = struct.calcsize(FORMAT_STRING) # bytes
 
-def create_feature_matrix(basename, n_individuals, n_features):
+def create_feature_matrix(basename, n_individuals, n_features, filtered=False):
     """
     Creates a memory-mapped Numpy array.  On-disk file format
     stores the matrix dimensions for easy reading later.
 
     Returns the Numpy array.
     """
-    
-    flname = basename + ".matrix"
+
+    if not filtered:
+        flname = basename + ".matrix"
+    else:
+        flname = basename + ".filtered.matrix"
 
     # writer header
     fl = open(flname, "w")
@@ -41,7 +44,7 @@ def create_feature_matrix(basename, n_individuals, n_features):
 
     return feature_matrix
 
-def open_feature_matrix(basename):
+def open_feature_matrix(basename, filtered=False):
     """
     Opens a memory-mapped Numpy array.  Reads the number of
     rows (individuals) and columns (features) from the header
@@ -51,8 +54,11 @@ def open_feature_matrix(basename):
     Returns a tuple of the number of individuals, number of 
     features, and the Numpy array."
     """
-    
-    flname = basename + ".matrix"
+
+    if not filtered:
+        flname = basename + ".matrix"
+    else:
+        flname = basename + ".filtered.matrix"
 
     # read header
     fl = open(flname)
@@ -77,21 +83,43 @@ def read_groups(inbase):
     fl.close()
     return groups
 
-def read_individuals(inbase):
-    fl = open(inbase + ".individuals")
+def read_individuals(inbase, filtered=False):
+    if not filtered:
+        flname = inbase + ".individuals"
+    else:
+        flname = inbase + ".filtered.individuals"
+    
+    fl = open(flname)
     individuals = [ln.strip() for ln in fl]
     fl.close()
     return individuals
 
-def read_features(flname):
+def read_features(inbase, filtered=False):
+    if not filtered:
+        flname = inbase + ".features"
+    else:
+        flname = inbase + ".filtered.features"
+    
     fl = open(flname)
     features = fl.readlines()
     fl.close()
     return features
+
+def write_features(basename, features, filtered=False):
+    if not filtered:
+        flname = basename + ".features"
+    else:
+        flname = basename + ".filtered.features"
+
+    fl = open(flname, "w")
+    for feature in features:
+        fl.write(feature)
+        fl.write("\n")
+    fl.close()
     
-def get_group_indices(inbase):
+def get_group_indices(inbase, filtered):
     groups = read_groups(inbase)
-    individuals = read_individuals(inbase)
+    individuals = read_individuals(inbase, filtered=filtered)
 
     leftover_rows = set(xrange(len(individuals)))
     groups_rows = []
@@ -101,3 +129,30 @@ def get_group_indices(inbase):
         leftover_rows.difference_update(group_rows)
 
     return groups_rows, tuple(leftover_rows)
+
+def write_individuals(basename, labels, filtered=False):
+    if not filtered:
+        flname = basename + ".individuals"
+    else:
+        flname = basename + ".filtered.individuals"
+
+    fl = open(flname, "w")
+    for label in labels:
+        fl.write(label)
+        fl.write("\n")
+    fl.close()
+
+def select_groups(inbase, filtered):
+    group_indices, _ = get_group_indices(inbase, filtered=filtered)
+    individuals = read_individuals(inbase, filtered=filtered)
+
+    labels = []
+    selected_indices = []
+    selected_individuals = []
+    for label, (group_name, indices) in enumerate(group_indices):
+        for j, idx in enumerate(indices):
+            labels.append(label)
+            selected_indices.append(idx)
+            selected_individuals.append(individuals[idx])
+
+    return labels, selected_indices, selected_individuals
