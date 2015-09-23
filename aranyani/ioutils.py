@@ -16,6 +16,8 @@ limitations under the License.
 
 import numpy as np
 import struct
+import os
+from sklearn.externals import joblib
 
 FORMAT_STRING = "ii"
 HEADER_SIZE = struct.calcsize(FORMAT_STRING) # bytes
@@ -156,3 +158,23 @@ def select_groups(inbase, filtered):
             selected_individuals.append(individuals[idx])
 
     return labels, selected_indices, selected_individuals
+
+def serialize_models(inbase, rf_model1, rf_model2):
+    n_trees = len(rf_model1.estimators_)
+    
+    dirname = inbase + ".models/rf." + str(n_trees) + ".models"
+    dirname1 = dirname + "/1"
+    dirname2 = dirname + "/2"
+    
+    if not os.path.isdir(dirname1):
+        os.makedirs(dirname1)
+
+    if not os.path.isdir(dirname2):
+        os.makedirs(dirname2)
+
+    joblib.dump(rf_model1, dirname1 + "/model.pkl")
+    joblib.dump(rf_model2, dirname2 + "/model.pkl")
+
+    
+
+    
