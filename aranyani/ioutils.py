@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import glob
 import numpy as np
 import struct
 import os
@@ -174,6 +175,35 @@ def serialize_models(inbase, rf_model1, rf_model2):
 
     joblib.dump(rf_model1, dirname1 + "/model.pkl")
     joblib.dump(rf_model2, dirname2 + "/model.pkl")
+
+def deserialize_models(basename, n_trees):
+    model_paths = glob.glob(basename + ".models/rf." + str(n_trees) + ".models/*")
+
+    models = []
+    for path in model_paths:
+        if not os.path.isdir(path):
+            raise Exception, "Model does not exist."
+        model = joblib.load(path + "/model.pkl")
+        models.append(model)
+
+    return models
+
+def list_model_trees(basename):
+    model_paths = glob.glob(basename + ".models/rf.*.models")
+
+    tree_sizes = []
+    for path in model_paths:
+        start = path.rfind("rf.")
+        end = path.rfind(".models")
+
+        n_trees = int(path[start + 3:end])
+        tree_sizes.append(n_trees)
+
+    tree_sizes.sort()
+
+    return tree_sizes
+    
+    
 
     
 
