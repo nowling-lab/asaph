@@ -188,6 +188,34 @@ def deserialize_models(basename, n_trees):
 
     return models
 
+def serialize_feature_importances(inbase, rf_model1, rf_model2):
+    n_trees = len(rf_model1.estimators_)
+    
+    dirname = inbase + ".models/rf." + str(n_trees) + ".models"
+    dirname1 = dirname + "/1"
+    dirname2 = dirname + "/2"
+    
+    if not os.path.isdir(dirname1):
+        os.makedirs(dirname1)
+
+    if not os.path.isdir(dirname2):
+        os.makedirs(dirname2)
+
+    np.save(dirname1 + "/feature_importances.npy", rf_model1.feature_importances_)
+    np.save(dirname2 + "/feature_importances.npy", rf_model2.feature_importances_)
+
+def deserialize_feature_importances(basename, n_trees):
+    model_paths = glob.glob(basename + ".models/rf." + str(n_trees) + ".models/*")
+
+    models = []
+    for path in model_paths:
+        if not os.path.isdir(path):
+            raise Exception, "Feature importances do not exist."
+        model = np.load(path + "/feature_importances.npy")
+        models.append(model)
+
+    return models
+
 def list_model_trees(basename):
     model_paths = glob.glob(basename + ".models/rf.*.models")
 

@@ -32,7 +32,7 @@ if __name__ == "__main__":
     rf2 = RandomForestClassifier(n_estimators=n_trees)
     rf2.fit(feature_matrix, labels)
 
-    serialize_models(basename, rf1, rf2)
+    serialize_feature_importances(basename, rf1, rf2)
 
     
 

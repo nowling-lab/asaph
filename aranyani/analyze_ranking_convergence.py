@@ -56,7 +56,7 @@ def plot_errors(basename, tree_sizes, common_features):
     plt.xlabel("Number of Trees", fontsize=16)
     plt.ylabel("Common SNPs (%)", fontsize=16)
     plt.title("Ranking Convergence Analysis", fontsize=16)
-    plt.legend(loc="upper left")
+    plt.legend(loc="lower right")
     plt.ylim([0, 100])
     plt.xlim([min(tree_sizes), max(tree_sizes)])
 
@@ -70,12 +70,13 @@ if __name__ == "__main__":
 
     common_features = defaultdict(list)
     for n_trees in model_tree_counts:
-        rf1, rf2 = deserialize_models(basename, n_trees)
+        feature_importances1, feature_importances2 = \
+                        deserialize_feature_importances(basename, n_trees)
 
         for threshold in top_n_features:
             indices1, importances1, indices2, importances2 = \
-                    rank_features(threshold, rf1.feature_importances_, \
-                        rf2.feature_importances_)
+                    rank_features(threshold, feature_importances1, \
+                                  feature_importances2)
 
             common_indices = set(indices1).intersection(indices2)
             normalized_common = 100.0 * len(common_indices) / threshold
