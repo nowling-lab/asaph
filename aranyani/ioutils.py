@@ -104,7 +104,7 @@ def read_features(inbase, filtered=False):
         flname = inbase + ".filtered.features"
     
     fl = open(flname)
-    features = fl.readlines()
+    features = [line.strip() for line in fl.readlines()]
     fl.close()
     return features
 
