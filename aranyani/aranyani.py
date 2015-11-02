@@ -34,6 +34,16 @@ class SNPs(object):
         self.labels = labels
         self.importances = importances
 
+    def rank(self):
+        sorted_indices = np.argsort(-1.0 * self.importances)
+        sorted_importances = self.importances[sorted_indices]
+        nonzero_indices = sorted_indices[sorted_importances != 0.0]
+        nonzero_importances = sorted_importances[sorted_importances != 0.0]
+
+        ranked_labels = [self.labels[idx] for idx in nonzero_indices]
+        
+        return SNPs(ranked_labels, nonzero_importances)
+
 class Features(object):
     def __init__(self, feature_matrix, labels):
         self.feature_matrix = feature_matrix
@@ -61,15 +71,6 @@ class Features(object):
         importances = np.array([importance for importance, label in snp_importances])
     
         return SNPs(labels, importances)
-
-def rank_features(cutoff, feature_importances):
-    sorted_indices = np.argsort(-1.0 * feature_importances)
-    sorted_importances = feature_importances[sorted_indices]
-    nonzero_indices = sorted_indices[sorted_importances != 0.0]
-    nonzero_importances = sorted_importances[sorted_importances != 0.0]
-
-    return nonzero_indices[:cutoff], nonzero_importances[:cutoff]
-
 
 
 def plot_errors(basename, tree_sizes, common_features):

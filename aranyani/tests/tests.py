@@ -54,3 +54,16 @@ class TestFeatures(unittest.TestCase):
         self.assertEqual(snps.labels[1], (1, 1, 1))
         self.assertAlmostEqual(snps.importances[0], 0.75)
         self.assertAlmostEqual(snps.importances[1], 0.5)
+
+class TestSNPs(unittest.TestCase):
+    def test_rank(self):
+        labels = [(1, 1, 1), (1, 1, 2), (1, 1, 3)]
+        importances = np.array([0.5, 0.75, 0.0])
+
+        snps = SNPs(labels, importances)
+        ranked_snps = snps.rank()
+
+        self.assertEqual(ranked_snps.labels, [(1, 1, 2), (1, 1, 1)])
+        self.assertAlmostEqual(ranked_snps.importances[0], 0.75)
+        self.assertAlmostEqual(ranked_snps.importances[1], 0.5)
+        
