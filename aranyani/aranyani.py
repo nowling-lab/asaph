@@ -45,17 +45,23 @@ class SNPs(object):
         return SNPs(ranked_labels, nonzero_importances)
 
 class Features(object):
-    def __init__(self, feature_matrix, labels):
+    def __init__(self, feature_matrix, feature_labels, class_labels):
         self.feature_matrix = feature_matrix
-        self.labels = labels
+        self.feature_labels = feature_labels
+        self.class_labels = class_labels
 
     def snp_labels(self):
         snp_feature_indices = defaultdict(list)
-        for feature_idx, feature_label in enumerate(self.labels):
+        for feature_idx, feature_label in enumerate(self.feature_labels):
             snp_label = feature_label[:3]
             snp_feature_indices[snp_label].append(feature_idx)
 
         return snp_feature_indices
+
+    def train_rf(self, n_trees):
+        rf = RandomForestClassifier(n_estimators=n_trees)
+        rf.fit(self.feature_matrix, self.class_labels)
+        return rf
         
     def snp_importances(self, rf):
         feature_importances = rf.feature_importances_
