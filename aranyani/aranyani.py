@@ -29,6 +29,11 @@ from utils import *
 
 import itertools
 
+class SNPs(object):
+    def __init__(self, labels, importances):
+        self.labels = labels
+        self.importances = importances
+
 class Features(object):
     def __init__(self, feature_matrix, labels):
         self.feature_matrix = feature_matrix
@@ -55,8 +60,7 @@ class Features(object):
         labels = [label for importance, label in snp_importances]
         importances = np.array([importance for importance, label in snp_importances])
     
-        return labels, importances
-    
+        return SNPs(labels, importances)
 
 def rank_features(cutoff, feature_importances):
     sorted_indices = np.argsort(-1.0 * feature_importances)

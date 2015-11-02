@@ -48,9 +48,9 @@ class TestFeatures(unittest.TestCase):
         importances = np.array([0.0, 1.0, 0.5, 1.0])
         rf = MockRF(importances)
 
-        labels, snp_importances = features.snp_importances(rf)
+        snps = features.snp_importances(rf)
 
-        self.assertEqual(labels[0], (1, 1, 2))
-        self.assertEqual(labels[1], (1, 1, 1))
-        self.assertAlmostEqual(snp_importances[0], 0.75)
-        self.assertAlmostEqual(snp_importances[1], 0.5)
+        self.assertEqual(snps.labels[0], (1, 1, 2))
+        self.assertEqual(snps.labels[1], (1, 1, 1))
+        self.assertAlmostEqual(snps.importances[0], 0.75)
+        self.assertAlmostEqual(snps.importances[1], 0.5)
