@@ -42,9 +42,10 @@ FEATURE_MATRIX_FLNAME = "feature_matrix"
 def read_features(basename):
     feature_labels = from_json(os.path.join(basename, FEATURE_LABELS_FLNAME))
     class_labels = from_json(os.path.join(basename, CLASS_LABELS_FLNAME))
+    sample_labels = from_json(os.path.join(basename, SAMPLE_LABELS_FLNAME))
     feature_matrix = open_feature_matrix(os.path.join(basename, FEATURE_MATRIX_FLNAME))
 
-    return Features(feature_matrix, feature_labels, class_labels)
+    return Features(feature_matrix, feature_labels, class_labels, sample_labels)
 
 FORMAT_STRING = "ii"
 HEADER_SIZE = struct.calcsize(FORMAT_STRING) # bytes

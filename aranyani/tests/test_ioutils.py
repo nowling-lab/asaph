@@ -72,3 +72,5 @@ class TestIOUtils(unittest.TestCase):
                          len(features.class_labels))
         self.assertEqual(features.feature_matrix.shape[1],
                          len(features.feature_labels))
+        self.assertEqual(features.feature_matrix.shape[0],
+                         len(features.sample_labels))

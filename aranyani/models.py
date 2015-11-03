@@ -38,10 +38,11 @@ class SNPs(object):
         return SNPs(ranked_labels, nonzero_importances)
 
 class Features(object):
-    def __init__(self, feature_matrix, feature_labels, class_labels):
+    def __init__(self, feature_matrix, feature_labels, class_labels, sample_labels):
         self.feature_matrix = feature_matrix
         self.feature_labels = feature_labels
         self.class_labels = class_labels
+        self.sample_labels = sample_labels
 
     def snp_labels(self):
         snp_feature_indices = defaultdict(list)
