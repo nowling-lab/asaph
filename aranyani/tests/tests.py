@@ -20,7 +20,7 @@ import struct
 import unittest
 
 import numpy as np
-from ..aranyani import *
+from ..models import *
 
 class MockRF(object):
     def __init__(self, feature_importances):

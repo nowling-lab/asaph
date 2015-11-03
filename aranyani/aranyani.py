@@ -29,55 +29,14 @@ from utils import *
 
 import itertools
 
-class SNPs(object):
-    def __init__(self, labels, importances):
-        self.labels = labels
-        self.importances = importances
+def read_features(basename):
+    class_labels, selected_indices, selected_individuals = select_groups(basename, True)
+    feature_labels = read_features(basename, True)
+    feature_matrix = open_feature_matrix(basename, True)
 
-    def rank(self):
-        sorted_indices = np.argsort(-1.0 * self.importances)
-        sorted_importances = self.importances[sorted_indices]
-        nonzero_indices = sorted_indices[sorted_importances != 0.0]
-        nonzero_importances = sorted_importances[sorted_importances != 0.0]
+    features = Features(feature_matrix, feature_labels, class_labels)
 
-        ranked_labels = [self.labels[idx] for idx in nonzero_indices]
-        
-        return SNPs(ranked_labels, nonzero_importances)
-
-class Features(object):
-    def __init__(self, feature_matrix, feature_labels, class_labels):
-        self.feature_matrix = feature_matrix
-        self.feature_labels = feature_labels
-        self.class_labels = class_labels
-
-    def snp_labels(self):
-        snp_feature_indices = defaultdict(list)
-        for feature_idx, feature_label in enumerate(self.feature_labels):
-            snp_label = feature_label[:3]
-            snp_feature_indices[snp_label].append(feature_idx)
-
-        return snp_feature_indices
-
-    def train_rf(self, n_trees):
-        rf = RandomForestClassifier(n_estimators=n_trees)
-        rf.fit(self.feature_matrix, self.class_labels)
-        return rf
-        
-    def snp_importances(self, rf):
-        feature_importances = rf.feature_importances_
-        
-        snp_labels = self.snp_labels()
-
-        snp_importances = ( (np.mean(feature_importances[feature_idx]), snp_label)
-                            for snp_label, feature_idx in snp_labels.iteritems() )
-
-        snp_importances = sorted(snp_importances, reverse=True)
-
-        labels = [label for importance, label in snp_importances]
-        importances = np.array([importance for importance, label in snp_importances])
-    
-        return SNPs(labels, importances)
-
+    return features
 
 def plot_errors(basename, tree_sizes, common_features):
     if not os.path.exists(basename + os.sep + "figures"):
@@ -115,26 +74,19 @@ def tree_sweep(args):
         print "Need to specify list of SNP counts for tree-sweep mode."
         sys.exit(1)
 
-    labels, selected_indices, selected_individuals = select_groups(args["data"], True)
-    feature_labels = read_features(args["data"], True)
-    feature_matrix = open_feature_matrix(args["data"], True)
-
-    print feature_matrix.shape
+    features = read_features(args["data"])
+    
+    print features.feature_matrix.shape
 
     common_features = defaultdict(list)
     for n_trees in args["tree_list"]:
         print "Training forest of", n_trees, "trees"
-        rf1 = RandomForestClassifier(n_estimators=n_trees)
-        rf1.fit(feature_matrix, labels)
-        #snp_labels1, snp_importances1 = calc_snp_importances(feature_labels, rf1.feature_importances_)
-
-        rf2 = RandomForestClassifier(n_estimators=n_trees)
-        rf2.fit(feature_matrix, labels)
-        #snp_labels2, snp_importances2 = calc_snp_importances(feature_labels, rf2.feature_importances_)
+        rf1 = features.train_rf(n_trees)
+        rf2 = features.train_rf(n_trees)
 
         for threshold in args["snp_list"]:
-            indices1, importances1 = rank_features(threshold, rf1.feature_importances_)
-            indices2, importances2 = rank_features(threshold, rf2.feature_importances_)
+            snps1 = features.snp_importances(rf1).rank()
+            snps2 = features.snp_importances(rf2).rank()
 
             common_indices = set(indices1).intersection(indices2)
             normalized_common = 100.0 * len(common_indices) / threshold
