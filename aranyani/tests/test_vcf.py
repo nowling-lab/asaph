@@ -15,6 +15,7 @@ limitations under the License.
 """
 
 from collections import defaultdict
+from exceptions import NotImplementedError
 import json
 import os
 import struct
@@ -42,6 +43,8 @@ class TestVCFFunctions(unittest.TestCase):
         self.assertEqual(pos, "2")
         self.assertEqual(haploid1, ("A", "A", "T", "T", "X"))
         self.assertEqual(haploid2, ("A", "T", "A", "T", "X"))
+
+        self.assertRaises(NotImplementedError, vcf_line_to_seq, test_line.replace("0/0", "2/2"))
     
     def test_read_groups(self):
         groups = read_groups(GROUP_TEST_FILE)

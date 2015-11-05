@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from exceptions import NotImplementedError
 import sys
 
 import numpy as np
@@ -43,19 +44,25 @@ def vcf_line_to_seq(ln):
     for i, col in enumerate(cols[len(DEFAULT_COLUMNS):]):
         tag1, tag2 = col.split(":")[0].split("/")
 
-        nucl1 = "X"
-        if tag1 == "0":
+        if tag1 == ".":
+            nucl1 = "X"
+        elif tag1 == "0":
             nucl1 = ref_seq
         elif tag1 == "1":
             nucl1 = alt_seq
+        else:
+            raise NotImplementedError("Support for non-biallelic SNPs not implemented. Found '" + tag1 + "'")
 
         snps1.append(nucl1)
 
-        nucl2 = "X"
-        if tag2 == "0":
+        if tag2 == ".":
+            nucl2 = "X"
+        elif tag2 == "0":
             nucl2 = ref_seq
         elif tag2 == "1":
             nucl2 = alt_seq
+        else:
+            raise NotImplementedError("Support for non-biallelic SNPs not implemented. Found '" + tag1 + "'")
 
         snps2.append(nucl2)
 
