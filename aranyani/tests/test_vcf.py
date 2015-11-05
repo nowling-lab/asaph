@@ -25,6 +25,7 @@ import unittest
 import numpy as np
 
 from ..vcf import *
+from ..newioutils import *
 
 VCF_TEST_FILE = os.path.join("test_data", "test.vcf")
 GROUP_TEST_FILE = os.path.join("test_data", "groups")
@@ -49,13 +50,31 @@ class TestVCFFunctions(unittest.TestCase):
     def test_read_groups(self):
         groups = read_groups(GROUP_TEST_FILE)
 
-        self.assertIn("_all", groups)
-        self.assertEquals(len(groups), 3)
-        self.assertEquals(len(groups["group1"]), 8)
-        self.assertEquals(len(groups["group2"]), 8)
-        self.assertEquals(len(groups["_all"]), 16)
+        self.assertEquals(len(set(groups.values())), 2)
+        self.assertEquals(len(groups.keys()), 16)
     
     def test_read_dimensions(self):
-        sample_ids, n_samples, n_features = read_dimensions(VCF_TEST_FILE)
+        groups = read_groups(GROUP_TEST_FILE)
+        sample_ids, n_samples, n_features = read_dimensions(VCF_TEST_FILE, groups)
 
-        print n_samples, n_features
+        self.assertEquals(n_samples, 16)
+        self.assertEquals(n_features, 8)
+
+    def test_convert(self):
+        dirname = tempfile.mkdtemp()
+
+        flname = os.path.join(dirname, FEATURE_MATRIX_FLNAME)
+        convert(GROUP_TEST_FILE, VCF_TEST_FILE, dirname)
+
+        features = read_features(dirname)
+        
+        self.assertEquals(features.feature_matrix.shape[0], 16)
+        self.assertEquals(features.feature_matrix.shape[1], 8)
+        self.assertEquals(len(features.feature_labels), 8)
+        self.assertEquals(len(features.sample_labels), 16)
+        self.assertEquals(len(features.class_labels), 16)
+        self.assertEquals(len(set(features.class_labels)), 2)
+        
+        del features.feature_matrix
+
+        
