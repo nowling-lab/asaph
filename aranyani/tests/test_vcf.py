@@ -29,6 +29,20 @@ VCF_TEST_FILE = os.path.join("test_data", "test.vcf")
 GROUP_TEST_FILE = os.path.join("test_data", "groups")
 
 class TestVCFFunctions(unittest.TestCase):
+    def test_vcf_line_to_seq(self):
+        # Data columns 'CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT'
+        # individuals are columns after data columns
+        test_line = "\t".join(["1", "2", ".", "A", "T", "0", "PASS", ".", ".",
+                               "0/0:12,0:12:33:0", "0/1:12,0:12:33:0", "1/0:12,0:12:33:0",
+                               "1/1:12,0:12:33:0", "./.:12,0:12:33:0"])
+
+        chrom, pos, haploid1, haploid2 = vcf_line_to_seq(test_line)
+
+        self.assertEqual(chrom, "1")
+        self.assertEqual(pos, "2")
+        self.assertEqual(haploid1, ("A", "A", "T", "T", "X"))
+        self.assertEqual(haploid2, ("A", "T", "A", "T", "X"))
+    
     def test_read_groups(self):
         groups = read_groups(GROUP_TEST_FILE)
 
