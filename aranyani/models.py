@@ -41,6 +41,11 @@ class SNPs(object):
         # convert to list for serialization
         return SNPs(self.n_trees, list(ranked_labels), list(nonzero_importances), True)
 
+    def __repr__(self):
+        return "SNPs(n_trees=%s, n_snps=%s, ranked=%s)" \
+            % (self.n_trees, len(self.labels), self.ranked)
+
+
 class Features(object):
     def __init__(self, feature_matrix, feature_labels, class_labels, sample_labels):
         self.feature_matrix = feature_matrix
@@ -76,3 +81,4 @@ class Features(object):
         importances = np.array([importance for importance, label in snp_importances])
     
         return SNPs(len(rf.estimators_), labels, importances, False)
+
