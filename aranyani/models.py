@@ -23,9 +23,11 @@ from scipy.stats import rankdata
 from sklearn.ensemble import RandomForestClassifier
 
 class SNPs(object):
-    def __init__(self, labels, importances):
+    def __init__(self, n_trees, labels, importances, ranked):
+        self.n_trees = n_trees
         self.labels = labels
         self.importances = importances
+        self.ranked = ranked
 
     def rank(self):
         sorted_indices = np.argsort(-1.0 * self.importances)
@@ -35,7 +37,7 @@ class SNPs(object):
 
         ranked_labels = [self.labels[idx] for idx in nonzero_indices]
         
-        return SNPs(ranked_labels, nonzero_importances)
+        return SNPs(self.n_trees, ranked_labels, nonzero_importances, True)
 
 class Features(object):
     def __init__(self, feature_matrix, feature_labels, class_labels, sample_labels):
@@ -70,4 +72,4 @@ class Features(object):
         labels = [label for importance, label in snp_importances]
         importances = np.array([importance for importance, label in snp_importances])
     
-        return SNPs(labels, importances)
+        return SNPs(len(rf.estimators_), labels, importances, False)
