@@ -154,9 +154,6 @@ def convert(groups_flname, vcf_flname, outbase):
                 
             feature_idx += len(feature_offsets)
 
-    print individual_ids
-    print feature_labels
-    
     del feature_matrix
 
     to_json(os.path.join(outbase, FEATURE_LABELS_FLNAME), feature_labels)
