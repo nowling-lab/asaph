@@ -41,9 +41,24 @@ class SNPs(object):
         # convert to list for serialization
         return SNPs(self.n_trees, list(ranked_labels), list(nonzero_importances), True)
 
+    def take(self, n):
+        if not self.ranked:
+            ranked = self.rank()
+            return SNPs(ranked.n_trees, ranked.labels[:n],
+                        ranked.importances[:n], ranked.ranked)
+        
+        return SNPs(self.n_trees, self.labels[:n],
+                    self.importances[:n], self.ranked)
+
+    def __len__(self):
+        return len(self.labels)
+    
+    def count_intersection(self, other):
+        return len(set(self.labels).intersection(other.labels))
+
     def __repr__(self):
         return "SNPs(n_trees=%s, n_snps=%s, ranked=%s)" \
-            % (self.n_trees, len(self.labels), self.ranked)
+            % (self.n_trees, len(self), self.ranked)
 
 
 class Features(object):
