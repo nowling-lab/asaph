@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from collections import defaultdict
+import glob
 import json
 import os
 import struct
@@ -102,3 +104,25 @@ def write_snps(basedir, snps, model_id):
     to_json(flname, vars(snps))
 
     
+def read_snps(basedir):
+    model_base_dir = os.path.join(basedir, "models")
+    if not os.path.exists(model_base_dir):
+        return dict()
+
+    model_tree_dirs = glob.glob(os.path.join(model_base_dir, "*"))
+
+    print model_tree_dirs
+
+    models = defaultdict(list)
+    for model_dir in model_tree_dirs:
+        model_flnames = glob.glob(os.path.join(model_dir, "*"))
+
+        for flname in model_flnames:
+            model_data = from_json(flname)
+
+            snps = SNPs(model_data["n_trees"], model_data["labels"],
+                        model_data["importances"], model_data["ranked"])
+
+            models[snps.n_trees].append(snps)
+
+    return models

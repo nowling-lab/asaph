@@ -79,7 +79,7 @@ class TestIOUtils(unittest.TestCase):
     def test_write_snps(self):
         dirname = tempfile.mkdtemp()
 
-        labels = range(10)
+        labels = [[l] for l in range(10)]
         importances = [random.random() for i in xrange(10)]
         snps = SNPs(10, labels, importances, False)
 
@@ -91,6 +91,25 @@ class TestIOUtils(unittest.TestCase):
         self.assertTrue(os.path.exists(model_dir))
         self.assertTrue(os.path.exists(os.path.join(model_dir, "1")))
 
-        
+    def test_read_snps(self):
+        dirname = tempfile.mkdtemp()
 
+        tree_sizes = [10, 25, 50]
         
+        labels = [[l] for l in range(10)]
+        for n_trees in tree_sizes:
+            importances = [random.random() for i in xrange(10)]
+            snps = SNPs(n_trees, labels, importances, False)
+            write_snps(dirname, snps, "1")
+            importances = [random.random() for i in xrange(10)]
+            snps = SNPs(n_trees, labels, importances, False)
+            write_snps(dirname, snps, "2")
+
+        all_snps = read_snps(dirname)
+
+        self.assertEqual(len(all_snps), len(tree_sizes))
+        self.assertItemsEqual(all_snps.keys(), tree_sizes)
+
+        for n_trees in tree_sizes:
+            self.assertEqual(len(all_snps[n_trees]), 2)
+            
