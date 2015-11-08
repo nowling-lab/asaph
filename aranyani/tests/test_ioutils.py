@@ -17,6 +17,7 @@ limitations under the License.
 from collections import defaultdict
 import json
 import os
+import random
 import struct
 import tempfile
 import unittest
@@ -74,3 +75,22 @@ class TestIOUtils(unittest.TestCase):
                          len(features.feature_labels))
         self.assertEqual(features.feature_matrix.shape[0],
                          len(features.sample_labels))
+
+    def test_write_snps(self):
+        dirname = tempfile.mkdtemp()
+
+        labels = range(10)
+        importances = [random.random() for i in xrange(10)]
+        snps = SNPs(10, labels, importances, False)
+
+        model_dir = os.path.join(dirname, "models", "10")
+        self.assertFalse(os.path.exists(model_dir))
+        
+        write_snps(dirname, snps, "1")
+
+        self.assertTrue(os.path.exists(model_dir))
+        self.assertTrue(os.path.exists(os.path.join(model_dir, "1")))
+
+        
+
+        

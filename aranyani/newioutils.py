@@ -22,6 +22,14 @@ import numpy as np
 
 from .models import *
 
+FEATURE_LABELS_FLNAME = "feature_labels"
+CLASS_LABELS_FLNAME = "class_labels"
+SAMPLE_LABELS_FLNAME = "sample_labels"
+FEATURE_MATRIX_FLNAME = "feature_matrix"
+
+FORMAT_STRING = "ii"
+HEADER_SIZE = struct.calcsize(FORMAT_STRING) # bytes
+
 def to_json(flname, obj):
     fl = open(flname, "w")
     json.dump(obj, fl)
@@ -34,11 +42,6 @@ def from_json(flname):
 
     return obj
 
-FEATURE_LABELS_FLNAME = "feature_labels"
-CLASS_LABELS_FLNAME = "class_labels"
-SAMPLE_LABELS_FLNAME = "sample_labels"
-FEATURE_MATRIX_FLNAME = "feature_matrix"
-
 def read_features(basename):
     feature_labels = from_json(os.path.join(basename, FEATURE_LABELS_FLNAME))
     class_labels = from_json(os.path.join(basename, CLASS_LABELS_FLNAME))
@@ -47,8 +50,6 @@ def read_features(basename):
 
     return Features(feature_matrix, feature_labels, class_labels, sample_labels)
 
-FORMAT_STRING = "ii"
-HEADER_SIZE = struct.calcsize(FORMAT_STRING) # bytes
 
 def create_feature_matrix(flname, n_individuals, n_features):
     """
@@ -91,3 +92,13 @@ def open_feature_matrix(flname):
                                 shape=(n_individuals, n_features))
 
     return feature_matrix
+
+def write_snps(basedir, snps, model_id):
+    model_dir = os.path.join(basedir, "models", str(snps.n_trees))
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
+
+    flname = os.path.join(model_dir, model_id)
+    to_json(flname, vars(snps))
+
+    
