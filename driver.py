@@ -19,6 +19,7 @@ import os
 import sys
 
 from aranyani.newioutils import read_features
+from aranyani.newioutils import read_snps
 from aranyani.newioutils import write_snps
 from aranyani.vcf import convert
 
@@ -58,12 +59,32 @@ def train_model(args):
     write_snps(workdir, snp_importances1, "model1")
     write_snps(workdir, snp_importances2, "model2")
 
+def analyze_rankings(args):
+    workdir = args["workdir"]
+    
+    snp_thresholds = args["thresholds"]
+    if snp_thresholds is None:
+        print "Need to specify at least one threshold for ranking convergence analysis."
+        sys.exit(1)
+    
+
+    all_snps = read_snps(workdir)
+    ordered_trees = sorted(all_snps.keys())
+
+    for threshold in snp_thresholds:
+        for n_trees in ordered_trees:
+            snps = all_snps[n_trees]
+            snps1 = snps[0].take(threshold)
+            snps2 = snps[1].take(threshold)
+            print threshold, n_trees, snps1.count_intersection(snps2)
+
 def parseargs():
     parser = argparse.ArgumentParser(description="Aranyani")
 
     parser.add_argument("--mode", required=True,
                         choices=["import",
-                                 "train"],
+                                 "train",
+                                 "analyze-rankings"],
                         help="Operating mode")
 
     parser.add_argument("--vcf", type=str, help="VCF file to import")
@@ -71,6 +92,9 @@ def parseargs():
     parser.add_argument("--workdir", type=str, help="Work directory", required=True)
 
     parser.add_argument("--trees", type=int, help="Number of trees in Random Forest")
+
+    parser.add_argument("--thresholds", type=int, nargs="+",
+                        help="Number of SNPs to use in ranking convergence analysis")
 
     return vars(parser.parse_args())
 
@@ -81,6 +105,8 @@ if __name__ == "__main__":
         import_vcf(args)
     elif args["mode"] == "train":
         train_model(args)
+    elif args["mode"] == "analyze-rankings":
+        analyze_rankings(args)
     else:
         print "Unknown mode '%s'" % args["mode"]
         sys.exit(1)
