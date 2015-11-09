@@ -124,6 +124,10 @@ def convert(groups_flname, vcf_flname, outbase):
     
     individual_ids, n_individuals, n_features = read_dimensions(vcf_flname, groups)
 
+    print n_individuals, "individuals", n_features, "features"
+    # 4 bytes / float, 1 MB = 1024 * 1024 bytes
+    print "Estimated file size (MB):", 4 * n_individuals * n_features/ float(1024 * 1024)
+
     flname = os.path.join(outbase, FEATURE_MATRIX_FLNAME)
     feature_matrix = create_feature_matrix(flname, n_individuals, n_features)
 
