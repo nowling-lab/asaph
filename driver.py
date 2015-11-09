@@ -66,17 +66,46 @@ def analyze_rankings(args):
     if snp_thresholds is None:
         print "Need to specify at least one threshold for ranking convergence analysis."
         sys.exit(1)
-    
 
+    plot_fl = args["plot_file"]
+    if plot_fl is None:
+        print "Need to specify plot filename."
+        sys.exit(1)
+    
     all_snps = read_snps(workdir)
     ordered_trees = sorted(all_snps.keys())
 
+    common_features_percentages = defaultdict(list)
     for threshold in snp_thresholds:
         for n_trees in ordered_trees:
             snps = all_snps[n_trees]
             snps1 = snps[0].take(threshold)
             snps2 = snps[1].take(threshold)
-            print threshold, n_trees, snps1.count_intersection(snps2)
+
+            percentage = 100.0 * float(snps1.count_intersection(snps2)) / float(threshold)
+            common_feature_percentages[threshold].append(percentage)
+            
+            print threshold, n_trees, percentage
+
+    
+    plt.clf()
+    plt.hold(True)
+    plt.grid(True)
+    colors = ["r.-", "g.-", "b.-", "k.-", "c.-", "m.-"]
+    for i, threshold in enumerate(sorted(common_features_percentages.keys())):
+        normalized_common = common_features_percentages[threshold]
+        color = colors[i]
+        plt.semilogx(ordered_trees, normalized_common, color, \
+            label="Top %s SNPs" % threshold)
+    
+    plt.xlabel("Number of Trees", fontsize=16)
+    plt.ylabel("Common SNPs (%)", fontsize=16)
+    plt.title("SNP Ranking Convergence Analysis", fontsize=16)
+    plt.legend(loc="lower right")
+    plt.ylim([0, 100])
+    plt.xlim([min(ordered_trees), max(ordered_trees)])
+
+    plt.savefig(plot_fl, DPI=200) 
 
 def parseargs():
     parser = argparse.ArgumentParser(description="Aranyani")
@@ -95,6 +124,9 @@ def parseargs():
 
     parser.add_argument("--thresholds", type=int, nargs="+",
                         help="Number of SNPs to use in ranking convergence analysis")
+
+    parser.add_argument("--plot-file", type=str,
+                        help="File to write plot to. Extensions supported include .PNG, .PDF, and .EPS")
 
     return vars(parser.parse_args())
 
