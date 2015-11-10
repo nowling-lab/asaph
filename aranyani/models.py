@@ -31,15 +31,15 @@ class SNPs(object):
         self.ranked = ranked
         
     def rank(self):
-        sorted_indices = np.argsort(-1.0 * self.importances)
-        sorted_importances = self.importances[sorted_indices]
-        nonzero_indices = sorted_indices[sorted_importances != 0.0]
-        nonzero_importances = sorted_importances[sorted_importances != 0.0]
-
-        ranked_labels = [self.labels[idx] for idx in nonzero_indices]
+        paired = zip(self.importances, self.labels)
+        nonzero = filter(lambda t: t[0] != 0.0, paired)
+        sorted_pairs = sorted(nonzero, reverse=True)
+        
+        sorted_labels = [label for importance, label in sorted_pairs]
+        sorted_importances = [importance for importance, label in sorted_pairs]
 
         # convert to list for serialization
-        return SNPs(self.n_trees, list(ranked_labels), list(nonzero_importances), True)
+        return SNPs(self.n_trees, list(sorted_labels), list(sorted_importances), True)
 
     def take(self, n):
         if not self.ranked:
