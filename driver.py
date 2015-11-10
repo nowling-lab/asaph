@@ -15,8 +15,11 @@ limitations under the License.
 """
 
 import argparse
+from collections import defaultdict
 import os
 import sys
+
+import matplotlib.pyplot as plt
 
 from aranyani.newioutils import read_features
 from aranyani.newioutils import read_snps
@@ -61,51 +64,71 @@ def train_model(args):
 
 def analyze_rankings(args):
     workdir = args["workdir"]
-    
-    snp_thresholds = args["thresholds"]
-    if snp_thresholds is None:
-        print "Need to specify at least one threshold for ranking convergence analysis."
-        sys.exit(1)
 
-    plot_fl = args["plot_file"]
-    if plot_fl is None:
-        print "Need to specify plot filename."
-        sys.exit(1)
-    
+    figures_dir = os.path.join(workdir, "figures")
+
+    if not os.path.exists(figures_dir):
+        os.makedirs(figures_dir)
+
     all_snps = read_snps(workdir)
     ordered_trees = sorted(all_snps.keys())
 
-    common_features_percentages = defaultdict(list)
-    for threshold in snp_thresholds:
-        for n_trees in ordered_trees:
-            snps = all_snps[n_trees]
-            snps1 = snps[0].take(threshold)
-            snps2 = snps[1].take(threshold)
-
-            percentage = 100.0 * float(snps1.count_intersection(snps2)) / float(threshold)
-            common_feature_percentages[threshold].append(percentage)
-            
-            print threshold, n_trees, percentage
-
+    thresholds = [0.01, 0.05, 0.1, 0.25, 0.5] 
     
+    common_feature_counts = []
+    snp1_feature_counts = []
+    snp2_feature_counts = []
+    common_feature_threshold_percentages = defaultdict(list)
+    for n_trees in ordered_trees:
+        snps1, snps2 = all_snps[n_trees]
+
+        common_feature_counts.append(snps1.count_intersection(snps2))
+        snp1_feature_counts.append(len(snps1))
+        snp2_feature_counts.append(len(snps2))
+            
+        #print n_trees, len(snps1), len(snps2), snps1.count_intersection(snps2)
+
+        for threshold in thresholds:
+            n = max(1, int(threshold * min(len(snps1), len(snps2))))
+            percentage = 100.0 * float(snps1.take(n).count_intersection(snps2.take(n))) \
+                         / float(n)
+            common_feature_threshold_percentages[threshold].append(percentage)
+
+            print n_trees, n, threshold, percentage
+
     plt.clf()
     plt.hold(True)
     plt.grid(True)
-    colors = ["r.-", "g.-", "b.-", "k.-", "c.-", "m.-"]
-    for i, threshold in enumerate(sorted(common_features_percentages.keys())):
-        normalized_common = common_features_percentages[threshold]
-        color = colors[i]
-        plt.semilogx(ordered_trees, normalized_common, color, \
-            label="Top %s SNPs" % threshold)
-    
+    plt.semilogx(ordered_trees, common_feature_counts, "k.-", label="Common")
+    plt.semilogx(ordered_trees, snp1_feature_counts, "c.-", label="Model 1")
+    plt.semilogx(ordered_trees, snp2_feature_counts, "m.-", label="Model 2")
     plt.xlabel("Number of Trees", fontsize=16)
-    plt.ylabel("Common SNPs (%)", fontsize=16)
-    plt.title("SNP Ranking Convergence Analysis", fontsize=16)
-    plt.legend(loc="lower right")
+    plt.ylabel("SNPs (Count)", fontsize=16)
+    plt.legend(loc="upper left")
+    plt.ylim([0, max(common_feature_counts) + 10])
+    plt.xlim([min(ordered_trees), max(ordered_trees)])
+
+    plt.savefig(os.path.join(figures_dir, "snp_counts.png"), DPI=200) 
+    plt.savefig(os.path.join(figures_dir, "snp_counts.pdf"), DPI=200)
+
+    plt.clf()
+    plt.hold(True)
+    plt.grid(True)
+    colors = ["r.-", "g.-", "b.-", "m.-", "c.-"]
+    for i, threshold in enumerate(thresholds):
+        c = colors[i]
+        label = str(int(100.0 * threshold))
+        plt.semilogx(ordered_trees, common_feature_threshold_percentages[threshold],
+                     c, label="Top %s%%" % label)
+    plt.xlabel("Number of Trees", fontsize=16)
+    plt.ylabel("Common SNPs (Percentage)", fontsize=16)
+    plt.legend(loc="upper left")
     plt.ylim([0, 100])
     plt.xlim([min(ordered_trees), max(ordered_trees)])
 
-    plt.savefig(plot_fl, DPI=200) 
+    plt.savefig(os.path.join(figures_dir, "common_snps.png"), DPI=200) 
+    plt.savefig(os.path.join(figures_dir, "common_snps.pdf"), DPI=200)
+    
 
 def parseargs():
     parser = argparse.ArgumentParser(description="Aranyani")
@@ -124,9 +147,6 @@ def parseargs():
 
     parser.add_argument("--thresholds", type=int, nargs="+",
                         help="Number of SNPs to use in ranking convergence analysis")
-
-    parser.add_argument("--plot-file", type=str,
-                        help="File to write plot to. Extensions supported include .PNG, .PDF, and .EPS")
 
     return vars(parser.parse_args())
 
