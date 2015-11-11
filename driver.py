@@ -101,7 +101,7 @@ def analyze_rankings(args):
     plt.xlabel("Number of Trees", fontsize=16)
     plt.ylabel("SNPs (Count)", fontsize=16)
     plt.legend(loc="upper left")
-    plt.ylim([0, max(common_feature_counts) + 10])
+    plt.ylim([0, max(max(common_feature_counts), max(snp1_feature_counts), max(snp2_feature_counts)) + 10])
     plt.xlim([min(ordered_trees), max(ordered_trees)])
 
     plt.savefig(os.path.join(figures_dir, "snp_counts.png"), DPI=200) 
