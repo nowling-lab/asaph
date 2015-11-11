@@ -84,15 +84,11 @@ def analyze_rankings(args):
         snp1_feature_counts.append(len(snps1))
         snp2_feature_counts.append(len(snps2))
             
-        #print n_trees, len(snps1), len(snps2), snps1.count_intersection(snps2)
-
         for threshold in thresholds:
             n = max(1, int(threshold * min(len(snps1), len(snps2))))
             percentage = 100.0 * float(snps1.take(n).count_intersection(snps2.take(n))) \
                          / float(n)
             common_feature_threshold_percentages[threshold].append(percentage)
-
-            print n_trees, n, threshold, percentage
 
     plt.clf()
     plt.hold(True)

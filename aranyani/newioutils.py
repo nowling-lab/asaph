@@ -111,8 +111,6 @@ def read_snps(basedir):
 
     model_tree_dirs = glob.glob(os.path.join(model_base_dir, "*"))
 
-    print model_tree_dirs
-
     models = defaultdict(list)
     for model_dir in model_tree_dirs:
         model_flnames = glob.glob(os.path.join(model_dir, "*"))
