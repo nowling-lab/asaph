@@ -45,6 +45,7 @@ def import_vcf(args):
 
 def train_model(args):
     workdir = args["workdir"]
+    max_batch_size = args["batch_size"]
 
     n_trees = args["trees"]
     if n_trees is None:
@@ -53,11 +54,8 @@ def train_model(args):
 
     features = read_features(workdir)
 
-    rf1 = features.train_rf(n_trees)
-    rf2 = features.train_rf(n_trees)
-
-    snp_importances1 = features.snp_importances(rf1).rank()
-    snp_importances2 = features.snp_importances(rf2).rank()
+    snp_importances1 = features.snp_importances(n_trees, max_batch_size).rank()
+    snp_importances2 = features.snp_importances(n_trees, max_batch_size).rank()
 
     write_snps(workdir, snp_importances1, "model1")
     write_snps(workdir, snp_importances2, "model2")
@@ -145,6 +143,9 @@ def parseargs():
 
     parser.add_argument("--trees", type=int, help="Number of trees in Random Forest")
 
+    parser.add_argument("--batch-size", type=int, default=100,
+                        help="Number of trees to use per RF batch")
+    
     parser.add_argument("--thresholds", type=int, nargs="+",
                         help="Number of SNPs to use in ranking convergence analysis")
 

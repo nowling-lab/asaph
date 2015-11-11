@@ -45,16 +45,19 @@ class TestFeatures(unittest.TestCase):
         self.assertIn(3, snp_labels[(1,1,2)])
 
     def test_snp_importances(self):
-        features = Features(None, self.feature_labels, None, None)
-        importances = np.array([0.0, 1.0, 0.5, 1.0])
-        rf = MockRF(importances, 100)
+        n_trees = 10
+        batch_size = 3
+        features = np.array([[0, 1, 0, 1],
+                             [1, 0, 1, 0],
+                             [1, 0, 1, 0],
+                             [0, 1, 0, 1]])
+        class_labels = [0, 0, 1, 1]
+        
+        features = Features(features, self.feature_labels, class_labels, None)
 
-        snps = features.snp_importances(rf)
+        snps = features.snp_importances(n_trees, batch_size)
 
-        self.assertEqual(snps.labels[0], (1, 1, 2))
-        self.assertEqual(snps.labels[1], (1, 1, 1))
-        self.assertAlmostEqual(snps.importances[0], 0.75)
-        self.assertAlmostEqual(snps.importances[1], 0.5)
+        self.assertEqual(snps.n_trees, n_trees)
 
     def test_train_rf(self):
         n_trees = 10

@@ -82,8 +82,16 @@ class Features(object):
         rf.fit(self.feature_matrix, self.class_labels)
         return rf
 
-    def snp_importances(self, rf):
-        feature_importances = rf.feature_importances_
+    def snp_importances(self, n_trees, max_batch_size):
+        remaining_trees = n_trees
+        batch_size = min(remaining_trees, max_batch_size)
+        feature_importances = np.zeros(self.feature_matrix.shape[1])
+        while remaining_trees > 0:
+            rf = self.train_rf(batch_size)
+            feature_importances += batch_size * rf.feature_importances_
+            remaining_trees -= batch_size
+
+        feature_importances = feature_importances / n_trees
         
         snp_labels = self.snp_labels()
 
@@ -95,5 +103,5 @@ class Features(object):
         labels = [label for importance, label in snp_importances]
         importances = np.array([importance for importance, label in snp_importances])
     
-        return SNPs(len(rf.estimators_), labels, importances, False)
+        return SNPs(n_trees, labels, importances, False)
 
