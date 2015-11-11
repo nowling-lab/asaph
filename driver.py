@@ -71,7 +71,7 @@ def analyze_rankings(args):
     all_snps = read_snps(workdir)
     ordered_trees = sorted(all_snps.keys())
 
-    thresholds = [0.01, 0.05, 0.1, 0.25, 0.5] 
+    thresholds = [0.05, 0.1, 0.25, 0.5] 
     
     common_feature_counts = []
     snp1_feature_counts = []
@@ -146,9 +146,6 @@ def parseargs():
     parser.add_argument("--batch-size", type=int, default=100,
                         help="Number of trees to use per RF batch")
     
-    parser.add_argument("--thresholds", type=int, nargs="+",
-                        help="Number of SNPs to use in ranking convergence analysis")
-
     return vars(parser.parse_args())
 
 if __name__ == "__main__":
