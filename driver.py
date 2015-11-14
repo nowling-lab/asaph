@@ -23,6 +23,8 @@ import matplotlib
 matplotlib.use("PDF")
 import matplotlib.pyplot as plt
 
+import numpy as np
+
 from aranyani.newioutils import read_features
 from aranyani.newioutils import read_snps
 from aranyani.newioutils import write_snps
@@ -141,7 +143,7 @@ def output_rankings(args):
     all_models = read_snps(workdir)
     if n_trees not in all_models:
         print "No model with %s trees. The available models have %s trees" \
-            % (n_trees, all_models.keys())
+            % (n_trees, sorted(all_models.keys()))
         sys.exit(1)
 
     snps1, snps2 = all_models[n_trees]
@@ -153,6 +155,78 @@ def output_rankings(args):
         fl.write("%s\t%s\t%s\t%s\n" % (chrom, pos, haploid, importance))
     fl.close()
 
+def validate(args):
+    workdir = args["workdir"]
+
+    figures_dir = os.path.join(workdir, "figures")
+
+    if not os.path.exists(figures_dir):
+        os.makedirs(figures_dir)
+
+    n_trees = args["trees"]
+    if n_trees is None:
+        print "Number of trees must be specified"
+        sys.exit(1)
+
+    n_holdout_trees_lst = args["holdout_trees"]
+    if n_holdout_trees_lst is None:
+        print "Number of trees must be specified"
+        sys.exit(1)
+
+    n_snps_lst = args["snps"]
+    if n_snps_lst is None:
+        print "Number of SNPs must be specified"
+        sys.exit(1)
+
+    n_trials = args["trials"]
+    if n_trials is None:
+        print "Number of trials must be specified"
+        sys.exit(1)
+
+    all_models = read_snps(workdir)
+    if n_trees not in all_models:
+        print "No model with %s trees. The available models have %s trees" \
+            % (n_trees, sorted(all_models.keys()))
+        sys.exit(1)
+
+    # n_snps, n_holdout_trees
+    score_averages = defaultdict(list)
+    score_errors = defaultdict(list)
+    
+    snps1, snps2 = all_models[n_trees]
+    features = read_features(workdir)
+
+    for n_snps in n_snps_lst:
+        selected_features = features.select_from_snps(snps1.take(n_snps))
+        print selected_features.feature_matrix.shape
+        print selected_features.feature_labels
+        print selected_features.class_labels
+        print selected_features.feature_matrix
+        for n_holdout_trees in sorted(n_holdout_trees_lst):
+            scores = []
+            for i in xrange(n_trials):
+                score = selected_features.validate_rf(n_holdout_trees)
+                scores.append(score)
+            print n_snps, n_trees, scores
+            score_averages[n_snps].append(np.mean(scores))
+            score_errors[n_snps].append(np.std(scores))
+
+    plt.clf()
+    plt.hold(True)
+    plt.grid(True)
+    for n_snps in n_snps_lst:
+        plt.errorbar(sorted(n_holdout_trees_lst), score_averages[n_snps],
+                     yerr=score_errors[n_snps], label="%s SNPs" % n_snps,
+                     fmt="d-")
+    plt.xlabel("Number of Trees", fontsize=16)
+    plt.ylabel("Score from Hold-out Validation", fontsize=16)
+    plt.legend(loc="lower right")
+    plt.ylim([0, 1.25])
+    plt.xlim([min(n_holdout_trees_lst) - 1, max(n_holdout_trees_lst) + 1])
+
+    plt.savefig(os.path.join(figures_dir, "holdout_validation.png"), DPI=200) 
+    plt.savefig(os.path.join(figures_dir, "holdout_validation.pdf"), DPI=200)
+            
 def parseargs():
     parser = argparse.ArgumentParser(description="Aranyani")
 
@@ -160,7 +234,8 @@ def parseargs():
                         choices=["import",
                                  "train",
                                  "analyze-rankings",
-                                 "output-rankings"],
+                                 "output-rankings",
+                                 "validate"],
                         help="Operating mode")
 
     parser.add_argument("--vcf", type=str, help="VCF file to import")
@@ -174,6 +249,15 @@ def parseargs():
 
     parser.add_argument("--ranks-file", type=str,
                         help="Output file for SNP ranks")
+
+    parser.add_argument("--snps", type=int, nargs="+",
+                        help="Top N SNPs to use in hold-out analysis.")
+
+    parser.add_argument("--holdout-trees", type=int, nargs="+",
+                        help="Number of trees to use in hold-out analysis.")
+
+    parser.add_argument("--trials", type=int,
+                        help="Number of scoring trials to run")
     
     return vars(parser.parse_args())
 
@@ -188,6 +272,8 @@ if __name__ == "__main__":
         analyze_rankings(args)
     elif args["mode"] == "output-rankings":
         output_rankings(args)
+    elif args["mode"] == "validate":
+        validate(args)
     else:
         print "Unknown mode '%s'" % args["mode"]
         sys.exit(1)
