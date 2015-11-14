@@ -124,7 +124,34 @@ def analyze_rankings(args):
 
     plt.savefig(os.path.join(figures_dir, "common_snps.png"), DPI=200) 
     plt.savefig(os.path.join(figures_dir, "common_snps.pdf"), DPI=200)
-    
+
+def output_rankings(args):
+    workdir = args["workdir"]
+
+    n_trees = args["trees"]
+    if n_trees is None:
+        print "Number of trees must be specified for outputting ranks"
+        sys.exit(1)
+
+    ranks_flname = args["ranks_file"]
+    if ranks_flname is None:
+        print "Output filename must be specified"
+        sys.exit(1)
+
+    all_models = read_snps(workdir)
+    if n_trees not in all_models:
+        print "No model with %s trees. The available models have %s trees" \
+            % (n_trees, all_models.keys())
+        sys.exit(1)
+
+    snps1, snps2 = all_models[n_trees]
+
+    fl = open(ranks_flname, "w")
+    for i in xrange(len(snps1)):
+        chrom, pos, haploid = snps1.labels[i]
+        importance = snps1.importances[i]
+        fl.write("%s\t%s\t%s\t%s\n" % (chrom, pos, haploid, importance))
+    fl.close()
 
 def parseargs():
     parser = argparse.ArgumentParser(description="Aranyani")
@@ -132,7 +159,8 @@ def parseargs():
     parser.add_argument("--mode", required=True,
                         choices=["import",
                                  "train",
-                                 "analyze-rankings"],
+                                 "analyze-rankings",
+                                 "output-rankings"],
                         help="Operating mode")
 
     parser.add_argument("--vcf", type=str, help="VCF file to import")
@@ -143,6 +171,9 @@ def parseargs():
 
     parser.add_argument("--batch-size", type=int, default=100,
                         help="Number of trees to use per RF batch")
+
+    parser.add_argument("--ranks-file", type=str,
+                        help="Output file for SNP ranks")
     
     return vars(parser.parse_args())
 
@@ -155,6 +186,8 @@ if __name__ == "__main__":
         train_model(args)
     elif args["mode"] == "analyze-rankings":
         analyze_rankings(args)
+    elif args["mode"] == "output-rankings":
+        output_rankings(args)
     else:
         print "Unknown mode '%s'" % args["mode"]
         sys.exit(1)
