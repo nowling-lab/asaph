@@ -76,7 +76,8 @@ class Features(object):
     def snp_labels(self):
         snp_feature_indices = defaultdict(list)
         for feature_idx, feature_label in enumerate(self.feature_labels):
-            snp_label = feature_label[:3]
+            # chrom and pos
+            snp_label = feature_label[:2]
             snp_feature_indices[snp_label].append(feature_idx)
 
         return snp_feature_indices
@@ -128,8 +129,8 @@ class Features(object):
         selected_indices = []
         selected_feature_labels = []
         
-        for i, (chrom, pos, haploid, nucleotide) in enumerate(self.feature_labels):
-            if (chrom, pos, haploid) in snp_labels:
+        for i, (chrom, pos, nucleotide) in enumerate(self.feature_labels):
+            if (chrom, pos) in snp_labels:
                 selected_indices.append(i)
                 selected_feature_labels.append(self.feature_labels[i])
 

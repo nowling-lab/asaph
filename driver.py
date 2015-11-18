@@ -150,9 +150,9 @@ def output_rankings(args):
 
     fl = open(ranks_flname, "w")
     for i in xrange(len(snps1)):
-        chrom, pos, haploid = snps1.labels[i]
+        chrom, pos = snps1.labels[i]
         importance = snps1.importances[i]
-        fl.write("%s\t%s\t%s\t%s\n" % (chrom, pos, haploid, importance))
+        fl.write("%s\t%s\t%s\n" % (chrom, pos, importance))
     fl.close()
 
 def validate(args):
