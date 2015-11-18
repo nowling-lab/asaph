@@ -52,13 +52,16 @@ def extract_features(chrom, pos, snps):
 
     return features
 
-def vcf_line_to_seq(ln):
-    cols = ln.split()
+def vcf_line_to_seq(ln, kept_individual_idx):
+    cols = ln.strip().split()
     ref_seq = cols[DEFAULT_COLUMNS["REF"]]
     alt_seq = cols[DEFAULT_COLUMNS["ALT"]]
 
     snps = []
     for i, col in enumerate(cols[len(DEFAULT_COLUMNS):]):
+        if i not in kept_individual_idx:
+            continue
+        
         tags = col.split(":")[0].split("/")
 
         nucleotides = defaultdict(int)
@@ -79,20 +82,26 @@ def vcf_line_to_seq(ln):
     return extract_features(cols[DEFAULT_COLUMNS["CHROM"]], cols[DEFAULT_COLUMNS["POS"]], \
                             snps)
 
-def stream_vcf_fl(flname):
+def stream_vcf_fl(flname, kept_individuals):
     with open(flname) as fl:
         for ln in fl:
             if ln.startswith("#CHROM"):
                 column_names = ln[1:].strip().split()
                 break
 
-        individual_ids = column_names[len(DEFAULT_COLUMNS):]
+        all_ids = column_names[len(DEFAULT_COLUMNS):]
 
-        yield individual_ids
+        individual_ids = [ident for ident in all_ids
+                          if ident in kept_individuals]
+        
+        individual_idx = list([i for i, ident in enumerate(all_ids)
+                              if ident in kept_individuals])
+
+        yield individual_ids, individual_idx
 
         for ln in fl:
             if not ln.startswith("#"):
-                yield vcf_line_to_seq(ln)
+                yield vcf_line_to_seq(ln, individual_idx)
 
 def read_dimensions(inflname, groups):
     # Data columns 'CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT'
@@ -100,24 +109,20 @@ def read_dimensions(inflname, groups):
     # variants are rows
 
     # read file once to get dimensions
-    gen = stream_vcf_fl(inflname)
-    all_ids = list(next(gen))
-    individual_ids = [ident for ident in all_ids
-                      if ident in groups.keys()]
-    individual_idx = set([i for i, ident in enumerate(all_ids)
-                          if ident in groups.keys()])
-    
-    n_individuals = len(individual_idx)
+    gen = stream_vcf_fl(inflname, groups.keys())
+    kept_ids, kept_idx = list(next(gen))
+
+    n_individuals = len(kept_ids)
 
     n_features = 0
     for features in gen:
         # all nucleotides are missing or only one genotype
         if len(features) <= 1:
-            pass
+            continue
 
         n_features += len(features)
 
-    return individual_ids, n_individuals, n_features
+    return kept_ids, n_individuals, n_features
 
 def convert(groups_flname, vcf_flname, outbase):
     groups = read_groups(groups_flname)
@@ -133,21 +138,19 @@ def convert(groups_flname, vcf_flname, outbase):
 
     feature_idx = 0
 
-    gen = stream_vcf_fl(vcf_flname)
-    all_ids = list(next(gen))
-    individual_idx = list([i for i, ident in enumerate(all_ids)
-                          if ident in groups.keys()])
+    gen = stream_vcf_fl(vcf_flname, groups.keys())
+    individual_ids, individual_idx = list(next(gen))
 
     feature_labels = [None] * n_features
     column_idx = 0
     for snp_features in gen:
         # all nucleotides are missing or only one genotype
         if len(snp_features) <= 1:
-            pass
+            continue
 
         for label, column in snp_features.iteritems():
             feature_labels[column_idx] = label
-            feature_matrix[:, column_idx] = column[individual_idx]
+            feature_matrix[:, column_idx] = column
             column_idx += 1
 
     # close and save

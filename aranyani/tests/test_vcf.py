@@ -34,11 +34,12 @@ class TestVCFFunctions(unittest.TestCase):
     def test_vcf_line_to_seq(self):
         # Data columns 'CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT'
         # individuals are columns after data columns
+        idx = range(5)
         test_line = "\t".join(["1", "2", ".", "A", "T", "0", "PASS", ".", ".",
                                "0/0:12,0:12:33:0", "0/1:12,0:12:33:0", "1/0:12,0:12:33:0",
                                "1/1:12,0:12:33:0", "./.:12,0:12:33:0"])
 
-        snps = vcf_line_to_seq(test_line)
+        snps = vcf_line_to_seq(test_line, idx)
 
         self.assertIn(("1", "2", "A"), snps)
         self.assertIn(("1", "2", "T"), snps)
@@ -47,7 +48,7 @@ class TestVCFFunctions(unittest.TestCase):
         self.assertEqual(list(snps[("1", "2", "A")]), [2, 1, 1, 0, 0])
         self.assertEqual(list(snps[("1", "2", "T")]), [0, 1, 1, 2, 0])
                               
-        self.assertRaises(NotImplementedError, vcf_line_to_seq, test_line.replace("0/0", "2/2"))
+        self.assertRaises(NotImplementedError, vcf_line_to_seq, test_line.replace("0/0", "2/2"), idx)
     
     def test_read_groups(self):
         groups = read_groups(GROUP_TEST_FILE)
@@ -60,7 +61,7 @@ class TestVCFFunctions(unittest.TestCase):
         sample_ids, n_samples, n_features = read_dimensions(VCF_TEST_FILE, groups)
 
         self.assertEquals(n_samples, 16)
-        self.assertEquals(n_features, 8)
+        self.assertEquals(n_features, 6)
 
     def test_convert(self):
         dirname = tempfile.mkdtemp()
@@ -71,8 +72,8 @@ class TestVCFFunctions(unittest.TestCase):
         features = read_features(dirname)
         
         self.assertEquals(features.feature_matrix.shape[0], 16)
-        self.assertEquals(features.feature_matrix.shape[1], 8)
-        self.assertEquals(len(features.feature_labels), 8)
+        self.assertEquals(features.feature_matrix.shape[1], 6)
+        self.assertEquals(len(features.feature_labels), 6)
         self.assertEquals(len(features.sample_labels), 16)
         self.assertEquals(len(features.class_labels), 16)
         self.assertEquals(len(set(features.class_labels)), 2)
