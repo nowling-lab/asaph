@@ -153,8 +153,6 @@ def convert(groups_flname, vcf_flname, outbase):
     # close and save
     del feature_matrix
 
-    print feature_labels
-    
     to_json(os.path.join(outbase, FEATURE_LABELS_FLNAME), feature_labels)
     to_json(os.path.join(outbase, SAMPLE_LABELS_FLNAME), individual_ids)
 
