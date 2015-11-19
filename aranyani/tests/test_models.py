@@ -28,21 +28,21 @@ class MockRF(object):
         self.feature_importances_ = feature_importances
 
 class TestFeatures(unittest.TestCase):
-    feature_labels = [(1,1,1,"A"),
-                      (1,1,1,"T"),
-                      (1,1,2,"G"),
-                      (1,1,2,"C")]
+    feature_labels = [(1,1,"A"),
+                      (1,1,"T"),
+                      (1,2,"G"),
+                      (1,2,"C")]
     
     def test_snps_labels(self):
         features = Features(None, self.feature_labels, None, None)
         snp_labels = features.snp_labels()
 
-        self.assertIn((1,1,1), snp_labels)
-        self.assertIn((1,1,2), snp_labels)
-        self.assertIn(0, snp_labels[(1,1,1)])
-        self.assertIn(1, snp_labels[(1,1,1)])
-        self.assertIn(2, snp_labels[(1,1,2)])
-        self.assertIn(3, snp_labels[(1,1,2)])
+        self.assertIn((1,1), snp_labels)
+        self.assertIn((1,2), snp_labels)
+        self.assertIn(0, snp_labels[(1,1)])
+        self.assertIn(1, snp_labels[(1,1)])
+        self.assertIn(2, snp_labels[(1,2)])
+        self.assertIn(3, snp_labels[(1,2)])
 
     def test_snp_importances(self):
         n_trees = 10
@@ -74,13 +74,13 @@ class TestFeatures(unittest.TestCase):
 
 class TestSNPs(unittest.TestCase):
     def test_rank(self):
-        labels = [(1, 1, 1), (1, 1, 2), (1, 1, 3)]
+        labels = [(1, 1), (1, 2), (1, 3)]
         importances = np.array([0.5, 0.75, 0.0])
 
         snps = SNPs(None, labels, importances, False)
         ranked_snps = snps.rank()
 
-        self.assertEqual(ranked_snps.labels, [(1, 1, 2), (1, 1, 1)])
+        self.assertEqual(ranked_snps.labels, [(1, 2), (1, 1)])
         self.assertAlmostEqual(ranked_snps.importances[0], 0.75)
         self.assertAlmostEqual(ranked_snps.importances[1], 0.5)
         self.assertTrue(ranked_snps.ranked)

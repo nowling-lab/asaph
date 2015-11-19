@@ -34,60 +34,74 @@ def read_groups(flname):
 
     return groups
 
-def vcf_line_to_seq(ln):
-    cols = ln.split()
+def extract_features(chrom, pos, snps):
+    n_individuals = len(snps)
+
+    all_nucl = set()
+    
+    for nucl_dict in snps:
+        all_nucl.update(nucl_dict.keys())
+
+    features = dict()
+    for nucl in all_nucl:
+        features[(chrom, pos, nucl)] = np.zeros((n_individuals))
+
+    for idx, nucl_dict in enumerate(snps):
+        for nucl, count in nucl_dict.items():
+            features[(chrom, pos, nucl)][idx] = count
+
+    return features
+
+def vcf_line_to_seq(ln, kept_individual_idx):
+    cols = ln.strip().split()
     ref_seq = cols[DEFAULT_COLUMNS["REF"]]
     alt_seq = cols[DEFAULT_COLUMNS["ALT"]]
 
-    snps1 = []
-    snps2 = []
+    snps = []
     for i, col in enumerate(cols[len(DEFAULT_COLUMNS):]):
-        tag1, tag2 = col.split(":")[0].split("/")
+        if i not in kept_individual_idx:
+            continue
+        
+        tags = col.split(":")[0].split("/")
 
-        if tag1 == ".":
-            nucl1 = "X"
-        elif tag1 == "0":
-            nucl1 = ref_seq
-        elif tag1 == "1":
-            nucl1 = alt_seq
-        else:
-            raise NotImplementedError("Support for non-biallelic SNPs not implemented. Found '" + tag1 + "'")
+        nucleotides = defaultdict(int)
 
-        snps1.append(nucl1)
+        for tag in tags:
+            if tag == ".":
+                # ignore unknown nucleotides
+                pass
+            elif tag == "0":
+                nucleotides[ref_seq] += 1
+            elif tag == "1":
+                nucleotides[alt_seq] += 1
+            else:
+                raise NotImplementedError("Support for non-biallelic SNPs not implemented. Found '" + tag + "'")
 
-        if tag2 == ".":
-            nucl2 = "X"
-        elif tag2 == "0":
-            nucl2 = ref_seq
-        elif tag2 == "1":
-            nucl2 = alt_seq
-        else:
-            raise NotImplementedError("Support for non-biallelic SNPs not implemented. Found '" + tag1 + "'")
+        snps.append(dict(nucleotides))
 
-        snps2.append(nucl2)
+    return extract_features(cols[DEFAULT_COLUMNS["CHROM"]], cols[DEFAULT_COLUMNS["POS"]], \
+                            snps)
 
-    return cols[DEFAULT_COLUMNS["CHROM"]], cols[DEFAULT_COLUMNS["POS"]], tuple(snps1), tuple(snps2)
-
-def extract_features(seq):
-    unique_nucl = set(seq)
-    unique_nucl.discard("X")
-    return { nucl : offset for offset, nucl in enumerate(unique_nucl) }
-
-def stream_vcf_fl(flname):
+def stream_vcf_fl(flname, kept_individuals):
     with open(flname) as fl:
         for ln in fl:
             if ln.startswith("#CHROM"):
                 column_names = ln[1:].strip().split()
                 break
 
-        individual_ids = column_names[len(DEFAULT_COLUMNS):]
+        all_ids = column_names[len(DEFAULT_COLUMNS):]
 
-        yield individual_ids
+        individual_ids = [ident for ident in all_ids
+                          if ident in kept_individuals]
+        
+        individual_idx = list([i for i, ident in enumerate(all_ids)
+                              if ident in kept_individuals])
+
+        yield individual_ids, individual_idx
 
         for ln in fl:
             if not ln.startswith("#"):
-                chrom, pos, snps1, snps2 = vcf_line_to_seq(ln)
-                yield chrom, pos, snps1, snps2
+                yield vcf_line_to_seq(ln, individual_idx)
 
 def read_dimensions(inflname, groups):
     # Data columns 'CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT'
@@ -95,29 +109,20 @@ def read_dimensions(inflname, groups):
     # variants are rows
 
     # read file once to get dimensions
-    gen = stream_vcf_fl(inflname)
-    all_ids = list(next(gen))
-    individual_ids = [ident for ident in all_ids
-                      if ident in groups.keys()]
-    individual_idx = set([i for i, ident in enumerate(all_ids)
-                          if ident in groups.keys()])
-    
-    n_individuals = len(individual_idx)
+    gen = stream_vcf_fl(inflname, groups.keys())
+    kept_ids, kept_idx = list(next(gen))
+
+    n_individuals = len(kept_ids)
 
     n_features = 0
-    for _, _, haploid1, haploid2 in gen:
-        filtered_haploid1 = [value for i, value in enumerate(haploid1)
-                             if i in individual_idx]
-        filtered_haploid2 = [value for i, value in enumerate(haploid2)
-                             if i in individual_idx]
+    for features in gen:
+        # all nucleotides are missing or only one genotype
+        if len(features) <= 1:
+            continue
 
-        # ignore positions where we only have 1 value
-        if len(extract_features(filtered_haploid1)) >= 2:
-            n_features += len(extract_features(filtered_haploid1))
-        if len(extract_features(filtered_haploid2)) >= 2:
-            n_features += len(extract_features(filtered_haploid2))
+        n_features += len(features)
 
-    return individual_ids, n_individuals, n_features
+    return kept_ids, n_individuals, n_features
 
 def convert(groups_flname, vcf_flname, outbase):
     groups = read_groups(groups_flname)
@@ -133,31 +138,22 @@ def convert(groups_flname, vcf_flname, outbase):
 
     feature_idx = 0
 
-    gen = stream_vcf_fl(vcf_flname)
-    all_ids = list(next(gen))
-    individual_idx = set([i for i, ident in enumerate(all_ids)
-                          if ident in groups.keys()])
+    gen = stream_vcf_fl(vcf_flname, groups.keys())
+    individual_ids, individual_idx = list(next(gen))
 
     feature_labels = [None] * n_features
-    for chrom, pos, haploid1, haploid2 in gen:
-        for haploid_idx, snps in enumerate([haploid1, haploid2]):
-            filtered_snps = [value for i, value in enumerate(snps)
-                             if i in individual_idx]
-            feature_offsets = extract_features(filtered_snps)
+    column_idx = 0
+    for snp_features in gen:
+        # all nucleotides are missing or only one genotype
+        if len(snp_features) <= 1:
+            continue
 
-            # ignore positions where we only have 1 value
-            if len(feature_offsets) < 2:
-                continue
-            
-            for indiv, nucl in enumerate(filtered_snps):
-                if nucl != "X":
-                    feature_matrix[indiv, feature_idx + feature_offsets[nucl]] = 1.0
+        for label, column in snp_features.iteritems():
+            feature_labels[column_idx] = label
+            feature_matrix[:, column_idx] = column
+            column_idx += 1
 
-            for value, offset in feature_offsets.items():
-                feature_labels[feature_idx + offset] = (chrom, pos, haploid_idx, value)
-                
-            feature_idx += len(feature_offsets)
-
+    # close and save
     del feature_matrix
 
     to_json(os.path.join(outbase, FEATURE_LABELS_FLNAME), feature_labels)
