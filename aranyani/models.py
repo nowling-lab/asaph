@@ -42,9 +42,13 @@ class SNPs(object):
         # convert to list for serialization
         return SNPs(self.n_trees, list(sorted_labels), list(sorted_importances), True)
 
-    def take(self, start, end=None):
-        if end == None:
-            end = len(self)
+    def take(self, p1, p2=None):
+        if p2 == None:
+            start = 0
+            end = p1
+        else:
+            start = p1
+            end = p2
             
         if not self.ranked:
             ranked = self.rank()
