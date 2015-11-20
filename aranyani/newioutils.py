@@ -28,6 +28,8 @@ FEATURE_LABELS_FLNAME = "feature_labels"
 CLASS_LABELS_FLNAME = "class_labels"
 SAMPLE_LABELS_FLNAME = "sample_labels"
 FEATURE_MATRIX_FLNAME = "feature_matrix"
+FIXED_DIFFERENCES_FLNAME = "fixed_differences"
+MISSING_DATA_FLNAME = "missing_data"
 
 FORMAT_STRING = "ii"
 HEADER_SIZE = struct.calcsize(FORMAT_STRING) # bytes
@@ -49,8 +51,11 @@ def read_features(basename):
     class_labels = from_json(os.path.join(basename, CLASS_LABELS_FLNAME))
     sample_labels = from_json(os.path.join(basename, SAMPLE_LABELS_FLNAME))
     feature_matrix = open_feature_matrix(os.path.join(basename, FEATURE_MATRIX_FLNAME))
+    fixed_differences = from_json(os.path.join(basename, FIXED_DIFFERENCES_FLNAME))
+    missing_data = from_json(os.path.join(basename, MISSING_DATA_FLNAME))
 
-    return Features(feature_matrix, feature_labels, class_labels, sample_labels)
+    return Features(feature_matrix, feature_labels, class_labels, sample_labels,
+                    fixed_differences, missing_data)
 
 
 def create_feature_matrix(flname, n_individuals, n_features):
@@ -119,7 +124,8 @@ def read_snps(basedir):
             model_data = from_json(flname)
 
             snps = SNPs(model_data["n_trees"], model_data["labels"],
-                        model_data["importances"], model_data["ranked"])
+                        model_data["importances"], model_data["ranked"],
+                        model_data["fixed_differences"], model_data["missing_data"])
 
             models[snps.n_trees].append(snps)
 

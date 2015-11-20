@@ -34,7 +34,7 @@ class TestFeatures(unittest.TestCase):
                       (1,2,"C")]
     
     def test_snps_labels(self):
-        features = Features(None, self.feature_labels, None, None)
+        features = Features(None, self.feature_labels, None, None, None, None)
         snp_labels = features.snp_labels()
 
         self.assertIn((1,1), snp_labels)
@@ -53,7 +53,7 @@ class TestFeatures(unittest.TestCase):
                              [0, 1, 0, 1]])
         class_labels = [0, 0, 1, 1]
         
-        features = Features(features, self.feature_labels, class_labels, None)
+        features = Features(features, self.feature_labels, class_labels, None, None, None)
 
         snps = features.snp_importances(n_trees, batch_size)
 
@@ -67,7 +67,7 @@ class TestFeatures(unittest.TestCase):
                              [0, 1, 0, 1]])
         class_labels = [0, 0, 1, 1]
         
-        features = Features(features, self.feature_labels, class_labels, None)
+        features = Features(features, self.feature_labels, class_labels, None, None, None)
         rf = features.train_rf(n_trees)
 
         self.assertEqual(len(rf.estimators_), n_trees)

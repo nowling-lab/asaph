@@ -61,7 +61,7 @@ class TestVCFFunctions(unittest.TestCase):
         sample_ids, n_samples, n_features = read_dimensions(VCF_TEST_FILE, groups)
 
         self.assertEquals(n_samples, 16)
-        self.assertEquals(n_features, 6)
+        self.assertEquals(n_features, 4)
 
     def test_convert(self):
         dirname = tempfile.mkdtemp()
@@ -72,8 +72,8 @@ class TestVCFFunctions(unittest.TestCase):
         features = read_features(dirname)
         
         self.assertEquals(features.feature_matrix.shape[0], 16)
-        self.assertEquals(features.feature_matrix.shape[1], 6)
-        self.assertEquals(len(features.feature_labels), 6)
+        self.assertEquals(features.feature_matrix.shape[1], 4)
+        self.assertEquals(len(features.feature_labels), 4)
         self.assertEquals(len(features.sample_labels), 16)
         self.assertEquals(len(features.class_labels), 16)
         self.assertEquals(len(set(features.class_labels)), 2)

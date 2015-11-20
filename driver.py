@@ -152,7 +152,10 @@ def output_rankings(args):
     for i in xrange(len(snps1)):
         chrom, pos = snps1.labels[i]
         importance = snps1.importances[i]
-        fl.write("%s\t%s\t%s\n" % (chrom, pos, importance))
+        fd = snps1.fixed_differences[i]
+        missing = snps1.missing_data[i]
+        fl.write("%s\t%s\t%s\t%s\t%s\n" % (chrom, pos, importance, fd, missing))
+
     fl.close()
 
 def validate(args):

@@ -124,6 +124,31 @@ def read_dimensions(inflname, groups):
 
     return kept_ids, n_individuals, n_features
 
+def is_fixed_difference(snp_features, class_labels):
+    n_individuals = len(class_labels)
+
+    individuals_without_missing = []
+    for idx in xrange(n_individuals):
+        nucl_count = 0
+        for key, features in snp_features.items():
+            nucl_count += features[idx]
+        if nucl_count == 2:
+            individuals_without_missing.append(idx)
+
+    class_entries = defaultdict(set)
+    for idx in individuals_without_missing:
+        nucl_counts = []
+        for key, features in snp_features.items():
+            nucl_counts.append(features[idx])
+        class_entries[class_labels[idx]].add(tuple(nucl_counts))
+
+    all_class_entries = reduce(lambda x, y: x.intersection(y), class_entries.values())
+
+    # fixed differences, any missing
+    return len(all_class_entries) == 0, \
+        len(individuals_without_missing) != len(class_labels)
+    
+
 def convert(groups_flname, vcf_flname, outbase):
     groups = read_groups(groups_flname)
     
@@ -141,29 +166,37 @@ def convert(groups_flname, vcf_flname, outbase):
     gen = stream_vcf_fl(vcf_flname, groups.keys())
     individual_ids, individual_idx = list(next(gen))
 
+    class_labels = [None] * n_individuals
+    for idx, ident in enumerate(individual_ids):
+        class_labels[idx] = groups[ident]
+
+    
     feature_labels = [None] * n_features
+    fixed_differences = []
+    missing = []
     column_idx = 0
     for snp_features in gen:
         # all nucleotides are missing or only one genotype
         if len(snp_features) <= 1:
             continue
 
+        fd, missing_data = is_fixed_difference(snp_features, class_labels)
+        
         for label, column in snp_features.iteritems():
             feature_labels[column_idx] = label
             feature_matrix[:, column_idx] = column
             column_idx += 1
+            fixed_differences.append(fd)
+            missing.append(missing_data)
 
     # close and save
     del feature_matrix
 
     to_json(os.path.join(outbase, FEATURE_LABELS_FLNAME), feature_labels)
     to_json(os.path.join(outbase, SAMPLE_LABELS_FLNAME), individual_ids)
-
-    class_labels = [None] * n_individuals
-    for idx, ident in enumerate(individual_ids):
-        class_labels[idx] = groups[ident]
-
     to_json(os.path.join(outbase, CLASS_LABELS_FLNAME), class_labels)
+    to_json(os.path.join(outbase, FIXED_DIFFERENCES_FLNAME), fixed_differences)
+    to_json(os.path.join(outbase, MISSING_DATA_FLNAME), missing)
 
     
     

@@ -55,11 +55,16 @@ def create_features_dataset(basename):
                                [1, 0, 1, 0],
                                [0, 1, 0, 1]])
 
+    fixed_differences = [False, False, False]
+    missing = [False, False, False, False]
+
     del feature_matrix
 
     to_json(os.path.join(basename, FEATURE_LABELS_FLNAME), feature_labels)
     to_json(os.path.join(basename, SAMPLE_LABELS_FLNAME), sample_labels)
     to_json(os.path.join(basename, CLASS_LABELS_FLNAME), class_labels)
+    to_json(os.path.join(basename, FIXED_DIFFERENCES_FLNAME), fixed_differences)
+    to_json(os.path.join(basename, MISSING_DATA_FLNAME), missing)
 
 class TestIOUtils(unittest.TestCase):
     def test_read_features(self):
