@@ -28,10 +28,10 @@ class MockRF(object):
         self.feature_importances_ = feature_importances
 
 class TestFeatures(unittest.TestCase):
-    feature_labels = [(1,1,"A"),
-                      (1,1,"T"),
-                      (1,2,"G"),
-                      (1,2,"C")]
+    feature_labels = [[(1,1,"A")],
+                      [(1,1,"T")],
+                      [(1,2,"G")],
+                      [(1,2,"C")]]
     
     def test_snps_labels(self):
         features = Features(None, self.feature_labels, None, None, None, None)
@@ -52,8 +52,12 @@ class TestFeatures(unittest.TestCase):
                              [1, 0, 1, 0],
                              [0, 1, 0, 1]])
         class_labels = [0, 0, 1, 1]
+        sample_labels = [0, 1, 2, 3]
+        fixed_differences = {(1, 1) : False, (1, 2) : False}
+        missing_data = {(1, 1) : False, (1, 2) : False}
         
-        features = Features(features, self.feature_labels, class_labels, None, None, None)
+        features = Features(features, self.feature_labels, class_labels, sample_labels,
+                            fixed_differences, missing_data)
 
         snps = features.snp_importances(n_trees, batch_size)
 
@@ -74,13 +78,15 @@ class TestFeatures(unittest.TestCase):
 
 class TestSNPs(unittest.TestCase):
     def test_rank(self):
-        labels = [(1, 1), (1, 2), (1, 3)]
+        labels = [[(1, 1)], [(1, 2)], [(1, 3)]]
         importances = np.array([0.5, 0.75, 0.0])
+        fixed_differences = {(1, 1) : False, (1, 2) : False}
+        missing_data = {(1, 1) : False, (1, 2) : False}
 
-        snps = SNPs(None, labels, importances, False)
+        snps = SNPs(None, labels, importances, False, fixed_differences, missing_data)
         ranked_snps = snps.rank()
 
-        self.assertEqual(ranked_snps.labels, [(1, 2), (1, 1)])
+        self.assertEqual(ranked_snps.labels, [((1, 2),), ((1, 1),)])
         self.assertAlmostEqual(ranked_snps.importances[0], 0.75)
         self.assertAlmostEqual(ranked_snps.importances[1], 0.5)
         self.assertTrue(ranked_snps.ranked)

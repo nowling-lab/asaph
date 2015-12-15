@@ -83,7 +83,7 @@ class Features(object):
                  fixed_differences, missing_data):
         self.feature_matrix = feature_matrix
         # convert to tuple for hashing
-        self.feature_labels = map(tuple, feature_labels)
+        self.feature_labels = [map(tuple, labels) for labels in feature_labels]
         self.class_labels = class_labels
         self.sample_labels = sample_labels
         self.fixed_differences = fixed_differences
@@ -91,10 +91,11 @@ class Features(object):
 
     def snp_labels(self):
         snp_feature_indices = defaultdict(list)
-        for feature_idx, feature_label in enumerate(self.feature_labels):
-            # chrom and pos
-            snp_label = feature_label[:2]
-            snp_feature_indices[snp_label].append(feature_idx)
+        for feature_idx, feature_labels in enumerate(self.feature_labels):
+            for label in feature_labels:
+                # chrom and pos
+                snp_label = label[:2]
+                snp_feature_indices[snp_label].append(feature_idx)
 
         return snp_feature_indices
 
@@ -119,8 +120,8 @@ class Features(object):
         # feature_idx is a list of associated features
         # FD and Missing are the same for all features of the same SNP
         snp_importances = ( (np.mean(feature_importances[feature_idx]), snp_label,
-                             self.fixed_differences[feature_idx[0]],
-                             self.missing_data[feature_idx[0]])
+                             self.fixed_differences[snp_label],
+                             self.missing_data[snp_label])
                             for snp_label, feature_idx in snp_labels.iteritems() )
 
         snp_importances = sorted(snp_importances, reverse=True)

@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import cPickle
 from collections import defaultdict
 import glob
-import json
 import os
 import struct
 
@@ -36,12 +36,12 @@ HEADER_SIZE = struct.calcsize(FORMAT_STRING) # bytes
 
 def to_json(flname, obj):
     fl = open(flname, "w")
-    json.dump(obj, fl)
+    cPickle.dump(obj, fl)
     fl.close()
 
 def from_json(flname):
     fl = open(flname)
-    obj = json.load(fl)
+    obj = cPickle.load(fl)
     fl.close()
 
     return obj

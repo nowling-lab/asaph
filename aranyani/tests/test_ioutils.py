@@ -31,14 +31,14 @@ def create_features_dataset(basename):
     if not os.path.exists(basename):
         os.mkdir(basename)
 
-    feature_labels = [(1,1,1,"A"),
-                      (1,1,1,"T"),
-                      (1,1,2,"G"),
-                      (1,1,2,"C"),
-                      (1,2,1,"A"),
-                      (1,2,1,"T"),
-                      (1,2,2,"G"),
-                      (1,2,2,"C")]
+    feature_labels = [[(1,1,1,"A")],
+                      [(1,1,1,"T")],
+                      [(1,1,2,"G")],
+                      [(1,1,2,"C")],
+                      [(1,2,1,"A")],
+                      [(1,2,1,"T")],
+                      [(1,2,2,"G")],
+                      [(1,2,2,"C")]]
 
     sample_labels = ["sample1",
                      "sample2",
@@ -86,7 +86,7 @@ class TestIOUtils(unittest.TestCase):
 
         labels = [[l] for l in range(10)]
         importances = [random.random() for i in xrange(10)]
-        snps = SNPs(10, labels, importances, False)
+        snps = SNPs(10, labels, importances, False, None, None)
 
         model_dir = os.path.join(dirname, "models", "10")
         self.assertFalse(os.path.exists(model_dir))
@@ -104,10 +104,10 @@ class TestIOUtils(unittest.TestCase):
         labels = [[l] for l in range(10)]
         for n_trees in tree_sizes:
             importances = [random.random() for i in xrange(10)]
-            snps = SNPs(n_trees, labels, importances, False)
+            snps = SNPs(n_trees, labels, importances, False, None, None)
             write_snps(dirname, snps, "1")
             importances = [random.random() for i in xrange(10)]
-            snps = SNPs(n_trees, labels, importances, False)
+            snps = SNPs(n_trees, labels, importances, False, None, None)
             write_snps(dirname, snps, "2")
 
         all_snps = read_snps(dirname)

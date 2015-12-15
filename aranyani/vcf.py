@@ -115,14 +115,16 @@ def read_dimensions(inflname, groups):
     n_individuals = len(kept_ids)
 
     n_features = 0
-    for features in gen:
+    feature_table = defaultdict(int)
+    for snp_features in gen:
         # all nucleotides are missing or only one genotype
-        if len(features) <= 1:
+        if len(snp_features) <= 1:
             continue
+        
+        for label, column in snp_features.iteritems():
+            feature_table[tuple(column)] += 1
 
-        n_features += len(features)
-
-    return kept_ids, n_individuals, n_features
+    return kept_ids, n_individuals, len(feature_table)
 
 def is_fixed_difference(snp_features, class_labels):
     n_individuals = len(class_labels)
@@ -171,23 +173,32 @@ def convert(groups_flname, vcf_flname, outbase):
         class_labels[idx] = groups[ident]
 
     
-    feature_labels = [None] * n_features
-    fixed_differences = []
-    missing = []
+    feature_labels = [list() for i in xrange(n_features)]
+    fixed_differences = dict()
+    missing = dict()
     column_idx = 0
+    feature_column = dict()
     for snp_features in gen:
         # all nucleotides are missing or only one genotype
         if len(snp_features) <= 1:
             continue
 
-        fd, missing_data = is_fixed_difference(snp_features, class_labels)
+        fd, is_missing_data = is_fixed_difference(snp_features, class_labels)
+
+        snp_label = snp_features.items()[0][0][:2]
+        fixed_differences[snp_label] = fd
+        missing[snp_label] = is_missing_data
         
         for label, column in snp_features.iteritems():
-            feature_labels[column_idx] = label
-            feature_matrix[:, column_idx] = column
-            column_idx += 1
-            fixed_differences.append(fd)
-            missing.append(missing_data)
+            if tuple(column) not in feature_column:
+                feature_column[tuple(column)] = column_idx
+                feature_labels[column_idx].append(label)
+                feature_matrix[:, column_idx] = column
+                column_idx += 1
+            else:
+                feature_column_idx = feature_column[tuple(column)]
+                feature_labels[feature_column_idx].append(label)
+                
 
     # close and save
     del feature_matrix
