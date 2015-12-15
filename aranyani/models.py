@@ -106,9 +106,9 @@ class Features(object):
 
     def snp_importances(self, n_trees, max_batch_size):
         remaining_trees = n_trees
-        batch_size = min(remaining_trees, max_batch_size)
         feature_importances = np.zeros(self.feature_matrix.shape[1])
         while remaining_trees > 0:
+            batch_size = min(remaining_trees, max_batch_size)
             rf = self.train_rf(batch_size)
             feature_importances += batch_size * rf.feature_importances_
             remaining_trees -= batch_size
