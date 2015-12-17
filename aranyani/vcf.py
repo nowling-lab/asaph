@@ -103,7 +103,7 @@ def stream_vcf_fl(flname, kept_individuals):
             if not ln.startswith("#"):
                 yield vcf_line_to_seq(ln, individual_idx)
 
-def read_dimensions(inflname, groups):
+def read_dimensions(inflname, groups, compress):
     # Data columns 'CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT'
     # individuals are columns after data columns
     # variants are rows
@@ -120,9 +120,14 @@ def read_dimensions(inflname, groups):
         # all nucleotides are missing or only one genotype
         if len(snp_features) <= 1:
             continue
-        
-        for label, column in snp_features.iteritems():
-            feature_table[tuple(column)] += 1
+
+        if compress:
+            for label, column in snp_features.iteritems():
+                feature_table[tuple(column)] += 1
+        else:
+            for label, column in snp_features.iteritems():
+                feature_table[n_features] = 1
+                n_features += 1
 
     return kept_ids, n_individuals, len(feature_table)
 
@@ -151,10 +156,10 @@ def is_fixed_difference(snp_features, class_labels):
         len(individuals_without_missing) != len(class_labels)
     
 
-def convert(groups_flname, vcf_flname, outbase):
+def convert(groups_flname, vcf_flname, outbase, compress):
     groups = read_groups(groups_flname)
     
-    individual_ids, n_individuals, n_features = read_dimensions(vcf_flname, groups)
+    individual_ids, n_individuals, n_features = read_dimensions(vcf_flname, groups, compress)
 
     print n_individuals, "individuals", n_features, "features"
     # 4 bytes / float, 1 MB = 1024 * 1024 bytes
@@ -188,16 +193,22 @@ def convert(groups_flname, vcf_flname, outbase):
         snp_label = snp_features.items()[0][0][:2]
         fixed_differences[snp_label] = fd
         missing[snp_label] = is_missing_data
-        
-        for label, column in snp_features.iteritems():
-            if tuple(column) not in feature_column:
-                feature_column[tuple(column)] = column_idx
+
+        if compress:
+            for label, column in snp_features.iteritems():
+                if tuple(column) not in feature_column:
+                    feature_column[tuple(column)] = column_idx
+                    feature_labels[column_idx].append(label)
+                    feature_matrix[:, column_idx] = column
+                    column_idx += 1
+                else:
+                    feature_column_idx = feature_column[tuple(column)]
+                    feature_labels[feature_column_idx].append(label)
+        else:
+            for label, column in snp_features.iteritems():
                 feature_labels[column_idx].append(label)
                 feature_matrix[:, column_idx] = column
                 column_idx += 1
-            else:
-                feature_column_idx = feature_column[tuple(column)]
-                feature_labels[feature_column_idx].append(label)
                 
 
     # close and save
