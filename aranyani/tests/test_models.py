@@ -22,11 +22,6 @@ import unittest
 import numpy as np
 from ..models import *
 
-class MockRF(object):
-    def __init__(self, feature_importances, n_trees):
-        self.estimators_ = [None] * n_trees
-        self.feature_importances_ = feature_importances
-
 class TestFeatures(unittest.TestCase):
     feature_labels = [[(1,1,"A")],
                       [(1,1,"T")],

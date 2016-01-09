@@ -182,7 +182,7 @@ def convert(groups_flname, vcf_flname, outbase, compress, filter_trivial):
     print "Estimated file size (MB):", 4 * n_individuals * n_features/ float(1024 * 1024)
 
     flname = os.path.join(outbase, FEATURE_MATRIX_FLNAME)
-    feature_matrix = create_feature_matrix(flname, n_individuals, n_features)
+    feature_matrix = np.zeros((n_individuals, n_features))
 
     feature_idx = 0
 
@@ -230,9 +230,7 @@ def convert(groups_flname, vcf_flname, outbase, compress, filter_trivial):
                 column_idx += 1
                 
 
-    # close and save
-    del feature_matrix
-
+    np.save(os.path.join(outbase, FEATURE_MATRIX_FLNAME), feature_matrix)
     to_json(os.path.join(outbase, FEATURE_LABELS_FLNAME), feature_labels)
     to_json(os.path.join(outbase, SAMPLE_LABELS_FLNAME), individual_ids)
     to_json(os.path.join(outbase, CLASS_LABELS_FLNAME), class_labels)

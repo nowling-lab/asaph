@@ -27,12 +27,9 @@ from .models import *
 FEATURE_LABELS_FLNAME = "feature_labels"
 CLASS_LABELS_FLNAME = "class_labels"
 SAMPLE_LABELS_FLNAME = "sample_labels"
-FEATURE_MATRIX_FLNAME = "feature_matrix"
+FEATURE_MATRIX_FLNAME = "feature_matrix.npy"
 FIXED_DIFFERENCES_FLNAME = "fixed_differences"
 MISSING_DATA_FLNAME = "missing_data"
-
-FORMAT_STRING = "ii"
-HEADER_SIZE = struct.calcsize(FORMAT_STRING) # bytes
 
 def to_json(flname, obj):
     fl = open(flname, "w")
@@ -50,55 +47,12 @@ def read_features(basename):
     feature_labels = from_json(os.path.join(basename, FEATURE_LABELS_FLNAME))
     class_labels = from_json(os.path.join(basename, CLASS_LABELS_FLNAME))
     sample_labels = from_json(os.path.join(basename, SAMPLE_LABELS_FLNAME))
-    feature_matrix = open_feature_matrix(os.path.join(basename, FEATURE_MATRIX_FLNAME))
+    feature_matrix = np.load(os.path.join(basename, FEATURE_MATRIX_FLNAME))
     fixed_differences = from_json(os.path.join(basename, FIXED_DIFFERENCES_FLNAME))
     missing_data = from_json(os.path.join(basename, MISSING_DATA_FLNAME))
 
     return Features(feature_matrix, feature_labels, class_labels, sample_labels,
                     fixed_differences, missing_data)
-
-
-def create_feature_matrix(flname, n_individuals, n_features):
-    """
-    Creates a memory-mapped Numpy array.  On-disk file format
-    stores the matrix dimensions for easy reading later.
-
-    Returns the Numpy array.
-    """
-
-    # writer header
-    fl = open(flname, "w")
-    fl.write(struct.pack(FORMAT_STRING, n_individuals, n_features))
-    fl.close()
-
-    feature_matrix = np.memmap(filename=flname, dtype="float32", \
-                               mode="r+", offset=HEADER_SIZE, \
-                               shape=(n_individuals, n_features))
-
-    return feature_matrix
-
-def open_feature_matrix(flname):
-    """
-    Opens a memory-mapped Numpy array.  Reads the number of
-    rows (individuals) and columns (features) from the header
-    of the file and the matrix from the rest of the file. The
-    Numpy array is opened in read-only mode.
-
-    Returns a tuple of the number of individuals, number of 
-    features, and the Numpy array."
-    """
-
-    # read header
-    fl = open(flname)
-    header = fl.read(HEADER_SIZE)
-    n_individuals, n_features = struct.unpack(FORMAT_STRING, header)
-    fl.close()
-
-    feature_matrix = np.memmap(filename=flname, dtype="float32",
-                                mode="r", offset=HEADER_SIZE, \
-                                shape=(n_individuals, n_features))
-
-    return feature_matrix
 
 def write_snps(basedir, snps, model_id):
     model_dir = os.path.join(basedir, "models", str(snps.n_trees))

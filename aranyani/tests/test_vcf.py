@@ -86,8 +86,6 @@ class TestVCFFunctions(unittest.TestCase):
         self.assertEquals(len(features.sample_labels), 16)
         self.assertEquals(len(features.class_labels), 16)
         self.assertEquals(len(set(features.class_labels)), 2)
-        
-        del features.feature_matrix
 
     def test_convert_compress(self):
         dirname = tempfile.mkdtemp()
@@ -104,4 +102,3 @@ class TestVCFFunctions(unittest.TestCase):
         self.assertEquals(len(features.class_labels), 16)
         self.assertEquals(len(set(features.class_labels)), 2)
         
-        del features.feature_matrix        
