@@ -45,11 +45,10 @@ def import_vcf(args):
     if not os.path.exists(workdir):
         os.makedirs(workdir)
 
-    convert(groups_flname, vcf_flname, workdir, args["compress"])
+    convert(groups_flname, vcf_flname, workdir, args["compress"], args["filter_trivial"])
 
 def train_model(args):
     workdir = args["workdir"]
-    max_batch_size = args["batch_size"]
 
     n_trees = args["trees"]
     if n_trees is None:
@@ -58,8 +57,8 @@ def train_model(args):
 
     features = read_features(workdir)
 
-    snp_importances1 = features.snp_importances(n_trees, max_batch_size).rank()
-    snp_importances2 = features.snp_importances(n_trees, max_batch_size).rank()
+    snp_importances1 = features.snp_importances(n_trees).rank()
+    snp_importances2 = features.snp_importances(n_trees).rank()
 
     write_snps(workdir, snp_importances1, "model1")
     write_snps(workdir, snp_importances2, "model2")
@@ -242,14 +241,12 @@ def parseargs():
                         help="Operating mode")
 
     parser.add_argument("--compress", action="store_true")
+    parser.add_argument("--filter-trivial", action="store_true")
     parser.add_argument("--vcf", type=str, help="VCF file to import")
     parser.add_argument("--groups", type=str, help="Groups file to import")
     parser.add_argument("--workdir", type=str, help="Work directory", required=True)
 
     parser.add_argument("--trees", type=int, help="Number of trees in Random Forest")
-
-    parser.add_argument("--batch-size", type=int, default=100,
-                        help="Number of trees to use per RF batch")
 
     parser.add_argument("--ranks-file", type=str,
                         help="Output file for SNP ranks")

@@ -103,7 +103,7 @@ def stream_vcf_fl(flname, kept_individuals):
             if not ln.startswith("#"):
                 yield vcf_line_to_seq(ln, individual_idx)
 
-def read_dimensions(inflname, groups, compress):
+def read_dimensions(inflname, groups, compress, filter_trivial):
     # Data columns 'CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT'
     # individuals are columns after data columns
     # variants are rows
@@ -114,11 +114,22 @@ def read_dimensions(inflname, groups, compress):
 
     n_individuals = len(kept_ids)
 
+    class_labels = [None] * n_individuals
+    for idx, ident in enumerate(kept_ids):
+        class_labels[idx] = groups[ident]
+
+    total_trivial = 0
+        
     n_features = 0
     feature_table = defaultdict(int)
     for snp_features in gen:
         # all nucleotides are missing or only one genotype
         if len(snp_features) <= 1:
+            continue
+
+        is_trivial, _ = is_fixed_difference(snp_features, class_labels)
+        if filter_trivial and is_trivial:
+            total_trivial += 1
             continue
 
         if compress:
@@ -128,6 +139,9 @@ def read_dimensions(inflname, groups, compress):
             for label, column in snp_features.iteritems():
                 feature_table[n_features] = 1
                 n_features += 1
+
+    if filter_trivial:
+        print "Filtered", total_trivial, "trivial SNPs"
 
     return kept_ids, n_individuals, len(feature_table)
 
@@ -152,14 +166,16 @@ def is_fixed_difference(snp_features, class_labels):
     all_class_entries = reduce(lambda x, y: x.intersection(y), class_entries.values())
 
     # fixed differences, any missing
-    return len(all_class_entries) == 0, \
-        len(individuals_without_missing) != len(class_labels)
+    is_trivial = len(all_class_entries) == 0
+    has_missing = len(individuals_without_missing) != len(class_labels)
+
+    return is_trivial, has_missing
     
 
-def convert(groups_flname, vcf_flname, outbase, compress):
+def convert(groups_flname, vcf_flname, outbase, compress, filter_trivial):
     groups = read_groups(groups_flname)
     
-    individual_ids, n_individuals, n_features = read_dimensions(vcf_flname, groups, compress)
+    individual_ids, n_individuals, n_features = read_dimensions(vcf_flname, groups, compress, filter_trivial)
 
     print n_individuals, "individuals", n_features, "features"
     # 4 bytes / float, 1 MB = 1024 * 1024 bytes
@@ -179,7 +195,7 @@ def convert(groups_flname, vcf_flname, outbase, compress):
 
     
     feature_labels = [list() for i in xrange(n_features)]
-    fixed_differences = dict()
+    trivial_snps = dict()
     missing = dict()
     column_idx = 0
     feature_column = dict()
@@ -188,12 +204,15 @@ def convert(groups_flname, vcf_flname, outbase, compress):
         if len(snp_features) <= 1:
             continue
 
-        fd, is_missing_data = is_fixed_difference(snp_features, class_labels)
+        is_trivial, is_missing_data = is_fixed_difference(snp_features, class_labels)
 
         snp_label = snp_features.items()[0][0][:2]
-        fixed_differences[snp_label] = fd
+        trivial_snps[snp_label] = is_trivial
         missing[snp_label] = is_missing_data
 
+        if filter_trivial and is_trivial:
+            continue
+        
         if compress:
             for label, column in snp_features.iteritems():
                 if tuple(column) not in feature_column:
@@ -217,8 +236,18 @@ def convert(groups_flname, vcf_flname, outbase, compress):
     to_json(os.path.join(outbase, FEATURE_LABELS_FLNAME), feature_labels)
     to_json(os.path.join(outbase, SAMPLE_LABELS_FLNAME), individual_ids)
     to_json(os.path.join(outbase, CLASS_LABELS_FLNAME), class_labels)
-    to_json(os.path.join(outbase, FIXED_DIFFERENCES_FLNAME), fixed_differences)
+    to_json(os.path.join(outbase, FIXED_DIFFERENCES_FLNAME), trivial_snps)
     to_json(os.path.join(outbase, MISSING_DATA_FLNAME), missing)
+
+    if filter_trivial:
+        fl = open(os.path.join(outbase, "trivial_snps"), "w")
+        for (chrom, pos), is_trivial in trivial_snps.iteritems():
+            if is_trivial:
+                fl.write(str(chrom))
+                fl.write("\t")
+                fl.write(str(pos))
+                fl.write("\n")
+        fl.close()
 
     
     

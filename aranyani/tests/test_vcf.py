@@ -58,14 +58,16 @@ class TestVCFFunctions(unittest.TestCase):
     
     def test_read_dimensions(self):
         groups = read_groups(GROUP_TEST_FILE)
-        sample_ids, n_samples, n_features = read_dimensions(VCF_TEST_FILE, groups, False)
+        sample_ids, n_samples, n_features = read_dimensions(VCF_TEST_FILE, groups, \
+                                                            False, False)
 
         self.assertEquals(n_samples, 16)
         self.assertEquals(n_features, 4)
 
     def test_read_dimensions_compress(self):
         groups = read_groups(GROUP_TEST_FILE)
-        sample_ids, n_samples, n_features = read_dimensions(VCF_TEST_FILE, groups, True)
+        sample_ids, n_samples, n_features = read_dimensions(VCF_TEST_FILE, groups, \
+                                                            True, False)
 
         self.assertEquals(n_samples, 16)
         self.assertEquals(n_features, 3)
@@ -74,7 +76,7 @@ class TestVCFFunctions(unittest.TestCase):
         dirname = tempfile.mkdtemp()
 
         flname = os.path.join(dirname, FEATURE_MATRIX_FLNAME)
-        convert(GROUP_TEST_FILE, VCF_TEST_FILE, dirname, False)
+        convert(GROUP_TEST_FILE, VCF_TEST_FILE, dirname, False, False)
 
         features = read_features(dirname)
         
@@ -91,7 +93,7 @@ class TestVCFFunctions(unittest.TestCase):
         dirname = tempfile.mkdtemp()
 
         flname = os.path.join(dirname, FEATURE_MATRIX_FLNAME)
-        convert(GROUP_TEST_FILE, VCF_TEST_FILE, dirname, True)
+        convert(GROUP_TEST_FILE, VCF_TEST_FILE, dirname, True, False)
 
         features = read_features(dirname)
         
@@ -102,6 +104,4 @@ class TestVCFFunctions(unittest.TestCase):
         self.assertEquals(len(features.class_labels), 16)
         self.assertEquals(len(set(features.class_labels)), 2)
         
-        del features.feature_matrix
-
-        
+        del features.feature_matrix        

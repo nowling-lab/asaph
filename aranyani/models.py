@@ -22,6 +22,7 @@ from scipy.stats import rankdata
 
 from sklearn.cross_validation import LeaveOneOut
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
 
 class SNPs(object):
     def __init__(self, n_trees, labels, importances, ranked, fixed_differences,
@@ -99,22 +100,17 @@ class Features(object):
 
         return snp_feature_indices
 
-    def train_rf(self, n_trees):
-        rf = RandomForestClassifier(n_estimators=n_trees)
-        rf.fit(self.feature_matrix, self.class_labels)
-        return rf
-
-    def snp_importances(self, n_trees, max_batch_size):
+    def snp_importances(self, n_trees):
         remaining_trees = n_trees
         feature_importances = np.zeros(self.feature_matrix.shape[1])
         while remaining_trees > 0:
-            batch_size = min(remaining_trees, max_batch_size)
-            rf = self.train_rf(batch_size)
-            feature_importances += batch_size * rf.feature_importances_
-            remaining_trees -= batch_size
+            dt = DecisionTreeClassifier(max_features="sqrt")
+            dt.fit(self.feature_matrix, self.class_labels)
+            feature_importances += dt.feature_importances_
+            remaining_trees -= 1
 
         feature_importances = feature_importances / n_trees
-        
+
         snp_labels = self.snp_labels()
 
         # feature_idx is a list of associated features

@@ -59,22 +59,9 @@ class TestFeatures(unittest.TestCase):
         features = Features(features, self.feature_labels, class_labels, sample_labels,
                             fixed_differences, missing_data)
 
-        snps = features.snp_importances(n_trees, batch_size)
+        snps = features.snp_importances(n_trees)
 
         self.assertEqual(snps.n_trees, n_trees)
-
-    def test_train_rf(self):
-        n_trees = 10
-        features = np.array([[0, 1, 0, 1],
-                             [1, 0, 1, 0],
-                             [1, 0, 1, 0],
-                             [0, 1, 0, 1]])
-        class_labels = [0, 0, 1, 1]
-        
-        features = Features(features, self.feature_labels, class_labels, None, None, None)
-        rf = features.train_rf(n_trees)
-
-        self.assertEqual(len(rf.estimators_), n_trees)
 
 class TestSNPs(unittest.TestCase):
     def test_rank(self):
