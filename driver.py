@@ -55,10 +55,15 @@ def train_model(args):
         print "Number of trees must be specified for training"
         sys.exit(1)
 
+    n_resamples = args["resamples"]
+    if n_resamples is None:
+        print "Number of additional samples must be specified for training"
+        sys.exit(1)
+
     features = read_features(workdir)
 
-    snp_importances1 = features.snp_importances(n_trees).rank()
-    snp_importances2 = features.snp_importances(n_trees).rank()
+    snp_importances1 = features.snp_importances(n_trees, n_resamples).rank()
+    snp_importances2 = features.snp_importances(n_trees, n_resamples).rank()
 
     write_snps(workdir, snp_importances1, "model1")
     write_snps(workdir, snp_importances2, "model2")
@@ -174,6 +179,7 @@ def parseargs():
     parser.add_argument("--workdir", type=str, help="Work directory", required=True)
 
     parser.add_argument("--trees", type=int, help="Number of trees in Random Forest")
+    parser.add_argument("--resamples", type=int, help="Number of additional samples")
 
     parser.add_argument("--ranks-file", type=str,
                         help="Output file for SNP ranks")

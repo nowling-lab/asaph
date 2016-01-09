@@ -54,7 +54,7 @@ class TestFeatures(unittest.TestCase):
         features = Features(features, self.feature_labels, class_labels, sample_labels,
                             fixed_differences, missing_data)
 
-        snps = features.snp_importances(n_trees)
+        snps = features.snp_importances(n_trees, 0)
 
         self.assertEqual(snps.n_trees, n_trees)
 
