@@ -44,13 +44,13 @@ def extract_features(chrom, pos, snps):
 
     features = dict()
     for nucl in all_nucl:
-        features[(chrom, pos, nucl)] = np.zeros((n_individuals))
+        features[(chrom, pos, nucl)] = np.zeros(n_individuals)
 
     for idx, nucl_dict in enumerate(snps):
         for nucl, count in nucl_dict.items():
             features[(chrom, pos, nucl)][idx] = count
 
-    return features
+    return { key : tuple(value) for key, value in features.iteritems() }
 
 def vcf_line_to_seq(ln, kept_individual_idx):
     cols = ln.strip().split()
@@ -103,48 +103,6 @@ def stream_vcf_fl(flname, kept_individuals):
             if not ln.startswith("#"):
                 yield vcf_line_to_seq(ln, individual_idx)
 
-def read_dimensions(inflname, groups, compress, filter_trivial):
-    # Data columns 'CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT'
-    # individuals are columns after data columns
-    # variants are rows
-
-    # read file once to get dimensions
-    gen = stream_vcf_fl(inflname, groups.keys())
-    kept_ids, kept_idx = list(next(gen))
-
-    n_individuals = len(kept_ids)
-
-    class_labels = [None] * n_individuals
-    for idx, ident in enumerate(kept_ids):
-        class_labels[idx] = groups[ident]
-
-    total_trivial = 0
-        
-    n_features = 0
-    feature_table = defaultdict(int)
-    for snp_features in gen:
-        # all nucleotides are missing or only one genotype
-        if len(snp_features) <= 1:
-            continue
-
-        is_trivial, _ = is_fixed_difference(snp_features, class_labels)
-        if filter_trivial and is_trivial:
-            total_trivial += 1
-            continue
-
-        if compress:
-            for label, column in snp_features.iteritems():
-                feature_table[tuple(column)] += 1
-        else:
-            for label, column in snp_features.iteritems():
-                feature_table[n_features] = 1
-                n_features += 1
-
-    if filter_trivial:
-        print "Filtered", total_trivial, "trivial SNPs"
-
-    return kept_ids, n_individuals, len(feature_table)
-
 def is_fixed_difference(snp_features, class_labels):
     n_individuals = len(class_labels)
 
@@ -175,30 +133,18 @@ def is_fixed_difference(snp_features, class_labels):
 def convert(groups_flname, vcf_flname, outbase, compress, filter_trivial):
     groups = read_groups(groups_flname)
     
-    individual_ids, n_individuals, n_features = read_dimensions(vcf_flname, groups, compress, filter_trivial)
-
-    print n_individuals, "individuals", n_features, "features"
-    # 4 bytes / float, 1 MB = 1024 * 1024 bytes
-    print "Estimated file size (MB):", 4 * n_individuals * n_features/ float(1024 * 1024)
-
-    flname = os.path.join(outbase, FEATURE_MATRIX_FLNAME)
-    feature_matrix = np.zeros((n_individuals, n_features))
-
-    feature_idx = 0
-
     gen = stream_vcf_fl(vcf_flname, groups.keys())
     individual_ids, individual_idx = list(next(gen))
 
-    class_labels = [None] * n_individuals
-    for idx, ident in enumerate(individual_ids):
-        class_labels[idx] = groups[ident]
-
+    class_labels = [groups[ident] for ident in individual_ids]
     
-    feature_labels = [list() for i in xrange(n_features)]
+    feature_labels = []
     trivial_snps = dict()
     missing = dict()
     column_idx = 0
     feature_column = dict()
+
+    feature_columns = []
     for snp_features in gen:
         # all nucleotides are missing or only one genotype
         if len(snp_features) <= 1:
@@ -217,18 +163,22 @@ def convert(groups_flname, vcf_flname, outbase, compress, filter_trivial):
             for label, column in snp_features.iteritems():
                 if tuple(column) not in feature_column:
                     feature_column[tuple(column)] = column_idx
-                    feature_labels[column_idx].append(label)
-                    feature_matrix[:, column_idx] = column
+                    feature_labels.append([label])
+                    feature_columns.append(tuple(column))
                     column_idx += 1
                 else:
                     feature_column_idx = feature_column[tuple(column)]
                     feature_labels[feature_column_idx].append(label)
         else:
             for label, column in snp_features.iteritems():
-                feature_labels[column_idx].append(label)
-                feature_matrix[:, column_idx] = column
+                feature_labels.append([label])
+                feature_columns.append(tuple(column))
                 column_idx += 1
-                
+
+    # need to transpose, otherwise we get (n_features, n_individuals) instead
+    feature_matrix = np.array(feature_columns).T
+
+    print feature_matrix.shape[0], "individuals", feature_matrix.shape[1], "features"
 
     np.save(os.path.join(outbase, FEATURE_MATRIX_FLNAME), feature_matrix)
     to_json(os.path.join(outbase, FEATURE_LABELS_FLNAME), feature_labels)

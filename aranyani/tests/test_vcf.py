@@ -56,22 +56,6 @@ class TestVCFFunctions(unittest.TestCase):
         self.assertEquals(len(set(groups.values())), 2)
         self.assertEquals(len(groups.keys()), 16)
     
-    def test_read_dimensions(self):
-        groups = read_groups(GROUP_TEST_FILE)
-        sample_ids, n_samples, n_features = read_dimensions(VCF_TEST_FILE, groups, \
-                                                            False, False)
-
-        self.assertEquals(n_samples, 16)
-        self.assertEquals(n_features, 4)
-
-    def test_read_dimensions_compress(self):
-        groups = read_groups(GROUP_TEST_FILE)
-        sample_ids, n_samples, n_features = read_dimensions(VCF_TEST_FILE, groups, \
-                                                            True, False)
-
-        self.assertEquals(n_samples, 16)
-        self.assertEquals(n_features, 3)
-
     def test_convert(self):
         dirname = tempfile.mkdtemp()
 
