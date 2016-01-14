@@ -108,31 +108,38 @@ def stream_vcf_fl(flname, kept_individuals):
             if not ln.startswith("#"):
                 yield ln
 
-def is_fixed_difference(labeled_columns, class_labels):
-    n_individuals = len(class_labels)
+class AnnotateTrivial(object):
+    def __init__(self, class_labels):
+        self.class_labels = class_labels
+        self.trivial_snps = dict()
+        self.unknown_genotypes = dict()
 
-    individuals_without_missing = []
-    for idx in xrange(n_individuals):
-        nucl_count = 0
-        for key, features in labeled_columns:
-            nucl_count += features[idx]
-        if nucl_count == 2:
-            individuals_without_missing.append(idx)
+    def __call__(self, pair):
+        snp_label, labeled_columns = pair
+        n_individuals = len(self.class_labels)
 
-    class_entries = defaultdict(set)
-    for idx in individuals_without_missing:
-        nucl_counts = []
-        for key, features in labeled_columns:
-            nucl_counts.append(features[idx])
-        class_entries[class_labels[idx]].add(tuple(nucl_counts))
+        individuals_without_missing = []
+        for idx in xrange(n_individuals):
+            nucl_count = 0
+            for key, features in labeled_columns:
+                nucl_count += features[idx]
+            if nucl_count == 2:
+                individuals_without_missing.append(idx)
 
-    all_class_entries = reduce(lambda x, y: x.intersection(y), class_entries.values())
+        class_entries = defaultdict(set)
+        for idx in individuals_without_missing:
+            nucl_counts = []
+            for key, features in labeled_columns:
+                nucl_counts.append(features[idx])
+            class_entries[self.class_labels[idx]].add(tuple(nucl_counts))
 
-    # fixed differences, any missing
-    is_trivial = len(all_class_entries) == 0
-    has_missing = len(individuals_without_missing) != len(class_labels)
+        all_class_entries = reduce(lambda x, y: x.intersection(y), class_entries.values())
 
-    return is_trivial, has_missing
+        # fixed differences, any missing
+        self.trivial_snps[snp_label] = len(all_class_entries) == 0
+        self.unknown_genotypes[snp_label] = len(individuals_without_missing) != len(self.class_labels)
+
+        return pair
     
 
 def convert(groups_flname, vcf_flname, outbase, compress):
@@ -141,27 +148,23 @@ def convert(groups_flname, vcf_flname, outbase, compress):
     gen = stream_vcf_fl(vcf_flname, groups.keys())
     individual_ids, individual_idx = list(next(gen))
 
+    class_labels = [groups[ident] for ident in individual_ids]
+    annotation = AnnotateTrivial(class_labels)
+
     parsed_lines = map(parse_vcf_line, gen)
     selected_individuals = map(SelectIndividuals(individual_idx), parsed_lines)
     extracted_features = map(extract_features, selected_individuals)
     # all nucleotides are missing or only one genotype
     non_empty_features = filter(lambda pair: len(pair[1]) > 1, extracted_features)
-
-    class_labels = [groups[ident] for ident in individual_ids]
+    annotated_features = map(annotation, non_empty_features)
     
     feature_labels = []
-    trivial_snps = dict()
-    missing = dict()
     column_idx = 0
     feature_column = dict()
 
     feature_columns = []
     for pairs in non_empty_features:
         snp_label, labeled_columns = pairs
-        
-        is_trivial, is_missing_data = is_fixed_difference(labeled_columns, class_labels)
-        trivial_snps[snp_label] = is_trivial
-        missing[snp_label] = is_missing_data
 
         if compress:
             for label, column in labeled_columns:
@@ -188,8 +191,8 @@ def convert(groups_flname, vcf_flname, outbase, compress):
     to_json(os.path.join(outbase, FEATURE_LABELS_FLNAME), feature_labels)
     to_json(os.path.join(outbase, SAMPLE_LABELS_FLNAME), individual_ids)
     to_json(os.path.join(outbase, CLASS_LABELS_FLNAME), class_labels)
-    to_json(os.path.join(outbase, FIXED_DIFFERENCES_FLNAME), trivial_snps)
-    to_json(os.path.join(outbase, MISSING_DATA_FLNAME), missing)
+    to_json(os.path.join(outbase, FIXED_DIFFERENCES_FLNAME), annotation.trivial_snps)
+    to_json(os.path.join(outbase, MISSING_DATA_FLNAME), annotation.unknown_genotypes)
 
     
     
