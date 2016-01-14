@@ -31,7 +31,7 @@ VCF_TEST_FILE = os.path.join("test_data", "test.vcf")
 GROUP_TEST_FILE = os.path.join("test_data", "groups")
 
 class TestVCFFunctions(unittest.TestCase):
-    def test_vcf_line_to_seq(self):
+    def test_parse_vcf_line(self):
         # Data columns 'CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT'
         # individuals are columns after data columns
         idx = range(5)
@@ -39,16 +39,12 @@ class TestVCFFunctions(unittest.TestCase):
                                "0/0:12,0:12:33:0", "0/1:12,0:12:33:0", "1/0:12,0:12:33:0",
                                "1/1:12,0:12:33:0", "./.:12,0:12:33:0"])
 
-        snps = vcf_line_to_seq(test_line, idx)
+        triplet = parse_vcf_line(test_line)
 
-        self.assertIn(("1", "2", "A"), snps)
-        self.assertIn(("1", "2", "T"), snps)
-        self.assertEqual(len(snps[("1", "2", "A")]), 5)
-        self.assertEqual(len(snps[("1", "2", "T")]), 5)
-        self.assertEqual(list(snps[("1", "2", "A")]), [2, 1, 1, 0, 0])
-        self.assertEqual(list(snps[("1", "2", "T")]), [0, 1, 1, 2, 0])
-                              
-        self.assertRaises(NotImplementedError, vcf_line_to_seq, test_line.replace("0/0", "2/2"), idx)
+        chrom, pos, snps = triplet
+        self.assertEqual(chrom, "1")
+        self.assertEqual(pos, "2")                              
+        self.assertRaises(NotImplementedError, parse_vcf_line, test_line.replace("0/0", "2/2"))
     
     def test_read_groups(self):
         groups = read_groups(GROUP_TEST_FILE)

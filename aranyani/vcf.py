@@ -34,11 +34,11 @@ def read_groups(flname):
 
     return groups
 
-def extract_features(chrom, pos, snps):
+def extract_features(triplet):
+    chrom, pos, snps = triplet
     n_individuals = len(snps)
 
     all_nucl = set()
-    
     for nucl_dict in snps:
         all_nucl.update(nucl_dict.keys())
 
@@ -52,16 +52,13 @@ def extract_features(chrom, pos, snps):
 
     return { key : tuple(value) for key, value in features.iteritems() }
 
-def vcf_line_to_seq(ln, kept_individual_idx):
+def parse_vcf_line(ln):
     cols = ln.strip().split()
     ref_seq = cols[DEFAULT_COLUMNS["REF"]]
     alt_seq = cols[DEFAULT_COLUMNS["ALT"]]
 
     snps = []
     for i, col in enumerate(cols[len(DEFAULT_COLUMNS):]):
-        if i not in kept_individual_idx:
-            continue
-        
         tags = col.split(":")[0].split("/")
 
         nucleotides = defaultdict(int)
@@ -79,8 +76,16 @@ def vcf_line_to_seq(ln, kept_individual_idx):
 
         snps.append(dict(nucleotides))
 
-    return extract_features(cols[DEFAULT_COLUMNS["CHROM"]], cols[DEFAULT_COLUMNS["POS"]], \
-                            snps)
+    return (cols[DEFAULT_COLUMNS["CHROM"]], cols[DEFAULT_COLUMNS["POS"]], snps)
+
+class SelectIndividuals(object):
+    def __init__(self, kept_individual_idx):
+        self.kept_individual_idx = kept_individual_idx
+
+    def __call__(self, triplets):
+        chrom, pos, snps = triplets
+        selected = [snps[idx] for idx in self.kept_individual_idx]
+        return (chrom, pos, selected)
 
 def stream_vcf_fl(flname, kept_individuals):
     with open(flname) as fl:
@@ -101,7 +106,7 @@ def stream_vcf_fl(flname, kept_individuals):
 
         for ln in fl:
             if not ln.startswith("#"):
-                yield vcf_line_to_seq(ln, individual_idx)
+                yield ln
 
 def is_fixed_difference(snp_features, class_labels):
     n_individuals = len(class_labels)
@@ -136,6 +141,10 @@ def convert(groups_flname, vcf_flname, outbase, compress):
     gen = stream_vcf_fl(vcf_flname, groups.keys())
     individual_ids, individual_idx = list(next(gen))
 
+    parsed_lines = map(parse_vcf_line, gen)
+    selected_individuals = map(SelectIndividuals(individual_idx), parsed_lines)
+    extracted_features = map(extract_features, selected_individuals)
+
     class_labels = [groups[ident] for ident in individual_ids]
     
     feature_labels = []
@@ -145,7 +154,7 @@ def convert(groups_flname, vcf_flname, outbase, compress):
     feature_column = dict()
 
     feature_columns = []
-    for snp_features in gen:
+    for snp_features in extracted_features:
         # all nucleotides are missing or only one genotype
         if len(snp_features) <= 1:
             continue
