@@ -144,6 +144,8 @@ def convert(groups_flname, vcf_flname, outbase, compress):
     parsed_lines = map(parse_vcf_line, gen)
     selected_individuals = map(SelectIndividuals(individual_idx), parsed_lines)
     extracted_features = map(extract_features, selected_individuals)
+    # all nucleotides are missing or only one genotype
+    non_empty_features = filter(lambda features: len(features) > 1, extracted_features)
 
     class_labels = [groups[ident] for ident in individual_ids]
     
@@ -154,11 +156,7 @@ def convert(groups_flname, vcf_flname, outbase, compress):
     feature_column = dict()
 
     feature_columns = []
-    for snp_features in extracted_features:
-        # all nucleotides are missing or only one genotype
-        if len(snp_features) <= 1:
-            continue
-
+    for snp_features in non_empty_features:
         is_trivial, is_missing_data = is_fixed_difference(snp_features, class_labels)
 
         snp_label = snp_features.items()[0][0][:2]
