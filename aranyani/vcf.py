@@ -165,18 +165,18 @@ def convert(groups_flname, vcf_flname, outbase, compress):
 
         if compress:
             for label, column in snp_features.iteritems():
-                if tuple(column) not in feature_column:
-                    feature_column[tuple(column)] = column_idx
+                if column not in feature_column:
+                    feature_column[column] = column_idx
                     feature_labels.append([label])
-                    feature_columns.append(tuple(column))
+                    feature_columns.append(column)
                     column_idx += 1
                 else:
-                    feature_column_idx = feature_column[tuple(column)]
+                    feature_column_idx = feature_column[column]
                     feature_labels[feature_column_idx].append(label)
         else:
             for label, column in snp_features.iteritems():
                 feature_labels.append([label])
-                feature_columns.append(tuple(column))
+                feature_columns.append(column)
                 column_idx += 1
 
     # need to transpose, otherwise we get (n_features, n_individuals) instead
