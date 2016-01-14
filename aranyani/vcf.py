@@ -50,7 +50,7 @@ def extract_features(triplet):
         for nucl, count in nucl_dict.items():
             features[(chrom, pos, nucl)][idx] = count
 
-    return { key : tuple(value) for key, value in features.iteritems() }
+    return ((chrom, pos), [(key, tuple(value)) for key, value in features.iteritems()])
 
 def parse_vcf_line(ln):
     cols = ln.strip().split()
@@ -108,13 +108,13 @@ def stream_vcf_fl(flname, kept_individuals):
             if not ln.startswith("#"):
                 yield ln
 
-def is_fixed_difference(snp_features, class_labels):
+def is_fixed_difference(labeled_columns, class_labels):
     n_individuals = len(class_labels)
 
     individuals_without_missing = []
     for idx in xrange(n_individuals):
         nucl_count = 0
-        for key, features in snp_features.items():
+        for key, features in labeled_columns:
             nucl_count += features[idx]
         if nucl_count == 2:
             individuals_without_missing.append(idx)
@@ -122,7 +122,7 @@ def is_fixed_difference(snp_features, class_labels):
     class_entries = defaultdict(set)
     for idx in individuals_without_missing:
         nucl_counts = []
-        for key, features in snp_features.items():
+        for key, features in labeled_columns:
             nucl_counts.append(features[idx])
         class_entries[class_labels[idx]].add(tuple(nucl_counts))
 
@@ -145,7 +145,7 @@ def convert(groups_flname, vcf_flname, outbase, compress):
     selected_individuals = map(SelectIndividuals(individual_idx), parsed_lines)
     extracted_features = map(extract_features, selected_individuals)
     # all nucleotides are missing or only one genotype
-    non_empty_features = filter(lambda features: len(features) > 1, extracted_features)
+    non_empty_features = filter(lambda pair: len(pair[1]) > 1, extracted_features)
 
     class_labels = [groups[ident] for ident in individual_ids]
     
@@ -156,15 +156,15 @@ def convert(groups_flname, vcf_flname, outbase, compress):
     feature_column = dict()
 
     feature_columns = []
-    for snp_features in non_empty_features:
-        is_trivial, is_missing_data = is_fixed_difference(snp_features, class_labels)
-
-        snp_label = snp_features.items()[0][0][:2]
+    for pairs in non_empty_features:
+        snp_label, labeled_columns = pairs
+        
+        is_trivial, is_missing_data = is_fixed_difference(labeled_columns, class_labels)
         trivial_snps[snp_label] = is_trivial
         missing[snp_label] = is_missing_data
 
         if compress:
-            for label, column in snp_features.iteritems():
+            for label, column in labeled_columns:
                 if column not in feature_column:
                     feature_column[column] = column_idx
                     feature_labels.append([label])
@@ -174,7 +174,7 @@ def convert(groups_flname, vcf_flname, outbase, compress):
                     feature_column_idx = feature_column[column]
                     feature_labels[feature_column_idx].append(label)
         else:
-            for label, column in snp_features.iteritems():
+            for label, column in labeled_columns:
                 feature_labels.append([label])
                 feature_columns.append(column)
                 column_idx += 1
