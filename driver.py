@@ -45,7 +45,7 @@ def import_vcf(args):
     if not os.path.exists(workdir):
         os.makedirs(workdir)
 
-    convert(groups_flname, vcf_flname, workdir, args["compress"], args["filter_trivial"])
+    convert(groups_flname, vcf_flname, workdir, args["compress"])
 
 def train_model(args):
     workdir = args["workdir"]
@@ -173,7 +173,6 @@ def parseargs():
                         help="Operating mode")
 
     parser.add_argument("--compress", action="store_true")
-    parser.add_argument("--filter-trivial", action="store_true")
     parser.add_argument("--vcf", type=str, help="VCF file to import")
     parser.add_argument("--groups", type=str, help="Groups file to import")
     parser.add_argument("--workdir", type=str, help="Work directory", required=True)

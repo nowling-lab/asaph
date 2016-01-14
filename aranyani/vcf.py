@@ -130,7 +130,7 @@ def is_fixed_difference(snp_features, class_labels):
     return is_trivial, has_missing
     
 
-def convert(groups_flname, vcf_flname, outbase, compress, filter_trivial):
+def convert(groups_flname, vcf_flname, outbase, compress):
     groups = read_groups(groups_flname)
     
     gen = stream_vcf_fl(vcf_flname, groups.keys())
@@ -156,9 +156,6 @@ def convert(groups_flname, vcf_flname, outbase, compress, filter_trivial):
         trivial_snps[snp_label] = is_trivial
         missing[snp_label] = is_missing_data
 
-        if filter_trivial and is_trivial:
-            continue
-        
         if compress:
             for label, column in snp_features.iteritems():
                 if tuple(column) not in feature_column:
@@ -186,16 +183,6 @@ def convert(groups_flname, vcf_flname, outbase, compress, filter_trivial):
     to_json(os.path.join(outbase, CLASS_LABELS_FLNAME), class_labels)
     to_json(os.path.join(outbase, FIXED_DIFFERENCES_FLNAME), trivial_snps)
     to_json(os.path.join(outbase, MISSING_DATA_FLNAME), missing)
-
-    if filter_trivial:
-        fl = open(os.path.join(outbase, "trivial_snps"), "w")
-        for (chrom, pos), is_trivial in trivial_snps.iteritems():
-            if is_trivial:
-                fl.write(str(chrom))
-                fl.write("\t")
-                fl.write(str(pos))
-                fl.write("\n")
-        fl.close()
 
     
     
