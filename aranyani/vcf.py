@@ -24,6 +24,8 @@ from newioutils import *
 
 DEFAULT_COLUMNS = {'CHROM' : 0, 'POS' : 1, 'ID' : 2, 'REF' : 3, 'ALT' : 4, 'QUAL' : 5, 'FILTER' : 6, 'INFO' : 7, 'FORMAT' : 8}
 
+UNKNOWN_GENOTYPE = ("X", "X")
+
 def read_groups(flname):
     fl = open(flname)
     groups = dict()
@@ -38,17 +40,18 @@ def extract_features(triplet):
     chrom, pos, snps = triplet
     n_individuals = len(snps)
 
-    all_nucl = set()
-    for nucl_dict in snps:
-        all_nucl.update(nucl_dict.keys())
+    all_genotypes = defaultdict(int)
+    for genotype in snps:
+        if genotype != UNKNOWN_GENOTYPE:
+            all_genotypes[genotype] += 1
 
     features = dict()
-    for nucl in all_nucl:
-        features[(chrom, pos, nucl)] = np.zeros(n_individuals)
+    for genotype in all_genotypes.keys():
+        features[(chrom, pos, genotype)] = np.zeros(n_individuals)
 
-    for idx, nucl_dict in enumerate(snps):
-        for nucl, count in nucl_dict.items():
-            features[(chrom, pos, nucl)][idx] = count
+    for idx, genotype in enumerate(snps):
+        if genotype != UNKNOWN_GENOTYPE:
+            features[(chrom, pos, genotype)][idx] = 1
 
     return ((chrom, pos), [(key, tuple(value)) for key, value in features.iteritems()])
 
@@ -59,22 +62,23 @@ def parse_vcf_line(ln):
 
     snps = []
     for i, col in enumerate(cols[len(DEFAULT_COLUMNS):]):
-        tags = col.split(":")[0].split("/")
+        left, right = col.split(":")[0].split("/")
 
-        nucleotides = defaultdict(int)
+        homo1 = (ref_seq, ref_seq)
+        homo2 = (alt_seq, alt_seq)
+        hetero = tuple(sorted((ref_seq, alt_seq)))
 
-        for tag in tags:
-            if tag == ".":
-                # ignore unknown nucleotides
-                pass
-            elif tag == "0":
-                nucleotides[ref_seq] += 1
-            elif tag == "1":
-                nucleotides[alt_seq] += 1
-            else:
-                raise NotImplementedError("Support for non-biallelic SNPs not implemented. Found '" + tag + "'")
-
-        snps.append(dict(nucleotides))
+        if left == "0" and right == "0":
+            snps.append(homo1)
+        elif left == "1" and right == "1":
+            snps.append(homo2)
+        elif (left == "0" and right == "1") or \
+             (left == "1" and right == "0"):
+            snps.append(hetero)
+        # even if only one of the two alleles is unknown,
+        # consider both unknown
+        else:
+            snps.append(UNKNOWN_GENOTYPE)
 
     return (cols[DEFAULT_COLUMNS["CHROM"]], cols[DEFAULT_COLUMNS["POS"]], snps)
 
@@ -108,30 +112,41 @@ def stream_vcf_fl(flname, kept_individuals):
             if not ln.startswith("#"):
                 yield ln
 
+class FilterUnknown(object):
+    def __init__(self, class_labels):
+        self.class_labels = class_labels
+
+    def __call__(self, triplet):
+        chrom, pos, snps = triplet
+        n_individuals = len(self.class_labels)
+        
+        class_entries = defaultdict(set)
+        for idx in xrange(n_individuals):
+            genotype = snps[idx]
+            class_entries[self.class_labels[idx]].add(genotype)
+
+        return not(any(map(lambda x: x == set([UNKNOWN_GENOTYPE]), class_entries.values())))
+
 class AnnotateTrivial(object):
     def __init__(self, class_labels):
         self.class_labels = class_labels
         self.trivial_snps = dict()
         self.unknown_genotypes = dict()
 
-    def __call__(self, pair):
-        snp_label, labeled_columns = pair
+    def __call__(self, triplet):
+        chrom, pos, snps = triplet
+        snp_label = (chrom, pos)
         n_individuals = len(self.class_labels)
 
         individuals_without_missing = []
         for idx in xrange(n_individuals):
-            nucl_count = 0
-            for key, features in labeled_columns:
-                nucl_count += features[idx]
-            if nucl_count == 2:
+            if snps[idx] != UNKNOWN_GENOTYPE:
                 individuals_without_missing.append(idx)
 
         class_entries = defaultdict(set)
         for idx in individuals_without_missing:
-            nucl_counts = []
-            for key, features in labeled_columns:
-                nucl_counts.append(features[idx])
-            class_entries[self.class_labels[idx]].add(tuple(nucl_counts))
+            genotype = snps[idx]
+            class_entries[self.class_labels[idx]].add(genotype)
 
         all_class_entries = reduce(lambda x, y: x.intersection(y), class_entries.values())
 
@@ -139,7 +154,7 @@ class AnnotateTrivial(object):
         self.trivial_snps[snp_label] = len(all_class_entries) == 0
         self.unknown_genotypes[snp_label] = len(individuals_without_missing) != len(self.class_labels)
 
-        return pair
+        return triplet
     
 
 def convert(groups_flname, vcf_flname, outbase, compress):
@@ -150,20 +165,22 @@ def convert(groups_flname, vcf_flname, outbase, compress):
 
     class_labels = [groups[ident] for ident in individual_ids]
     annotation = AnnotateTrivial(class_labels)
+    filter_unknown = FilterUnknown(class_labels)
 
     parsed_lines = map(parse_vcf_line, gen)
     selected_individuals = map(SelectIndividuals(individual_idx), parsed_lines)
-    extracted_features = map(extract_features, selected_individuals)
     # all nucleotides are missing or only one genotype
-    non_empty_features = filter(lambda pair: len(pair[1]) > 1, extracted_features)
-    annotated_features = map(annotation, non_empty_features)
+    non_empty_features = filter(lambda triplet: len(triplet[2]) > 1, selected_individuals)
+    # at least one class is only unknown genotypes
+    known_features = filter(lambda triplet: filter_unknown(triplet), non_empty_features)
+    annotated_features = map(annotation, known_features)
+    extracted_features = map(extract_features, annotated_features)
     
     feature_labels = []
     column_idx = 0
     feature_column = dict()
-
     feature_columns = []
-    for pairs in non_empty_features:
+    for pairs in extracted_features:
         snp_label, labeled_columns = pairs
 
         if compress:

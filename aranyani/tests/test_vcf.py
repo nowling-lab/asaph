@@ -44,7 +44,6 @@ class TestVCFFunctions(unittest.TestCase):
         chrom, pos, snps = triplet
         self.assertEqual(chrom, "1")
         self.assertEqual(pos, "2")                              
-        self.assertRaises(NotImplementedError, parse_vcf_line, test_line.replace("0/0", "2/2"))
     
     def test_read_groups(self):
         groups = read_groups(GROUP_TEST_FILE)
@@ -61,8 +60,8 @@ class TestVCFFunctions(unittest.TestCase):
         features = read_features(dirname)
         
         self.assertEquals(features.feature_matrix.shape[0], 16)
-        self.assertEquals(features.feature_matrix.shape[1], 4)
-        self.assertEquals(len(features.feature_labels), 4)
+        self.assertEquals(features.feature_matrix.shape[1], 6)
+        self.assertEquals(len(features.feature_labels), 6)
         self.assertEquals(len(features.sample_labels), 16)
         self.assertEquals(len(features.class_labels), 16)
         self.assertEquals(len(set(features.class_labels)), 2)
@@ -76,8 +75,8 @@ class TestVCFFunctions(unittest.TestCase):
         features = read_features(dirname)
         
         self.assertEquals(features.feature_matrix.shape[0], 16)
-        self.assertEquals(features.feature_matrix.shape[1], 3)
-        self.assertEquals(len(features.feature_labels), 3)
+        self.assertEquals(features.feature_matrix.shape[1], 5)
+        self.assertEquals(len(features.feature_labels), 5)
         self.assertEquals(len(features.sample_labels), 16)
         self.assertEquals(len(features.class_labels), 16)
         self.assertEquals(len(set(features.class_labels)), 2)
