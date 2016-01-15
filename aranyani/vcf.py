@@ -127,24 +127,20 @@ class ImputeUnknown(object):
             class_entries[self.class_labels[idx]][genotype] += 1
 
         class_modes = dict()
-        class_known_ratios = dict()
         for class_label, genotypes in class_entries.iteritems():
             class_size = float(sum(genotypes.values()))
-            known_ratio = 1.0 - float(genotypes[UNKNOWN_GENOTYPE]) / class_size
             _, mode = max([(count, genotype) for genotype, count in genotypes.items()
                            if genotype != UNKNOWN_GENOTYPE])
-            class_known_ratios[class_label] = known_ratio
-            class_modes[class_label] = mode
+            mode_ratio = float(genotypes[mode]) / class_size
+            class_modes[class_label] = (mode, mode_ratio)
 
 
         imputed_snps = []
-        any_imputed = False
         for idx, genotype in enumerate(snps):
             class_label = self.class_labels[idx]
-            if genotype == UNKNOWN_GENOTYPE and \
-               class_known_ratios[class_label] > self.threshold:
-                imputed_snps.append(class_modes[class_label])
-                any_imputed = True
+            mode, ratio = class_modes[class_label]
+            if genotype == UNKNOWN_GENOTYPE and ratio > self.threshold:
+                imputed_snps.append(mode)
             else:
                 imputed_snps.append(genotype)
 
