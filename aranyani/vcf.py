@@ -112,6 +112,44 @@ def stream_vcf_fl(flname, kept_individuals):
             if not ln.startswith("#"):
                 yield ln
 
+class ImputeUnknown(object):
+    def __init__(self, class_labels, threshold):
+        self.class_labels = class_labels
+        self.threshold = threshold
+
+    def __call__(self, triplet):
+        chrom, pos, snps = triplet
+        n_individuals = len(self.class_labels)
+        
+        class_entries = defaultdict(lambda: defaultdict(int))
+        for idx in xrange(n_individuals):
+            genotype = snps[idx]
+            class_entries[self.class_labels[idx]][genotype] += 1
+
+        class_modes = dict()
+        class_known_ratios = dict()
+        for class_label, genotypes in class_entries.iteritems():
+            class_size = float(sum(genotypes.values()))
+            known_ratio = 1.0 - float(genotypes[UNKNOWN_GENOTYPE]) / class_size
+            _, mode = max([(count, genotype) for genotype, count in genotypes.items()
+                           if genotype != UNKNOWN_GENOTYPE])
+            class_known_ratios[class_label] = known_ratio
+            class_modes[class_label] = mode
+
+
+        imputed_snps = []
+        any_imputed = False
+        for idx, genotype in enumerate(snps):
+            class_label = self.class_labels[idx]
+            if genotype == UNKNOWN_GENOTYPE and \
+               class_known_ratios[class_label] > self.threshold:
+                imputed_snps.append(class_modes[class_label])
+                any_imputed = True
+            else:
+                imputed_snps.append(genotype)
+
+        return (chrom, pos, imputed_snps)
+
 class FilterUnknown(object):
     def __init__(self, class_labels):
         self.class_labels = class_labels
@@ -157,7 +195,7 @@ class AnnotateTrivial(object):
         return triplet
     
 
-def convert(groups_flname, vcf_flname, outbase, compress):
+def convert(groups_flname, vcf_flname, outbase, compress, impute_threshold):
     groups = read_groups(groups_flname)
     
     gen = stream_vcf_fl(vcf_flname, groups.keys())
@@ -173,6 +211,9 @@ def convert(groups_flname, vcf_flname, outbase, compress):
     non_empty_features = filter(lambda triplet: len(triplet[2]) > 1, selected_individuals)
     # at least one class is only unknown genotypes
     known_features = filter(lambda triplet: filter_unknown(triplet), non_empty_features)
+    if impute_threshold != None:
+        impute_unknown = ImputeUnknown(class_labels, impute_threshold)
+        known_features = map(impute_unknown, known_features)
     annotated_features = map(annotation, known_features)
     extracted_features = map(extract_features, annotated_features)
     

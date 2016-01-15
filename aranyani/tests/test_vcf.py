@@ -55,7 +55,7 @@ class TestVCFFunctions(unittest.TestCase):
         dirname = tempfile.mkdtemp()
 
         flname = os.path.join(dirname, FEATURE_MATRIX_FLNAME)
-        convert(GROUP_TEST_FILE, VCF_TEST_FILE, dirname, False)
+        convert(GROUP_TEST_FILE, VCF_TEST_FILE, dirname, False, None)
 
         features = read_features(dirname)
         
@@ -70,7 +70,7 @@ class TestVCFFunctions(unittest.TestCase):
         dirname = tempfile.mkdtemp()
 
         flname = os.path.join(dirname, FEATURE_MATRIX_FLNAME)
-        convert(GROUP_TEST_FILE, VCF_TEST_FILE, dirname, True)
+        convert(GROUP_TEST_FILE, VCF_TEST_FILE, dirname, True, None)
 
         features = read_features(dirname)
         
