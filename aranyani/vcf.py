@@ -163,7 +163,18 @@ class FilterUnknown(object):
             genotype = snps[idx]
             class_entries[self.class_labels[idx]].add(genotype)
 
-        return not(any(map(lambda x: x == set([UNKNOWN_GENOTYPE]), class_entries.values())))
+        entire_class_unknown = False
+        for class_label, genotypes in class_entries.items():
+            if genotypes == set([UNKNOWN_GENOTYPE]):
+                entire_class_unknown = True
+
+        all_known_genotypes = set(snps)
+        all_known_genotypes.discard(UNKNOWN_GENOTYPE)
+        single_known_genotype = False
+        if len(all_known_genotypes) <= 1:
+            single_known_genotype = True
+
+        return not(single_known_genotype or entire_class_unknown)
 
 class AnnotateTrivial(object):
     def __init__(self, class_labels):
@@ -207,10 +218,8 @@ def convert(groups_flname, vcf_flname, outbase, compress, impute_threshold):
 
     parsed_lines = map(parse_vcf_line, gen)
     selected_individuals = map(SelectIndividuals(individual_idx), parsed_lines)
-    # all nucleotides are missing or only one genotype
-    non_empty_features = filter(lambda triplet: len(triplet[2]) > 1, selected_individuals)
-    # at least one class is only unknown genotypes
-    known_features = filter(lambda triplet: filter_unknown(triplet), non_empty_features)
+    # remove SNPs with < 2 known genotypes
+    known_features = filter(lambda triplet: filter_unknown(triplet), selected_individuals)
     if impute_threshold != None:
         impute_unknown = ImputeUnknown(class_labels, impute_threshold)
         known_features = map(impute_unknown, known_features)
