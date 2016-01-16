@@ -41,9 +41,10 @@ class TestVCFFunctions(unittest.TestCase):
 
         triplet = parse_vcf_line(test_line)
 
-        chrom, pos, snps = triplet
+        (chrom, pos), snps, genotypes = triplet
         self.assertEqual(chrom, "1")
-        self.assertEqual(pos, "2")                              
+        self.assertEqual(pos, "2")
+        self.assertItemsEqual(genotypes, (("A", "A"), ("A", "T"), ("T", "T")))
     
     def test_read_groups(self):
         groups = read_groups(GROUP_TEST_FILE)
@@ -73,10 +74,12 @@ class TestVCFFunctions(unittest.TestCase):
         convert(GROUP_TEST_FILE, VCF_TEST_FILE, dirname, True, None)
 
         features = read_features(dirname)
+
+        print features.feature_labels
         
         self.assertEquals(features.feature_matrix.shape[0], 16)
-        self.assertEquals(features.feature_matrix.shape[1], 5)
-        self.assertEquals(len(features.feature_labels), 5)
+        self.assertEquals(features.feature_matrix.shape[1], 4)
+        self.assertEquals(len(features.feature_labels), 4)
         self.assertEquals(len(features.sample_labels), 16)
         self.assertEquals(len(features.class_labels), 16)
         self.assertEquals(len(set(features.class_labels)), 2)

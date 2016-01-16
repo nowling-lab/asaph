@@ -37,16 +37,12 @@ def read_groups(flname):
     return groups
 
 def extract_features(triplet):
-    chrom, pos, snps = triplet
+    label, snps, genotypes = triplet
+    chrom, pos = label
     n_individuals = len(snps)
 
-    all_genotypes = defaultdict(int)
-    for genotype in snps:
-        if genotype != UNKNOWN_GENOTYPE:
-            all_genotypes[genotype] += 1
-
     features = dict()
-    for genotype in all_genotypes.keys():
+    for genotype in genotypes:
         features[(chrom, pos, genotype)] = np.zeros(n_individuals)
 
     for idx, genotype in enumerate(snps):
@@ -80,16 +76,18 @@ def parse_vcf_line(ln):
         else:
             snps.append(UNKNOWN_GENOTYPE)
 
-    return (cols[DEFAULT_COLUMNS["CHROM"]], cols[DEFAULT_COLUMNS["POS"]], snps)
+    return ((cols[DEFAULT_COLUMNS["CHROM"]], cols[DEFAULT_COLUMNS["POS"]]),
+            snps,
+            (homo1, homo2, hetero))
 
 class SelectIndividuals(object):
     def __init__(self, kept_individual_idx):
         self.kept_individual_idx = kept_individual_idx
 
     def __call__(self, triplets):
-        chrom, pos, snps = triplets
+        label, snps, genotypes = triplets
         selected = [snps[idx] for idx in self.kept_individual_idx]
-        return (chrom, pos, selected)
+        return (label, selected, genotypes)
 
 def stream_vcf_fl(flname, kept_individuals):
     with open(flname) as fl:
@@ -118,7 +116,7 @@ class ImputeUnknown(object):
         self.threshold = threshold
 
     def __call__(self, triplet):
-        chrom, pos, snps = triplet
+        label, snps, genotypes = triplet
         n_individuals = len(self.class_labels)
         
         class_entries = defaultdict(lambda: defaultdict(int))
@@ -134,7 +132,6 @@ class ImputeUnknown(object):
             mode_ratio = float(genotypes[mode]) / class_size
             class_modes[class_label] = (mode, mode_ratio)
 
-
         imputed_snps = []
         for idx, genotype in enumerate(snps):
             class_label = self.class_labels[idx]
@@ -144,14 +141,14 @@ class ImputeUnknown(object):
             else:
                 imputed_snps.append(genotype)
 
-        return (chrom, pos, imputed_snps)
+        return (label, imputed_snps, genotypes)
 
 class FilterUnknown(object):
     def __init__(self, class_labels):
         self.class_labels = class_labels
 
     def __call__(self, triplet):
-        chrom, pos, snps = triplet
+        label, snps, genotypes = triplet
         n_individuals = len(self.class_labels)
         
         class_entries = defaultdict(set)
@@ -179,8 +176,7 @@ class AnnotateTrivial(object):
         self.unknown_genotypes = dict()
 
     def __call__(self, triplet):
-        chrom, pos, snps = triplet
-        snp_label = (chrom, pos)
+        snp_label, snps, genotypes = triplet
         n_individuals = len(self.class_labels)
 
         individuals_without_missing = []
