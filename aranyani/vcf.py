@@ -116,7 +116,7 @@ class ImputeUnknown(object):
         self.threshold = threshold
 
     def __call__(self, triplet):
-        label, snps, genotypes = triplet
+        label, snps, all_genotypes = triplet
         n_individuals = len(self.class_labels)
         
         class_entries = defaultdict(lambda: defaultdict(int))
@@ -141,7 +141,7 @@ class ImputeUnknown(object):
             else:
                 imputed_snps.append(genotype)
 
-        return (label, imputed_snps, genotypes)
+        return (label, imputed_snps, all_genotypes)
 
 class FilterUnknown(object):
     def __init__(self, class_labels):
