@@ -106,7 +106,7 @@ def analyze_rankings(args):
     plt.semilogx(ordered_trees, snp2_feature_counts, "m.-", label="Model 2")
     plt.xlabel("Number of Trees", fontsize=16)
     plt.ylabel("SNPs (Count)", fontsize=16)
-    plt.legend(loc="upper left")
+    plt.legend(loc="lower right")
     plt.ylim([0, max(max(common_feature_counts), max(snp1_feature_counts), max(snp2_feature_counts)) + 10])
     plt.xlim([min(ordered_trees), max(ordered_trees)])
 
@@ -124,7 +124,7 @@ def analyze_rankings(args):
                      c, label="Top %s%%" % label)
     plt.xlabel("Number of Trees", fontsize=16)
     plt.ylabel("Common SNPs (%)", fontsize=16)
-    plt.legend(loc="upper left")
+    plt.legend(loc="lower right")
     plt.ylim([0, 100])
     plt.xlim([min(ordered_trees), max(ordered_trees)])
 
