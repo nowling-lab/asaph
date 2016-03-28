@@ -25,10 +25,10 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
-from aranyani.newioutils import read_features
-from aranyani.newioutils import read_snps
-from aranyani.newioutils import write_snps
-from aranyani.vcf import convert
+from asaph.newioutils import read_features
+from asaph.newioutils import read_snps
+from asaph.newioutils import write_snps
+from asaph.vcf import convert
 
 def import_vcf(args):
     vcf_flname = args["vcf"]
