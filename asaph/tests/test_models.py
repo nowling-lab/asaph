@@ -41,7 +41,6 @@ class TestFeatures(unittest.TestCase):
 
     def test_snp_importances(self):
         n_trees = 10
-        batch_size = 3
         features = np.array([[0, 1, 0, 1],
                              [1, 0, 1, 0],
                              [1, 0, 1, 0],
