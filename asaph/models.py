@@ -22,8 +22,7 @@ import numpy as np
 from scipy.stats import rankdata
 
 from sklearn.cross_validation import LeaveOneOut
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.tree import DecisionTreeClassifier
+from .ml import ConstrainedBaggingRandomForest
 
 class SNPs(object):
     def __init__(self, n_trees, labels, importances, ranked, fixed_differences,
@@ -101,35 +100,10 @@ class Features(object):
 
         return snp_feature_indices
 
-    def resample(self, n_resamples):
-        n_samples = self.feature_matrix.shape[0] + n_resamples
-        n_features = self.feature_matrix.shape[1]
-        
-        X = np.zeros((n_samples, n_features))
-        y = np.zeros(n_samples)
-
-        for i in xrange(self.feature_matrix.shape[0]):
-            X[i, :] = self.feature_matrix[i, :]
-            y[i] = self.class_labels[i]
-
-        for i in xrange(self.feature_matrix.shape[0], n_samples):
-            idx = random.randint(0, self.feature_matrix.shape[0] - 1)
-            X[i, :] = self.feature_matrix[idx, :]
-            y[i] = self.class_labels[idx]
-
-        return X, y
-
     def snp_importances(self, n_trees, n_resamples):
-        remaining_trees = n_trees
-        feature_importances = np.zeros(self.feature_matrix.shape[1])
-        while remaining_trees > 0:
-            dt = DecisionTreeClassifier(max_features="sqrt")
-            X, y = self.resample(n_resamples)
-            dt.fit(X, y)
-            feature_importances += dt.feature_importances_
-            remaining_trees -= 1
-
-        feature_importances = feature_importances / n_trees
+        rf = ConstrainedBaggingRandomForest(n_trees, n_resamples)
+        feature_importances = rf.feature_importances(self.feature_matrix,
+                                                     self.class_labels)
 
         snp_labels = self.snp_labels()
 
