@@ -28,7 +28,30 @@ import numpy as np
 from asaph.newioutils import read_features
 from asaph.newioutils import read_snps
 from asaph.newioutils import write_snps
-from asaph.vcf import convert
+from asaph.vcf import convert as convert_vcf
+from asaph.fasta import convert as convert_fasta
+
+def import_fasta(args):
+    fasta_flname = args["fasta"]
+    if fasta_flname is None:
+        print "FASTA file must be specified for import"
+        sys.exit(1)
+
+    groups_flname = args["groups"]
+    if groups_flname is None:
+        print "Groups file must be specified for import"
+        sys.exit(1)
+
+    seq_type = args["seq"]
+    if seq_type is None:
+        print "Sequence type must be specified for import"
+        sys.exit(1)
+
+    workdir = args["workdir"]
+    if not os.path.exists(workdir):
+        os.makedirs(workdir)
+
+    convert_fasta(groups_flname, fasta_flname, seq_type, workdir)
 
 def import_vcf(args):
     vcf_flname = args["vcf"]
@@ -45,7 +68,7 @@ def import_vcf(args):
     if not os.path.exists(workdir):
         os.makedirs(workdir)
 
-    convert(groups_flname, vcf_flname, workdir, args["compress"], args["impute_unknown"])
+    convert_vcf(groups_flname, vcf_flname, workdir, args["compress"], args["impute_unknown"])
 
 def train_model(args):
     workdir = args["workdir"]
@@ -172,8 +195,12 @@ def parseargs():
                                  "output-rankings"],
                         help="Operating mode")
 
+    parser.add_argument("--seq", choices=["DNA", "AA"],
+                        help="Sequence type for FASTA input")
+
     parser.add_argument("--compress", action="store_true")
     parser.add_argument("--vcf", type=str, help="VCF file to import")
+    parser.add_argument("--fasta", type=str, help="FASTA file to import")
     parser.add_argument("--groups", type=str, help="Groups file to import")
     parser.add_argument("--workdir", type=str, help="Work directory", required=True)
 
@@ -192,7 +219,13 @@ if __name__ == "__main__":
     args = parseargs()
 
     if args["mode"] == "import":
-        import_vcf(args)
+        if args["vcf"] is not None:
+            import_vcf(args)
+        elif args["fasta"] is not None:
+            import_fasta(args)
+        else:
+            print "Need to specify VCF or FASTA file for import"
+            sys.exit(1)
     elif args["mode"] == "train":
         train_model(args)
     elif args["mode"] == "analyze-rankings":

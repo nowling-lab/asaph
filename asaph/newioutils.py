@@ -21,6 +21,7 @@ import os
 import struct
 
 import numpy as np
+from scipy import sparse
 
 from .models import *
 
@@ -47,7 +48,14 @@ def read_features(basename):
     feature_labels = from_json(os.path.join(basename, FEATURE_LABELS_FLNAME))
     class_labels = from_json(os.path.join(basename, CLASS_LABELS_FLNAME))
     sample_labels = from_json(os.path.join(basename, SAMPLE_LABELS_FLNAME))
-    feature_matrix = np.load(os.path.join(basename, FEATURE_MATRIX_FLNAME))
+    if os.path.exists(os.path.join(basename, FEATURE_MATRIX_FLNAME + ".npz")):
+        loader = np.load(os.path.join(basename, FEATURE_MATRIX_FLNAME + ".npz"))
+        feature_matrix = sparse.csr_matrix((loader["data"],
+                                           loader["indices"],
+                                           loader["indptr"]),
+                                           shape = loader["shape"])
+    else:
+        feature_matrix = np.load(os.path.join(basename, FEATURE_MATRIX_FLNAME))
     fixed_differences = from_json(os.path.join(basename, FIXED_DIFFERENCES_FLNAME))
     missing_data = from_json(os.path.join(basename, MISSING_DATA_FLNAME))
 
