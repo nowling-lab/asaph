@@ -22,6 +22,7 @@ import numpy as np
 from scipy.stats import rankdata
 
 from sklearn.cross_validation import LeaveOneOut
+from sklearn.decomposition import TruncatedSVD
 from .ml import ConstrainedBaggingRandomForest
 
 class SNPs(object):
@@ -144,4 +145,10 @@ class Features(object):
                         self.sample_labels,
                         selected_fds,
                         selected_missing)
+
+    def svd(self, n_pcs):
+        svd = TruncatedSVD(n_components = n_pcs)
+        proj = svd.fit_transform(self.feature_matrix)
+        return proj, svd.explained_variance_ratio_
+        
 

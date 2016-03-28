@@ -70,6 +70,35 @@ def import_vcf(args):
 
     convert_vcf(groups_flname, vcf_flname, workdir, args["compress"], args["impute_unknown"])
 
+def pca(args):
+    workdir = args["workdir"]
+
+    figures_dir = os.path.join(workdir, "figures")
+    if not os.path.exists(figures_dir):
+        os.makedirs(figures_dir)
+
+    n_pcs = args["n_pcs"]
+    if n_pcs is None:
+        print "Number of pcs must be specified for PCA"
+        sys.exit(1)
+    
+    features = read_features(workdir)
+    proj, explained_variance_ratios = features.svd(n_pcs)
+
+    plt.clf()
+    plt.plot(explained_variance_ratios, "b.-")
+    plt.xlabel("PC", fontsize=16)
+    plt.ylabel("Explained Variance Ratio", fontsize=16)
+    plt.savefig(os.path.join(figures_dir, "pca_explained_variance_ratios.png"), DPI=200)
+    
+    for i in xrange(n_pcs - 1):
+        for j in xrange(i + 1, n_pcs):
+            plt.clf()
+            plt.scatter(proj[:, i], proj[:, j])
+            plt.xlabel("PC " + str(i), fontsize=16)
+            plt.ylabel("PC " + str(j), fontsize=16)
+            plt.savefig(os.path.join(figures_dir, "pca_%s_%s.png" % (i, j)), DPI=200)
+    
 def train_model(args):
     workdir = args["workdir"]
 
@@ -192,7 +221,8 @@ def parseargs():
                         choices=["import",
                                  "train",
                                  "analyze-rankings",
-                                 "output-rankings"],
+                                 "output-rankings",
+                                 "pca"],
                         help="Operating mode")
 
     parser.add_argument("--seq", choices=["DNA", "AA"],
@@ -206,6 +236,7 @@ def parseargs():
 
     parser.add_argument("--trees", type=int, help="Number of trees in Random Forest")
     parser.add_argument("--resamples", type=int, help="Number of additional samples")
+    parser.add_argument("--n-pcs", type=int, help="Number of PCs to use in PCA")
 
     parser.add_argument("--ranks-file", type=str,
                         help="Output file for SNP ranks")
@@ -232,6 +263,8 @@ if __name__ == "__main__":
         analyze_rankings(args)
     elif args["mode"] == "output-rankings":
         output_rankings(args)
+    elif args["mode"] == "pca":
+        pca(args)
     else:
         print "Unknown mode '%s'" % args["mode"]
         sys.exit(1)
