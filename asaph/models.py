@@ -124,20 +124,6 @@ class Features(object):
         return SNPs(n_trees, labels, importances, False, fixed_differences, \
                     missing_data)
 
-    def validate_rf(self, n_trees):
-        score = 0.0
-        for train_index, test_index in LeaveOneOut(len(self.class_labels)):
-            X_train = self.feature_matrix[train_index]
-            X_test = self.feature_matrix[test_index]
-            y_train = np.array(self.class_labels)[train_index]
-            y_test = np.array(self.class_labels)[test_index]
-            
-            rf = RandomForestClassifier(n_estimators=n_trees)
-            rf.fit(X_train, y_train)
-            score += rf.score(X_test, y_test)
-            
-        return score / len(self.class_labels)
-
     def select_from_snps(self, snps):
         snp_labels = set(snps.labels)
         selected_indices = []
