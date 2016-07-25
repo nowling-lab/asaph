@@ -18,7 +18,7 @@ The work directory will be created and contain the resulting Asaph data structur
 
 Asaph supports two more features which can be useful: imputing unknown genotypes and compressing the feature matrix using dictionary encoding.  In cases where genotypes for an individual SNP are known for all but a few samples, Asaph supports imputing the missing genotypes using the most common value found in the sample's class.  The `--impute-unknown` flag can be used to enable imputation.  Imputation is only performed if the frequency of the majority genotype is above a user-provided threshold to prevent inaccurate results.
 
-Secondly, to improve run times, reduce memory usage, and stabilize rankings, Asaph supports dictionary encoding of the feature matrix.  With dictionary encoding, all SNPs with the same genotypes across all samples are replaced by a single instance.  When the rankings are generated, the original SNPs are given the variable importance score of the remaining instance.  In practice, we've found that the compression can reduce run times from weeks to hours.
+Secondly, to improve run times, reduce memory usage, and stabilize rankings, Asaph supports dictionary encoding of the feature matrix.  With dictionary encoding, all SNPs with the same genotypes across all samples are replaced by a single instance.  When the rankings are generated, the original SNPs are given the variable importance score of the remaining instance.  In practice, we've found that the compression can reduce run times from weeks to hours.  Compression can be enabled with the `--compress` flag.
 
 
 
