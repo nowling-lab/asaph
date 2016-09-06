@@ -49,11 +49,25 @@ class ConstrainedBaggingRandomForest(object):
 
         return X_new, y_new
 
+    def _bootstrap(self, X, y):
+        X_new = np.zeros(X.shape)
+        y_new = np.zeros(X.shape[0])
+
+        for i in xrange(X.shape[0]):
+            idx = random.randint(0, X.shape[0] - 1)
+            X_new[i, :] = X[idx, :]
+            y_new[i] = y[idx]
+
+        return X_new, y_new
+
     def feature_importances(self, X, y):
         feature_importances = np.zeros(X.shape[1])
         for i in xrange(self.n_trees):
             dt = DecisionTreeClassifier(max_features="sqrt")
-            X_new, y_new = self._resample(X, y)
+            if self.n_resamples == -1:
+                X_new, y_new = self._bootstrap(X, y)
+            else:
+                X_new, y_new = self._resample(X, y)
             dt.fit(X_new, y_new)
             feature_importances += dt.feature_importances_
 
