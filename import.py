@@ -26,8 +26,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from asaph.newioutils import read_features
-from asaph.newioutils import read_snps
-from asaph.newioutils import write_snps
 from asaph.vcf import convert as convert_vcf
 from asaph.fasta import convert as convert_fasta
 
