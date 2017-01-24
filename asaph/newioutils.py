@@ -43,6 +43,18 @@ def from_json(flname):
 
     return obj
 
+def serialize(flname, obj):
+    fl = open(flname, "w")
+    cPickle.dump(obj, fl)
+    fl.close()
+
+def deserialize(flname):
+    fl = open(flname)
+    obj = cPickle.load(fl)
+    fl.close()
+
+    return obj
+
 def read_features(basename):
     feature_labels = shelve.open(os.path.join(basename, FEATURE_LABELS_FLNAME))
     class_labels = from_json(os.path.join(basename, CLASS_LABELS_FLNAME))
