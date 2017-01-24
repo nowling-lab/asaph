@@ -179,7 +179,7 @@ def convert(groups_flname, vcf_flname, outbase, compress):
     column_idx = 0
     col_dict = dict()
     feature_columns = []
-    for col_name, column in extractor:
+    for feature_idx, (col_name, column) in enumerate(extractor):
         if compress:
             if column not in col_dict:
                 col_dict[column] = column_idx
@@ -199,7 +199,12 @@ def convert(groups_flname, vcf_flname, outbase, compress):
     # need to transpose, otherwise we get (n_features, n_individuals) instead
     feature_matrix = np.array(feature_columns).T
 
-    print feature_matrix.shape[0], "individuals", feature_matrix.shape[1], "features"
+    print feature_matrix.shape[0], "individuals"
+    if compress:
+        print (feature_idx + 1), "feature before compression"
+        print feature_matrix.shape[1], "features after compression"
+    else:
+        print feature_matrix.shape[1], "features"
 
     class_labels = [populations[ident] for ident in extractor.rows_to_names]
 
