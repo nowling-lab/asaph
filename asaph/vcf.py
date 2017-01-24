@@ -16,6 +16,7 @@ limitations under the License.
 
 from exceptions import NotImplementedError
 import os
+import shelve
 import sys
 
 import numpy as np
@@ -24,7 +25,7 @@ from newioutils import *
 
 DEFAULT_COLUMNS = {'CHROM' : 0, 'POS' : 1, 'ID' : 2, 'REF' : 3, 'ALT' : 4, 'QUAL' : 5, 'FILTER' : 6, 'INFO' : 7, 'FORMAT' : 8}
 
-UNKNOWN_GENOTYPE = ("X", "X")
+UNKNOWN_GENOTYPE = (0, 0)
 
 def read_groups(flname):
     fl = open(flname)
@@ -36,222 +37,174 @@ def read_groups(flname):
 
     return groups
 
-def extract_features(triplet):
-    label, snps, genotypes = triplet
-    chrom, pos = label
-    n_individuals = len(snps)
+## Parsing
+def parse_vcf_line(ln, individual_names):
+    """
+    Takes a string containing a line of a VCF file
+    and a list of individual names.
 
-    features = dict()
-    for genotype in genotypes:
-        features[(chrom, pos, genotype)] = np.zeros(n_individuals)
+    Returns a pair of (variant_label, alleles, individual_genotypes).
 
-    for idx, genotype in enumerate(snps):
-        if genotype != UNKNOWN_GENOTYPE:
-            features[(chrom, pos, genotype)][idx] = 1
-
-    return ((chrom, pos), [(key, tuple(value)) for key, value in features.iteritems()])
-
-def parse_vcf_line(ln):
+    variant_label is a pair of (chromosome, position)
+    alelles is a pair of (ref_seq, alt_seq)
+    individual_genotypes is a dictionary of individual ids to pairs
+    of (ref_count, alt_count)
+    """
+    
     cols = ln.strip().split()
-    ref_seq = cols[DEFAULT_COLUMNS["REF"]]
-    alt_seq = cols[DEFAULT_COLUMNS["ALT"]]
+    # TODO: Allow for more than 1 alternative sequence
+    alleles = (cols[DEFAULT_COLUMNS["REF"]],
+               cols[DEFAULT_COLUMNS["ALT"]])
 
-    snps = []
+    individual_genotypes = {}
     for i, col in enumerate(cols[len(DEFAULT_COLUMNS):]):
-        left, right = col.split(":")[0].split("/")
-
-        homo1 = (ref_seq, ref_seq)
-        homo2 = (alt_seq, alt_seq)
-        hetero = tuple(sorted((ref_seq, alt_seq)))
-
-        if left == "0" and right == "0":
-            snps.append(homo1)
-        elif left == "1" and right == "1":
-            snps.append(homo2)
-        elif (left == "0" and right == "1") or \
-             (left == "1" and right == "0"):
-            snps.append(hetero)
-        # even if only one of the two alleles is unknown,
-        # consider both unknown
-        else:
-            snps.append(UNKNOWN_GENOTYPE)
-
-    return ((cols[DEFAULT_COLUMNS["CHROM"]], cols[DEFAULT_COLUMNS["POS"]]),
-            snps,
-            (homo1, homo2, hetero))
-
-class SelectIndividuals(object):
-    def __init__(self, kept_individual_idx):
-        self.kept_individual_idx = kept_individual_idx
-
-    def __call__(self, triplets):
-        label, snps, genotypes = triplets
-        selected = [snps[idx] for idx in self.kept_individual_idx]
-        return (label, selected, genotypes)
-
-def stream_vcf_fl(flname, kept_individuals):
-    with open(flname) as fl:
-        for ln in fl:
-            if ln.startswith("#CHROM"):
-                column_names = ln[1:].strip().split()
-                break
-
-        all_ids = column_names[len(DEFAULT_COLUMNS):]
-
-        individual_ids = [ident for ident in all_ids
-                          if ident in kept_individuals]
+        genotype_pair = col.split(":")[0]
         
-        individual_idx = list([i for i, ident in enumerate(all_ids)
-                              if ident in kept_individuals])
+        ref_count = 0
+        alt_count = 0
 
-        yield individual_ids, individual_idx
+        # avoid caring whether / or | is used as separator by indexing
+        # ignore unknown genotype (.)
+        if genotype_pair[0] == "0":
+            ref_count += 1
+        elif genotype_pair[0] == "1":
+            alt_count += 1
 
-        for ln in fl:
-            if not ln.startswith("#"):
-                yield ln
+        if genotype_pair[2] == "0":
+            ref_count += 1
+        elif genotype_pair[2] == "1":
+            alt_count += 1
 
-class ImputeUnknown(object):
-    def __init__(self, class_labels, threshold):
-        self.class_labels = class_labels
-        self.threshold = threshold
+        individual_genotypes[individual_names[i]] = (ref_count, alt_count)
 
-    def __call__(self, triplet):
-        label, snps, all_genotypes = triplet
-        n_individuals = len(self.class_labels)
+    variant_label = (cols[DEFAULT_COLUMNS["CHROM"]], cols[DEFAULT_COLUMNS["POS"]])
+    return (variant_label, alleles, individual_genotypes)
+
+class VCFStreamer(object):
+    def __init__(self, flname):
+        self.flname = flname
+        self.individual_names = None
+
+    def __iter__(self):
+        with open(self.flname) as fl:
+            for ln in fl:
+                if ln.startswith("#CHROM"):
+                    column_names = ln[1:].strip().split()
+                    continue
+                elif ln.startswith("#"):
+                    continue
+
+                self.individual_names = column_names[len(DEFAULT_COLUMNS):]
+                
+                for ln in fl:
+                    if not ln.startswith("#"):
+                        yield parse_vcf_line(ln, self.individual_names)
+
+## Filters            
+def select_individuals(stream, individual_ids):
+    """
+    Filter stream of pairs, only keeping genotypes
+    for individuals with ids in individual_ids
+    """
+    kept_individuals = set(individual_ids)
+
+    for label, alleles, genotypes in stream:
+        selected = { name : genotypes[name] for name in kept_individuals }
+        yield (label, alleles, selected)
+
+def filter_invariants(stream):
+    """
+    Filter out variants that have < 2 genotypes present
+    """
+    for label, alleles, genotypes in stream:
+        observed_genotypes = set(genotypes.itervalues())
+        if len(observed_genotypes) >= 2:
+            yield (label, alleles, genotypes)
         
-        class_entries = defaultdict(lambda: defaultdict(int))
-        for idx in xrange(n_individuals):
-            genotype = snps[idx]
-            class_entries[self.class_labels[idx]][genotype] += 1
-
-        class_modes = dict()
-        for class_label, genotypes in class_entries.iteritems():
-            class_size = float(sum(genotypes.values()))
-            _, mode = max([(count, genotype) for genotype, count in genotypes.items()
-                           if genotype != UNKNOWN_GENOTYPE])
-            mode_ratio = float(genotypes[mode]) / class_size
-            class_modes[class_label] = (mode, mode_ratio)
-
-        imputed_snps = []
-        for idx, genotype in enumerate(snps):
-            class_label = self.class_labels[idx]
-            mode, ratio = class_modes[class_label]
-            if genotype == UNKNOWN_GENOTYPE and ratio > self.threshold:
-                imputed_snps.append(mode)
-            else:
-                imputed_snps.append(genotype)
-
-        return (label, imputed_snps, all_genotypes)
-
-class FilterUnknown(object):
-    def __init__(self, class_labels):
-        self.class_labels = class_labels
-
-    def __call__(self, triplet):
-        label, snps, genotypes = triplet
-        n_individuals = len(self.class_labels)
-        
+def filter_unknown(class_labels, stream):
+    """
+    Filter out variants where 1 or more classes contains all unknown genotypes.
+    """
+    for label, variant_alleles, genotypes in stream:
         class_entries = defaultdict(set)
-        for idx in xrange(n_individuals):
-            genotype = snps[idx]
-            class_entries[self.class_labels[idx]].add(genotype)
+        for idx, allele_counts in genotypes.iteritems():
+            class_entries[class_labels[idx]].add(allele_counts)
 
         entire_class_unknown = False
         for class_label, genotypes in class_entries.items():
             if genotypes == set([UNKNOWN_GENOTYPE]):
                 entire_class_unknown = True
 
-        all_known_genotypes = set(snps)
-        all_known_genotypes.discard(UNKNOWN_GENOTYPE)
-        single_known_genotype = False
-        if len(all_known_genotypes) <= 1:
-            single_known_genotype = True
+        if not entire_class_unknown:
+            yield (label, variant_alleles, genotypes)    
 
-        return not(single_known_genotype or entire_class_unknown)
+## Feature extraction
+class CountFeaturesExtractor(object):
+    def __init__(self, stream, individual_names):
+        self.stream = stream
+        self.name_to_row = dict()
+        self.rows_to_names = []
+        for idx, name in enumerate(individual_names):
+            self.name_to_row[name] = idx
+            self.rows_to_names.append(name)
 
-class AnnotateTrivial(object):
-    def __init__(self, class_labels):
-        self.class_labels = class_labels
-        self.trivial_snps = dict()
-        self.unknown_genotypes = dict()
+    def __iter__(self):
+        for variant_label, alleles, genotypes in self.stream:
+            chrom, pos = variant_label
+            ref_column = [0.] * len(self.name_to_row)
+            alt_column = [0.] * len(self.name_to_row)
+            for name, allele_counts in genotypes.items():
+                row_idx = self.name_to_row[name]
+                ref_column[row_idx] = allele_counts[0]
+                alt_column[row_idx] = allele_counts[1]
+            yield (chrom, pos, alleles[0]), tuple(ref_column)
+            yield (chrom, pos, alleles[1]), tuple(alt_column)
+        
+            
+def convert(groups_flname, vcf_flname, outbase, compress):
+    # dictionary of individual ids to population ids
+    populations = read_groups(groups_flname)
 
-    def __call__(self, triplet):
-        snp_label, snps, genotypes = triplet
-        n_individuals = len(self.class_labels)
-
-        individuals_without_missing = []
-        for idx in xrange(n_individuals):
-            if snps[idx] != UNKNOWN_GENOTYPE:
-                individuals_without_missing.append(idx)
-
-        class_entries = defaultdict(set)
-        for idx in individuals_without_missing:
-            genotype = snps[idx]
-            class_entries[self.class_labels[idx]].add(genotype)
-
-        all_class_entries = reduce(lambda x, y: x.intersection(y), class_entries.values())
-
-        # fixed differences, any missing
-        self.trivial_snps[snp_label] = len(all_class_entries) == 0
-        self.unknown_genotypes[snp_label] = len(individuals_without_missing) != len(self.class_labels)
-
-        return triplet
-    
-
-def convert(groups_flname, vcf_flname, outbase, compress, impute_threshold):
-    groups = read_groups(groups_flname)
-    
-    gen = stream_vcf_fl(vcf_flname, groups.keys())
-    individual_ids, individual_idx = list(next(gen))
-
-    class_labels = [groups[ident] for ident in individual_ids]
-    annotation = AnnotateTrivial(class_labels)
-    filter_unknown = FilterUnknown(class_labels)
-
-    parsed_lines = map(parse_vcf_line, gen)
-    selected_individuals = map(SelectIndividuals(individual_idx), parsed_lines)
+    # returns triplets of (variant_label, variant_alleles, genotype_counts)
+    stream = VCFStreamer(vcf_flname)
+    selected_individuals = select_individuals(stream,
+                                              populations.keys())
     # remove SNPs with < 2 known genotypes
-    known_features = filter(lambda triplet: filter_unknown(triplet), selected_individuals)
-    if impute_threshold != None:
-        impute_unknown = ImputeUnknown(class_labels, impute_threshold)
-        known_features = map(impute_unknown, known_features)
-    annotated_features = map(annotation, known_features)
-    extracted_features = map(extract_features, annotated_features)
-    
-    feature_labels = []
-    column_idx = 0
-    feature_column = dict()
-    feature_columns = []
-    for pairs in extracted_features:
-        snp_label, labeled_columns = pairs
+    variants = filter_invariants(selected_individuals)
 
+    # extract features
+    extractor = CountFeaturesExtractor(variants, populations.keys())
+
+    feature_names = shelve.open(os.path.join(outbase, FEATURE_LABELS_FLNAME))
+    column_idx = 0
+    col_dict = dict()
+    feature_columns = []
+    for col_name, column in extractor:
         if compress:
-            for label, column in labeled_columns:
-                if column not in feature_column:
-                    feature_column[column] = column_idx
-                    feature_labels.append([label])
-                    feature_columns.append(column)
-                    column_idx += 1
-                else:
-                    feature_column_idx = feature_column[column]
-                    feature_labels[feature_column_idx].append(label)
-        else:
-            for label, column in labeled_columns:
-                feature_labels.append([label])
+            if column not in col_dict:
+                col_dict[column] = column_idx
+                feature_names[str(column_idx)] = [col_name]
                 feature_columns.append(column)
                 column_idx += 1
+            else:
+                feature_column_idx = col_dict[column]
+                all_names = feature_names[str(feature_column_idx)]
+                all_names.append(col_name)
+                feature_names[str(feature_column_idx)]
+        else:
+            feature_names[str(column_idx)].append([col_name])
+            feature_columns.append(column)
+            column_idx += 1
 
     # need to transpose, otherwise we get (n_features, n_individuals) instead
     feature_matrix = np.array(feature_columns).T
 
     print feature_matrix.shape[0], "individuals", feature_matrix.shape[1], "features"
 
-    np.save(os.path.join(outbase, FEATURE_MATRIX_FLNAME), feature_matrix)
-    to_json(os.path.join(outbase, FEATURE_LABELS_FLNAME), feature_labels)
-    to_json(os.path.join(outbase, SAMPLE_LABELS_FLNAME), individual_ids)
-    to_json(os.path.join(outbase, CLASS_LABELS_FLNAME), class_labels)
-    to_json(os.path.join(outbase, FIXED_DIFFERENCES_FLNAME), annotation.trivial_snps)
-    to_json(os.path.join(outbase, MISSING_DATA_FLNAME), annotation.unknown_genotypes)
+    class_labels = [populations[ident] for ident in extractor.rows_to_names]
 
-    
+    np.save(os.path.join(outbase, FEATURE_MATRIX_FLNAME), feature_matrix)
+    feature_names.close()
+    to_json(os.path.join(outbase, SAMPLE_LABELS_FLNAME), extractor.rows_to_names)
+    to_json(os.path.join(outbase, CLASS_LABELS_FLNAME), class_labels)
     

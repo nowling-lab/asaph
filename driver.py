@@ -68,7 +68,7 @@ def import_vcf(args):
     if not os.path.exists(workdir):
         os.makedirs(workdir)
 
-    convert_vcf(groups_flname, vcf_flname, workdir, args["compress"], args["impute_unknown"])
+    convert_vcf(groups_flname, vcf_flname, workdir, args["compress"])
 
 def pca(args):
     workdir = args["workdir"]
@@ -240,9 +240,6 @@ def parseargs():
 
     parser.add_argument("--ranks-file", type=str,
                         help="Output file for SNP ranks")
-
-    parser.add_argument("--impute-unknown", type=float, default=None,
-                        help="Impute unknown genotypes if class has majority above threshold")
 
     return vars(parser.parse_args())
 

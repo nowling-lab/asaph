@@ -18,6 +18,7 @@ import cPickle
 from collections import defaultdict
 import glob
 import os
+import shelve
 import struct
 
 import numpy as np
@@ -29,8 +30,6 @@ FEATURE_LABELS_FLNAME = "feature_labels"
 CLASS_LABELS_FLNAME = "class_labels"
 SAMPLE_LABELS_FLNAME = "sample_labels"
 FEATURE_MATRIX_FLNAME = "feature_matrix.npy"
-FIXED_DIFFERENCES_FLNAME = "fixed_differences"
-MISSING_DATA_FLNAME = "missing_data"
 
 def to_json(flname, obj):
     fl = open(flname, "w")
@@ -45,7 +44,7 @@ def from_json(flname):
     return obj
 
 def read_features(basename):
-    feature_labels = from_json(os.path.join(basename, FEATURE_LABELS_FLNAME))
+    feature_labels = shelve.open(os.path.join(basename, FEATURE_LABELS_FLNAME))
     class_labels = from_json(os.path.join(basename, CLASS_LABELS_FLNAME))
     sample_labels = from_json(os.path.join(basename, SAMPLE_LABELS_FLNAME))
     if os.path.exists(os.path.join(basename, FEATURE_MATRIX_FLNAME + ".npz")):
@@ -56,11 +55,11 @@ def read_features(basename):
                                            shape = loader["shape"])
     else:
         feature_matrix = np.load(os.path.join(basename, FEATURE_MATRIX_FLNAME))
-    fixed_differences = from_json(os.path.join(basename, FIXED_DIFFERENCES_FLNAME))
-    missing_data = from_json(os.path.join(basename, MISSING_DATA_FLNAME))
 
-    return Features(feature_matrix, feature_labels, class_labels, sample_labels,
-                    fixed_differences, missing_data)
+    return Features(feature_matrix,
+                    feature_labels,
+                    class_labels,
+                    sample_labels)
 
 def write_snps(basedir, snps, model_id):
     model_dir = os.path.join(basedir, "models", str(snps.n_trees))
@@ -85,9 +84,10 @@ def read_snps(basedir):
         for flname in model_flnames:
             model_data = from_json(flname)
 
-            snps = SNPs(model_data["n_trees"], model_data["labels"],
-                        model_data["importances"], model_data["ranked"],
-                        model_data["fixed_differences"], model_data["missing_data"])
+            snps = SNPs(model_data["n_trees"],
+                        model_data["labels"],
+                        model_data["importances"],
+                        model_data["ranked"])
 
             models[snps.n_trees].append(snps)
 
