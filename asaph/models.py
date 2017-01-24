@@ -24,8 +24,7 @@ from scipy.stats import rankdata
 from .ml import ConstrainedBaggingRandomForest
 
 class SNPs(object):
-    def __init__(self, n_trees, labels, importances, ranked):
-        self.n_trees = n_trees
+    def __init__(self, labels, importances, ranked):
         # convert to tuple for hashing
         self.labels = map(tuple, labels)
         self.importances = importances
@@ -40,8 +39,7 @@ class SNPs(object):
         sorted_importances = [importance for importance, _ in sorted_pairs]
 
         # convert to list for serialization
-        return SNPs(self.n_trees,
-                    list(sorted_labels),
+        return SNPs(list(sorted_labels),
                     list(sorted_importances),
                     True)
 
@@ -55,11 +53,13 @@ class SNPs(object):
             
         if not self.ranked:
             ranked = self.rank()
-            return SNPs(ranked.n_trees, ranked.labels[start:end],
-                        ranked.importances[start:end], ranked.ranked)
+            return SNPs(ranked.labels[start:end],
+                        ranked.importances[start:end],
+                        ranked.ranked)
         
-        return SNPs(self.n_trees, self.labels[start:end],
-                    self.importances[start:end], self.ranked)
+        return SNPs(self.labels[start:end],
+                    self.importances[start:end],
+                    self.ranked)
 
     def __len__(self):
         return len(self.labels)
@@ -68,9 +68,8 @@ class SNPs(object):
         return len(set(self.labels).intersection(other.labels))
 
     def __repr__(self):
-        return "SNPs(n_trees=%s, n_snps=%s, ranked=%s)" \
-            % (self.n_trees, len(self), self.ranked)
-
+        return "SNPs(n_snps=%s, ranked=%s)" \
+            % (len(self), self.ranked)
 
 class Features(object):
     def __init__(self, feature_matrix, feature_names, class_labels, sample_labels):
@@ -81,7 +80,7 @@ class Features(object):
 
     def snp_labels(self):
         snp_feature_indices = defaultdict(list)
-        for feature_idx, feature_labels in self.feature_labels.items():
+        for feature_idx, feature_labels in self.feature_labels.iteritems():
             feature_idx = int(feature_idx)
             for label in feature_labels:
                 # chrom and pos only
@@ -90,20 +89,18 @@ class Features(object):
 
         return snp_feature_indices
 
-    def snp_importances(self, n_trees, n_resamples):
-        rf = ConstrainedBaggingRandomForest(n_trees, n_resamples)
-        feature_importances = rf.feature_importances(self.feature_matrix,
-                                                     self.class_labels)
-
+    def rank_snps(self, feature_importances):
+        feature_importances = np.abs(feature_importances)
+        
         snp_labels = self.snp_labels()
+        snp_importances = [ (np.mean(feature_importances[feature_idx]), snp_label)
+                            for snp_label, feature_idx in snp_labels.iteritems() ]
 
-        snp_importances = ( (np.mean(feature_importances[feature_idx]), snp_label)
-                            for snp_label, feature_idx in snp_labels.iteritems() )
-
-        snp_importances = sorted(snp_importances, reverse=True)
+        snp_importances = list(snp_importances)
 
         labels = [label for _, label in snp_importances]
         importances = np.array([importance for importance, _ in snp_importances])
-    
-        return SNPs(n_trees, labels, importances, False)
+
+        return SNPs(labels, importances, False).rank()
+        
 

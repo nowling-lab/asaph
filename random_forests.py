@@ -1,5 +1,5 @@
 """
-Copyright 2015 Ronald J. Nowling
+Copyright 2017 Ronald J. Nowling
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,9 +25,10 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
+from asaph.ml import ConstrainedBaggingRandomForest
 from asaph.newioutils import read_features
-from asaph.newioutils import read_snps
-from asaph.newioutils import write_snps
+from asaph.newioutils import read_rf_snps
+from asaph.newioutils import write_rf_snps
     
 def train_model(args):
     workdir = args["workdir"]
@@ -44,11 +45,19 @@ def train_model(args):
 
     features = read_features(workdir)
 
-    snp_importances1 = features.snp_importances(n_trees, n_resamples).rank()
-    snp_importances2 = features.snp_importances(n_trees, n_resamples).rank()
+    rf = ConstrainedBaggingRandomForest(n_trees,
+                                        n_resamples)
+    feature_importances = rf.feature_importances(features.feature_matrix,
+                                                 features.class_labels)
+    snp_importances = features.rank_snps(feature_importances)
+    write_rf_snps(workdir, snp_importances, n_trees, "model1")
 
-    write_snps(workdir, snp_importances1, "model1")
-    write_snps(workdir, snp_importances2, "model2")
+    rf = ConstrainedBaggingRandomForest(n_trees,
+                                        n_resamples)
+    feature_importances = rf.feature_importances(features.feature_matrix,
+                                                 features.class_labels)
+    snp_importances = features.rank_snps(feature_importances)
+    write_rf_snps(workdir, snp_importances, n_trees, "model2")
 
 def analyze_rankings(args):
     workdir = args["workdir"]
@@ -58,7 +67,7 @@ def analyze_rankings(args):
     if not os.path.exists(figures_dir):
         os.makedirs(figures_dir)
 
-    all_snps = read_snps(workdir)
+    all_snps = read_rf_snps(workdir)
     ordered_trees = sorted(all_snps.keys())
 
     thresholds = [0.05, 0.1, 0.25, 0.5] 
@@ -126,7 +135,7 @@ def output_rankings(args):
         print "Output filename must be specified"
         sys.exit(1)
 
-    all_models = read_snps(workdir)
+    all_models = read_rf_snps(workdir)
     if n_trees not in all_models:
         print "No model with %s trees. The available models have %s trees" \
             % (n_trees, sorted(all_models.keys()))
@@ -138,40 +147,49 @@ def output_rankings(args):
     for i in xrange(len(snps1)):
         chrom, pos = snps1.labels[i]
         importance = snps1.importances[i]
-        fd = snps1.fixed_differences[i]
-        missing = snps1.missing_data[i]
-        fl.write("%s\t%s\t%s\t%s\t%s\n" % (chrom, pos, importance, fd, missing))
+        fl.write("%s\t%s\t%s\n" % (chrom, pos, importance))
 
     fl.close()
 
 def parseargs():
-    parser = argparse.ArgumentParser(description="Aranyani")
-
-    parser.add_argument("--mode", required=True,
-                        choices=["train",
-                                 "analyze-rankings",
-                                 "output-rankings"],
-                        help="Operating mode")
+    parser = argparse.ArgumentParser(description="Asaph - Random Forests")
 
     parser.add_argument("--workdir", type=str, help="Work directory", required=True)
 
-    parser.add_argument("--trees", type=int, help="Number of trees in Random Forest")
-    parser.add_argument("--resamples", type=int, help="Number of additional samples")
+    subparsers = parser.add_subparsers(dest="mode")
+    train_parser = subparsers.add_parser("train",
+                                         help="Train RF model")
+    train_parser.add_argument("--trees",
+                              type=int,
+                              help="Number of trees in Random Forest")
+    train_parser.add_argument("--resamples",
+                              type=int,
+                              help="Number of additional samples")
 
-    parser.add_argument("--ranks-file", type=str,
-                        help="Output file for SNP ranks")
+    analyze_parser = subparsers.add_parser("analyze-rankings",
+                                           help="Analyze rankings")
 
-    return vars(parser.parse_args())
+    output_parser = subparsers.add_parser("output-rankings",
+                                          help="Output rankings")
+    output_parser.add_argument("--trees",
+                               type=int,
+                               help="Number of trees in Random Forest")
+
+    output_parser.add_argument("--ranks-file",
+                               type=str,
+                               help="Output file for SNP ranks")
+
+    return parser.parse_args()
 
 if __name__ == "__main__":
     args = parseargs()
 
-    if args["mode"] == "train":
-        train_model(args)
-    elif args["mode"] == "analyze-rankings":
-        analyze_rankings(args)
-    elif args["mode"] == "output-rankings":
-        output_rankings(args)
+    if args.mode == "train":
+        train_model(vars(args))
+    elif args.mode == "analyze-rankings":
+        analyze_rankings(vars(args))
+    elif args.mode == "output-rankings":
+        output_rankings(vars(args))
     else:
         print "Unknown mode '%s'" % args["mode"]
         sys.exit(1)

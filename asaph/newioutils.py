@@ -61,17 +61,17 @@ def read_features(basename):
                     class_labels,
                     sample_labels)
 
-def write_snps(basedir, snps, model_id):
-    model_dir = os.path.join(basedir, "models", str(snps.n_trees))
+def write_rf_snps(basedir, snps, n_trees, model_id):
+    model_dir = os.path.join(basedir, "models", "rf", str(n_trees))
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
 
     flname = os.path.join(model_dir, model_id)
-    to_json(flname, vars(snps))
+    to_json(flname, snps)
 
     
-def read_snps(basedir):
-    model_base_dir = os.path.join(basedir, "models")
+def read_rf_snps(basedir):
+    model_base_dir = os.path.join(basedir, "models", "rf")
     if not os.path.exists(model_base_dir):
         return dict()
 
@@ -82,13 +82,8 @@ def read_snps(basedir):
         model_flnames = glob.glob(os.path.join(model_dir, "*"))
 
         for flname in model_flnames:
-            model_data = from_json(flname)
-
-            snps = SNPs(model_data["n_trees"],
-                        model_data["labels"],
-                        model_data["importances"],
-                        model_data["ranked"])
-
-            models[snps.n_trees].append(snps)
+            snps = from_json(flname)
+            n_trees = int(os.path.basename(os.path.dirname(flname)))
+            models[n_trees].append(snps)
 
     return models
