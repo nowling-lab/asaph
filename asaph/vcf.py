@@ -159,9 +159,37 @@ class CountFeaturesExtractor(object):
                 alt_column[row_idx] = allele_counts[1]
             yield (chrom, pos, alleles[0]), tuple(ref_column)
             yield (chrom, pos, alleles[1]), tuple(alt_column)
-        
+
+class CategoricalFeaturesExtractor(object):
+    def __init__(self, stream, individual_names):
+        self.stream = stream
+        self.name_to_row = dict()
+        self.rows_to_names = []
+        for idx, name in enumerate(individual_names):
+            self.name_to_row[name] = idx
+            self.rows_to_names.append(name)
+
+    def __iter__(self):
+        for variant_label, alleles, genotypes in self.stream:
+            chrom, pos = variant_label
+            homo1_column = [0.] * len(self.name_to_row)
+            homo2_column = [0.] * len(self.name_to_row)
+            het_column = [0.] * len(self.name_to_row)
+            for name, allele_counts in genotypes.items():
+                row_idx = self.name_to_row[name]
+                if allele_counts == (2, 0):
+                    homo1_column[row_idx] = 1
+                elif allele_counts == (0, 2):
+                    homo2_column[row_idx] = 1
+                elif allele_counts == (1, 1):
+                    het_column[row_idx] = 1
+                # ignore partially unknown e.g., A/X
+            yield (chrom, pos, (alleles[0], alleles[0])), tuple(homo1_column)
+            yield (chrom, pos, (alleles[1], alleles[1])), tuple(homo2_column)
+            yield (chrom, pos, (alleles[0], alleles[1])), tuple(het_column)
             
-def convert(groups_flname, vcf_flname, outbase, compress):
+            
+def convert(groups_flname, vcf_flname, outbase, compress, feature_type):
     # dictionary of individual ids to population ids
     populations = read_groups(groups_flname)
 
@@ -173,7 +201,12 @@ def convert(groups_flname, vcf_flname, outbase, compress):
     variants = filter_invariants(selected_individuals)
 
     # extract features
-    extractor = CountFeaturesExtractor(variants, populations.keys())
+    if feature_type == "counts":
+        extractor = CountFeaturesExtractor(variants, populations.keys())
+    elif feature_type == "categories":
+        extractor = CategoricalFeaturesExtractor(variants, populations.keys())
+    else:
+        raise Exception, "Unknown feature type: %s" % feature_type
 
     feature_names = shelve.open(os.path.join(outbase, FEATURE_LABELS_FLNAME))
     column_idx = 0

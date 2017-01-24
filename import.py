@@ -37,9 +37,9 @@ def import_fasta(args):
         print "FASTA file must be specified for import"
         sys.exit(1)
 
-    groups_flname = args["groups"]
-    if groups_flname is None:
-        print "Groups file must be specified for import"
+    pops_flname = args["populations"]
+    if pops_flname is None:
+        print "Populations file must be specified for import"
         sys.exit(1)
 
     seq_type = args["seq"]
@@ -51,7 +51,7 @@ def import_fasta(args):
     if not os.path.exists(workdir):
         os.makedirs(workdir)
 
-    convert_fasta(groups_flname, fasta_flname, seq_type, workdir)
+    convert_fasta(pops_flname, fasta_flname, seq_type, workdir)
 
 def import_vcf(args):
     vcf_flname = args["vcf"]
@@ -59,31 +59,45 @@ def import_vcf(args):
         print "VCF file must be specified for import"
         sys.exit(1)
 
-    groups_flname = args["groups"]
-    if groups_flname is None:
-        print "Groups file must be specified for import"
+    pops_flname = args["populations"]
+    if pops_flname is None:
+        print "Populations file must be specified for import"
         sys.exit(1)
 
     workdir = args["workdir"]
     if not os.path.exists(workdir):
         os.makedirs(workdir)
 
-    convert_vcf(groups_flname, vcf_flname, workdir, args["compress"])
+    convert_vcf(pops_flname, vcf_flname, workdir, args["compress"], args["feature_type"])
 
 
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph")
 
-    parser.add_argument("--seq", choices=["DNA", "AA"],
+    parser.add_argument("--seq",
+                        choices=["DNA", "AA"],
+                        default="AA",
                         help="Sequence type for FASTA input")
 
     parser.add_argument("--compress", action="store_true")
 
-    parser.add_argument("--vcf", type=str, help="VCF file to import")
-    parser.add_argument("--fasta", type=str, help="FASTA file to import")
-    parser.add_argument("--groups", type=str, help="Groups file to import")
-
-    parser.add_argument("--workdir", type=str, help="Work directory", required=True)
+    parser.add_argument("--feature-type",
+                        choices=["categories", "counts"],
+                        default="counts",
+                        help="Feature representation to use")
+    
+    format_group = parser.add_mutually_exclusive_group(required=True)
+    format_group.add_argument("--vcf", type=str, help="VCF file to import")
+    format_group.add_argument("--fasta", type=str, help="FASTA file to import")
+    
+    parser.add_argument("--populations",
+                        type=str,
+                        help="Populations file to import")
+    
+    parser.add_argument("--workdir",
+                        type=str,
+                        help="Work directory",
+                        required=True)
 
     return vars(parser.parse_args())
 
