@@ -109,23 +109,3 @@ class Features(object):
     
         return SNPs(n_trees, labels, importances, False)
 
-    def select_from_snps(self, snps):
-        snp_labels = set(snps.labels)
-        selected_indices = []
-        selected_feature_labels = []
-        
-        for i, (chrom, pos, nucleotide) in enumerate(self.feature_labels):
-            if (chrom, pos) in snp_labels:
-                selected_indices.append(i)
-                selected_feature_labels.append(self.feature_labels[i])
-
-        return Features(self.feature_matrix[:, selected_indices],
-                        selected_feature_labels,
-                        self.class_labels,
-                        self.sample_labels)
-    def svd(self, n_pcs):
-        svd = TruncatedSVD(n_components = n_pcs)
-        proj = svd.fit_transform(self.feature_matrix)
-        return proj, svd.explained_variance_ratio_
-        
-

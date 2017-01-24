@@ -28,76 +28,6 @@ import numpy as np
 from asaph.newioutils import read_features
 from asaph.newioutils import read_snps
 from asaph.newioutils import write_snps
-from asaph.vcf import convert as convert_vcf
-from asaph.fasta import convert as convert_fasta
-
-def import_fasta(args):
-    fasta_flname = args["fasta"]
-    if fasta_flname is None:
-        print "FASTA file must be specified for import"
-        sys.exit(1)
-
-    groups_flname = args["groups"]
-    if groups_flname is None:
-        print "Groups file must be specified for import"
-        sys.exit(1)
-
-    seq_type = args["seq"]
-    if seq_type is None:
-        print "Sequence type must be specified for import"
-        sys.exit(1)
-
-    workdir = args["workdir"]
-    if not os.path.exists(workdir):
-        os.makedirs(workdir)
-
-    convert_fasta(groups_flname, fasta_flname, seq_type, workdir)
-
-def import_vcf(args):
-    vcf_flname = args["vcf"]
-    if vcf_flname is None:
-        print "VCF file must be specified for import"
-        sys.exit(1)
-
-    groups_flname = args["groups"]
-    if groups_flname is None:
-        print "Groups file must be specified for import"
-        sys.exit(1)
-
-    workdir = args["workdir"]
-    if not os.path.exists(workdir):
-        os.makedirs(workdir)
-
-    convert_vcf(groups_flname, vcf_flname, workdir, args["compress"])
-
-def pca(args):
-    workdir = args["workdir"]
-
-    figures_dir = os.path.join(workdir, "figures")
-    if not os.path.exists(figures_dir):
-        os.makedirs(figures_dir)
-
-    n_pcs = args["n_pcs"]
-    if n_pcs is None:
-        print "Number of pcs must be specified for PCA"
-        sys.exit(1)
-    
-    features = read_features(workdir)
-    proj, explained_variance_ratios = features.svd(n_pcs)
-
-    plt.clf()
-    plt.plot(explained_variance_ratios, "b.-")
-    plt.xlabel("PC", fontsize=16)
-    plt.ylabel("Explained Variance Ratio", fontsize=16)
-    plt.savefig(os.path.join(figures_dir, "pca_explained_variance_ratios.png"), DPI=200)
-    
-    for i in xrange(n_pcs - 1):
-        for j in xrange(i + 1, n_pcs):
-            plt.clf()
-            plt.scatter(proj[:, i], proj[:, j])
-            plt.xlabel("PC " + str(i), fontsize=16)
-            plt.ylabel("PC " + str(j), fontsize=16)
-            plt.savefig(os.path.join(figures_dir, "pca_%s_%s.png" % (i, j)), DPI=200)
     
 def train_model(args):
     workdir = args["workdir"]
@@ -218,25 +148,15 @@ def parseargs():
     parser = argparse.ArgumentParser(description="Aranyani")
 
     parser.add_argument("--mode", required=True,
-                        choices=["import",
-                                 "train",
+                        choices=["train",
                                  "analyze-rankings",
-                                 "output-rankings",
-                                 "pca"],
+                                 "output-rankings"],
                         help="Operating mode")
 
-    parser.add_argument("--seq", choices=["DNA", "AA"],
-                        help="Sequence type for FASTA input")
-
-    parser.add_argument("--compress", action="store_true")
-    parser.add_argument("--vcf", type=str, help="VCF file to import")
-    parser.add_argument("--fasta", type=str, help="FASTA file to import")
-    parser.add_argument("--groups", type=str, help="Groups file to import")
     parser.add_argument("--workdir", type=str, help="Work directory", required=True)
 
     parser.add_argument("--trees", type=int, help="Number of trees in Random Forest")
     parser.add_argument("--resamples", type=int, help="Number of additional samples")
-    parser.add_argument("--n-pcs", type=int, help="Number of PCs to use in PCA")
 
     parser.add_argument("--ranks-file", type=str,
                         help="Output file for SNP ranks")
@@ -246,22 +166,12 @@ def parseargs():
 if __name__ == "__main__":
     args = parseargs()
 
-    if args["mode"] == "import":
-        if args["vcf"] is not None:
-            import_vcf(args)
-        elif args["fasta"] is not None:
-            import_fasta(args)
-        else:
-            print "Need to specify VCF or FASTA file for import"
-            sys.exit(1)
-    elif args["mode"] == "train":
+    if args["mode"] == "train":
         train_model(args)
     elif args["mode"] == "analyze-rankings":
         analyze_rankings(args)
     elif args["mode"] == "output-rankings":
         output_rankings(args)
-    elif args["mode"] == "pca":
-        pca(args)
     else:
         print "Unknown mode '%s'" % args["mode"]
         sys.exit(1)
