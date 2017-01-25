@@ -30,6 +30,7 @@ FEATURE_LABELS_FLNAME = "feature_labels"
 CLASS_LABELS_FLNAME = "class_labels"
 SAMPLE_LABELS_FLNAME = "sample_labels"
 FEATURE_MATRIX_FLNAME = "feature_matrix.npy"
+SNP_FEATURE_INDICES_FLNAME = "snp_feature_indices"
 
 def to_json(flname, obj):
     fl = open(flname, "w")
@@ -56,7 +57,7 @@ def deserialize(flname):
     return obj
 
 def read_features(basename):
-    feature_labels = shelve.open(os.path.join(basename, FEATURE_LABELS_FLNAME))
+    snp_features_map = shelve.open(os.path.join(basename, SNP_FEATURE_INDICES_FLNAME))
     class_labels = from_json(os.path.join(basename, CLASS_LABELS_FLNAME))
     sample_labels = from_json(os.path.join(basename, SAMPLE_LABELS_FLNAME))
     if os.path.exists(os.path.join(basename, FEATURE_MATRIX_FLNAME + ".npz")):
@@ -69,7 +70,7 @@ def read_features(basename):
         feature_matrix = np.load(os.path.join(basename, FEATURE_MATRIX_FLNAME))
 
     return Features(feature_matrix,
-                    feature_labels,
+                    snp_features_map,
                     class_labels,
                     sample_labels)
 

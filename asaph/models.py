@@ -72,34 +72,21 @@ class SNPs(object):
             % (len(self), self.ranked)
 
 class Features(object):
-    def __init__(self, feature_matrix, feature_names, class_labels, sample_labels):
+    def __init__(self, feature_matrix, snp_feature_map, class_labels, sample_labels):
         self.feature_matrix = feature_matrix
-        self.feature_labels = feature_names
+        self.snp_feature_map = snp_feature_map
         self.class_labels = class_labels
         self.sample_labels = sample_labels
 
-    def snp_labels(self):
-        snp_feature_indices = defaultdict(list)
-        for feature_idx, feature_labels in self.feature_labels.iteritems():
-            feature_idx = int(feature_idx)
-            for label in feature_labels:
-                # chrom and pos only
-                snp_label = label[:2]
-                snp_feature_indices[snp_label].append(feature_idx)
-
-        return snp_feature_indices
-
     def rank_snps(self, feature_importances):
         feature_importances = np.abs(feature_importances)
-        
-        snp_labels = self.snp_labels()
-        snp_importances = [ (np.mean(feature_importances[feature_idx]), snp_label)
-                            for snp_label, feature_idx in snp_labels.iteritems() ]
 
-        snp_importances = list(snp_importances)
-
-        labels = [label for _, label in snp_importances]
-        importances = np.array([importance for importance, _ in snp_importances])
+        labels = []
+        importances = []
+        for snp_label, feature_idx in self.snp_feature_map.itervalues():
+            snp_score = np.mean(feature_importances[feature_idx])
+            importances.append(snp_score)
+            labels.append(snp_label)
 
         return SNPs(labels, importances, False).rank()
         

@@ -208,24 +208,22 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type):
     else:
         raise Exception, "Unknown feature type: %s" % feature_type
 
-    feature_names = shelve.open(os.path.join(outbase, FEATURE_LABELS_FLNAME))
+    snp_features = defaultdict(list)
     column_idx = 0
     col_dict = dict()
     feature_columns = []
-    for feature_idx, (col_name, column) in enumerate(extractor):
+    for feature_idx, ((chrom, pos, _), column) in enumerate(extractor):
         if compress:
             if column not in col_dict:
                 col_dict[column] = column_idx
-                feature_names[str(column_idx)] = [col_name]
+                snp_features[(chrom, pos)].append(column_idx)
                 feature_columns.append(column)
                 column_idx += 1
             else:
                 feature_column_idx = col_dict[column]
-                all_names = feature_names[str(feature_column_idx)]
-                all_names.append(col_name)
-                feature_names[str(feature_column_idx)]
+                snp_features[(chrom, pos)].append(feature_column_idx)
         else:
-            feature_names[str(column_idx)].append([col_name])
+            snp_features[(chrom, pos)] = [column_idx]
             feature_columns.append(column)
             column_idx += 1
 
@@ -234,7 +232,7 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type):
 
     print feature_matrix.shape[0], "individuals"
     if compress:
-        print (feature_idx + 1), "feature before compression"
+        print (feature_idx + 1), "features before compression"
         print feature_matrix.shape[1], "features after compression"
     else:
         print feature_matrix.shape[1], "features"
@@ -242,7 +240,12 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type):
     class_labels = [populations[ident] for ident in extractor.rows_to_names]
 
     np.save(os.path.join(outbase, FEATURE_MATRIX_FLNAME), feature_matrix)
-    feature_names.close()
-    to_json(os.path.join(outbase, SAMPLE_LABELS_FLNAME), extractor.rows_to_names)
-    to_json(os.path.join(outbase, CLASS_LABELS_FLNAME), class_labels)
+    serialize(os.path.join(outbase, SAMPLE_LABELS_FLNAME), extractor.rows_to_names)
+    serialize(os.path.join(outbase, CLASS_LABELS_FLNAME), class_labels)
+
+    # copy snp_features_map to shelf
+    snp_features_shelf = shelve.open(os.path.join(outbase, SNP_FEATURE_INDICES_FLNAME))
+    for i, pairs in enumerate(snp_features.iteritems()):
+        snp_features_shelf[str(i)] = pairs
+    snp_features_shelf.close()
     
