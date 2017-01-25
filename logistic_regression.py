@@ -74,6 +74,11 @@ def train(args):
 
 def rankings(args):
     workdir = args.workdir
+
+    figures_dir = os.path.join(workdir, "figures")
+    if not os.path.exists(figures_dir):
+        os.makedirs(figures_dir)
+    
     snp_models = read_snps(workdir)
 
     if args.method not in snp_models:
@@ -81,12 +86,20 @@ def rankings(args):
 
     model = snp_models[args.method]
 
-    ranks_flname = os.path.join(workdir, "rankings_%s.tsv" % args.method)
+    ranks_flname = os.path.join(workdir, "rankings_lr_%s.tsv" % args.method)
     with open(ranks_flname, "w") as fl:
         for i in xrange(len(model)):
             chrom, pos = model.labels[i]
             importance = model.importances[i]
             fl.write("%s\t%s\t%s\n" % (chrom, pos, importance))
+
+    fig_flname = os.path.join(figures_dir, "lr_weights_%s.png" % args.method)
+    plt.clf()
+    plt.grid(True)
+    plt.plot(model.importances, "m.-")
+    plt.xlabel("SNPs (ordered)", fontsize=16)
+    plt.ylabel("Weight", fontsize=16)
+    plt.savefig(fig_flname, DPI=300)
     
 
 def parseargs():
