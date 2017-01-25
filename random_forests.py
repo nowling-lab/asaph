@@ -162,7 +162,9 @@ def parseargs():
     train_parser.add_argument("--trees",
                               type=int,
                               help="Number of trees in Random Forest")
+    
     train_parser.add_argument("--resamples",
+                              default=-1,
                               type=int,
                               help="Number of additional samples")
 
