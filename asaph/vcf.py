@@ -16,7 +16,6 @@ limitations under the License.
 
 from exceptions import NotImplementedError
 import os
-import shelve
 import sys
 
 import numpy as np
@@ -242,10 +241,4 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type):
     np.save(os.path.join(outbase, FEATURE_MATRIX_FLNAME), feature_matrix)
     serialize(os.path.join(outbase, SAMPLE_LABELS_FLNAME), extractor.rows_to_names)
     serialize(os.path.join(outbase, CLASS_LABELS_FLNAME), class_labels)
-
-    # copy snp_features_map to shelf
-    snp_features_shelf = shelve.open(os.path.join(outbase, SNP_FEATURE_INDICES_FLNAME))
-    for i, pairs in enumerate(snp_features.iteritems()):
-        snp_features_shelf[str(i)] = pairs
-    snp_features_shelf.close()
-    
+    serialize(os.path.join(outbase, SNP_FEATURE_INDICES_FLNAME), snp_features)

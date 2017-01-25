@@ -83,7 +83,7 @@ class Features(object):
 
         labels = []
         importances = []
-        for snp_label, feature_idx in self.snp_feature_map.itervalues():
+        for snp_label, feature_idx in self.snp_feature_map.iteritems():
             snp_score = np.mean(feature_importances[feature_idx])
             importances.append(snp_score)
             labels.append(snp_label)

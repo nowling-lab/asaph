@@ -18,7 +18,6 @@ import cPickle
 from collections import defaultdict
 import glob
 import os
-import shelve
 import struct
 
 import numpy as np
@@ -57,9 +56,9 @@ def deserialize(flname):
     return obj
 
 def read_features(basename):
-    snp_features_map = shelve.open(os.path.join(basename, SNP_FEATURE_INDICES_FLNAME))
-    class_labels = from_json(os.path.join(basename, CLASS_LABELS_FLNAME))
-    sample_labels = from_json(os.path.join(basename, SAMPLE_LABELS_FLNAME))
+    snp_features_map = deserialize(os.path.join(basename, SNP_FEATURE_INDICES_FLNAME))
+    class_labels = deserialize(os.path.join(basename, CLASS_LABELS_FLNAME))
+    sample_labels = deserialize(os.path.join(basename, SAMPLE_LABELS_FLNAME))
     if os.path.exists(os.path.join(basename, FEATURE_MATRIX_FLNAME + ".npz")):
         loader = np.load(os.path.join(basename, FEATURE_MATRIX_FLNAME + ".npz"))
         feature_matrix = sparse.csr_matrix((loader["data"],
