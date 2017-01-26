@@ -76,8 +76,16 @@ def analyze_rankings(args):
     snp1_feature_counts = []
     snp2_feature_counts = []
     common_feature_threshold_percentages = defaultdict(list)
+
+    used_trees = []
+    
     for n_trees in ordered_trees:
-        snps1, snps2 = all_snps[n_trees]
+        models = all_snps[n_trees]
+        if len(models) != 2:
+            continue
+
+        snps1, snps2 = models
+        used_trees.append(n_trees)
 
         common_feature_counts.append(snps1.count_intersection(snps2))
         snp1_feature_counts.append(len(snps1))
@@ -92,9 +100,9 @@ def analyze_rankings(args):
     plt.clf()
     plt.hold(True)
     plt.grid(True)
-    plt.semilogx(ordered_trees, common_feature_counts, "k.-", label="Common")
-    plt.semilogx(ordered_trees, snp1_feature_counts, "c.-", label="Model 1")
-    plt.semilogx(ordered_trees, snp2_feature_counts, "m.-", label="Model 2")
+    plt.semilogx(used_trees, common_feature_counts, "k.-", label="Common")
+    plt.semilogx(used_trees, snp1_feature_counts, "c.-", label="Model 1")
+    plt.semilogx(used_trees, snp2_feature_counts, "m.-", label="Model 2")
     plt.xlabel("Number of Trees", fontsize=16)
     plt.ylabel("SNPs (Count)", fontsize=16)
     plt.legend(loc="lower right")
@@ -111,7 +119,7 @@ def analyze_rankings(args):
     for i, threshold in enumerate(thresholds):
         c = colors[i]
         label = str(int(100.0 * threshold))
-        plt.semilogx(ordered_trees, common_feature_threshold_percentages[threshold],
+        plt.semilogx(used_trees, common_feature_threshold_percentages[threshold],
                      c, label="Top %s%%" % label)
     plt.xlabel("Number of Trees", fontsize=16)
     plt.ylabel("Common SNPs (%)", fontsize=16)
