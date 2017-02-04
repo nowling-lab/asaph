@@ -1,6 +1,8 @@
 # Asaph
 SNP analysis package using PCA and Random Forests
 
+Build status: ![build status](https://travis-ci.org/rnowling/asaph.svg?branch=dev)
+
 ## Importing data
 To create an Asaph project, we first need to import the data.  You can use the import mode for this like so:
 
