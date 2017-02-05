@@ -89,15 +89,14 @@ class VCFStreamer(object):
             for ln in fl:
                 if ln.startswith("#CHROM"):
                     column_names = ln[1:].strip().split()
-                    continue
+                    self.individual_names = column_names[len(DEFAULT_COLUMNS):]
+                    break
                 elif ln.startswith("#"):
                     continue
-
-                self.individual_names = column_names[len(DEFAULT_COLUMNS):]
                 
-                for ln in fl:
-                    if not ln.startswith("#"):
-                        yield parse_vcf_line(ln, self.individual_names)
+            for ln in fl:
+                if not ln.startswith("#"):
+                    yield parse_vcf_line(ln, self.individual_names)
 
 ## Filters            
 def select_individuals(stream, individual_ids):
