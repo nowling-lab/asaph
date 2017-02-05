@@ -1,5 +1,5 @@
 # Asaph
-SNP analysis package using PCA and Random Forests
+Software for ranking SNPs using Random Forests
 
 Build status: ![build status](https://travis-ci.org/rnowling/asaph.svg?branch=dev)
 
