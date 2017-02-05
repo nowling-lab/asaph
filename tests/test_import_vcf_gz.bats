@@ -5,18 +5,23 @@ count_snps() {
     echo "$counts"
 }
 
+count_samples() {
+    local counts=`python -c "import cPickle; data=cPickle.load(open('${1}/sample_labels')); print len(data)"`
+    echo "$counts"
+}
+
 setup() {
     N_INDIVIDUALS=20
     N_SNPS=10000
 
     export TEST_TEMP_DIR=`dirname $(mktemp -u)`
-    
+
     export VCF_GZ_PATH="${TEST_TEMP_DIR}/test.vcf.gz"
     export POPS_PATH="${TEST_TEMP_DIR}/populations.txt"
     export WORKDIR_PATH="${TEST_TEMP_DIR}/workdir"
-    
+
     export IMPORT_CMD="${BATS_TEST_DIRNAME}/../bin/import"
-    
+
     ${BATS_TEST_DIRNAME}/../bin/generate_data \
 			--output-vcf-gz ${VCF_GZ_PATH} \
 			--output-populations ${POPS_PATH} \
@@ -36,11 +41,12 @@ teardown() {
 	--vcf-gz ${VCF_GZ_PATH} \
 	--populations ${POPS_PATH} \
 	--feature-type counts
-    
+
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
     [ -d "${WORKDIR_PATH}" ]
     [ $(count_snps ${WORKDIR_PATH}) -eq ${N_SNPS} ]
+    [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
 
 @test "Import data: vcf.gz, dna, categories" {
@@ -54,6 +60,7 @@ teardown() {
     [ -e "${WORKDIR_PATH}" ]
     [ -d "${WORKDIR_PATH}" ]
     [ $(count_snps ${WORKDIR_PATH}) -eq ${N_SNPS} ]
+    [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
 
 @test "Import data: vcf.gz, dna, counts, feature_compression" {
@@ -68,6 +75,7 @@ teardown() {
     [ -e "${WORKDIR_PATH}" ]
     [ -d "${WORKDIR_PATH}" ]
     [ $(count_snps ${WORKDIR_PATH}) -eq ${N_SNPS} ]
+    [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
 
 @test "Import data: vcf.gz, dna, categories, feature_compression" {
@@ -82,4 +90,5 @@ teardown() {
     [ -e "${WORKDIR_PATH}" ]
     [ -d "${WORKDIR_PATH}" ]
     [ $(count_snps ${WORKDIR_PATH}) -eq ${N_SNPS} ]
+    [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }

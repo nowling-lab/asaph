@@ -40,7 +40,7 @@ def vcf_gz_writer(flname, stream):
 def pops_writer(flname, n_individuals):
     pops = { "population1" : [],
              "population2" : [] }
-    
+
     for i in xrange(n_individuals):
         pop = random.sample(pops.keys(), 1)[0]
         pops[pop].append(str(i))
@@ -48,10 +48,10 @@ def pops_writer(flname, n_individuals):
     with open(flname, "w") as fl:
         for key, value in pops.iteritems():
             fl.write(key)
-            fl.write("\t")
+            fl.write(",")
             fl.write(",".join(value))
             fl.write("\n")
-        
+
 def parseargs():
     parser = argparse.ArgumentParser()
 
@@ -61,7 +61,7 @@ def parseargs():
 
     exclusion.add_argument("--output-vcf-gz",
                            type=str)
-    
+
     parser.add_argument("--output-populations",
                         type=str,
                         required=True)
@@ -75,7 +75,7 @@ def parseargs():
                         required=True)
 
     return parser.parse_args()
-    
+
 
 if __name__ == "__main__":
     args = parseargs()
@@ -90,4 +90,4 @@ if __name__ == "__main__":
         vcf_gz_writer(args.output_vcf_gz,
                       generate_lines(args.individuals, args.snps))
 
-    
+
