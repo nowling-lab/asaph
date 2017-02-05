@@ -235,7 +235,7 @@ def parseargs():
     parser.add_argument("--workdir", type=str, help="Work directory", required=True)
 
     parser.add_argument("--trees", type=int, help="Number of trees in Random Forest")
-    parser.add_argument("--resamples", type=int, help="Number of additional samples")
+    parser.add_argument("--resamples", type=int, default=-1, help="Number of additional samples")
     parser.add_argument("--n-pcs", type=int, help="Number of PCs to use in PCA")
 
     parser.add_argument("--ranks-file", type=str,
