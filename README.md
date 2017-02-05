@@ -49,3 +49,8 @@ Each The `analyze-rankings` mode will generate two plots, comparisons of the num
                        --workdir <path/to/workdir> \
                        --ranks-file <path/for/output> \
                        --trees <select model with this many trees>
+
+## Running Tests
+Asaph has a test suite implemented using the [Bats](https://github.com/sstephenson/bats) framework.  You can run the test suite like so:
+
+    bats tests/*.bats
