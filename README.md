@@ -9,7 +9,7 @@ To create an Asaph project, we first need to import the data.  A minimal command
     bin/import --vcf <path/to/vcf> \
                --populations <path/to/populations_file> \
                --workdir <path/to/workdir> \
-               --features-type categories 
+               --features-type categories
 
 Asaph currently supports encoding SNPs as features in two ways: categories and counts.  In the categorical scheme, each genotype (e.g., A/T, A/A, T/T) is represented as a binary variable. In the counts scheme, each allele (e.g., A, T) is represented as an integer giving the number of copies (e.g., 0, 1, 2) of each allele the sample has.
 
@@ -49,8 +49,3 @@ Each The `analyze-rankings` mode will generate two plots, comparisons of the num
                        --workdir <path/to/workdir> \
                        --ranks-file <path/for/output> \
                        --trees <select model with this many trees>
-
-
-
-
-  
