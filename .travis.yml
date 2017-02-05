@@ -12,4 +12,4 @@ before_install:
   - docker build -t rnowling/asaph .
 
 script:
-  - docker run -t rnowling/asaph bats tests
+  - docker run -t rnowling/asaph bats tests/*.bats
