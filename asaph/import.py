@@ -19,27 +19,10 @@ from collections import defaultdict
 import os
 import sys
 
-import matplotlib
-matplotlib.use("PDF")
-import matplotlib.pyplot as plt
-
-import numpy as np
-
-from asaph.newioutils import read_features
 from asaph.vcf import convert as convert_vcf
 from asaph.fasta import convert as convert_fasta
 
 def import_fasta(args):
-    fasta_flname = args["fasta"]
-    if fasta_flname is None:
-        print "FASTA file must be specified for import"
-        sys.exit(1)
-
-    pops_flname = args["populations"]
-    if pops_flname is None:
-        print "Populations file must be specified for import"
-        sys.exit(1)
-
     seq_type = args["seq"]
     if seq_type is None:
         print "Sequence type must be specified for import"
@@ -49,25 +32,31 @@ def import_fasta(args):
     if not os.path.exists(workdir):
         os.makedirs(workdir)
 
-    convert_fasta(pops_flname, fasta_flname, seq_type, workdir)
+    convert_fasta(args["populations"],
+                  args["fasta"],
+                  seq_type,
+                  workdir)
 
 def import_vcf(args):
-    vcf_flname = args["vcf"]
-    if vcf_flname is None:
-        print "VCF file must be specified for import"
-        sys.exit(1)
-
-    pops_flname = args["populations"]
-    if pops_flname is None:
-        print "Populations file must be specified for import"
-        sys.exit(1)
-
     workdir = args["workdir"]
     if not os.path.exists(workdir):
         os.makedirs(workdir)
 
-    convert_vcf(pops_flname, vcf_flname, workdir, args["compress"], args["feature_type"])
 
+    if args["vcf"] is not None:
+        convert_vcf(args["populations"],
+                    args["vcf"],
+                    workdir,
+                    args["compress"],
+                    args["feature_type"],
+                    False)
+    elif args["vcf_gz"] is not None:
+        convert_vcf(args["populations"],
+                    args["vcf_gz"],
+                    workdir,
+                    args["compress"],
+                    args["feature_type"],
+                    True)
 
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph")
@@ -87,6 +76,7 @@ def parseargs():
     format_group = parser.add_mutually_exclusive_group(required=True)
     format_group.add_argument("--vcf", type=str, help="VCF file to import")
     format_group.add_argument("--fasta", type=str, help="FASTA file to import")
+    format_group.add_argument("--vcf-gz", type=str, help="Gzipped VCF file to import")
     
     parser.add_argument("--populations",
                         type=str,
@@ -102,10 +92,8 @@ def parseargs():
 if __name__ == "__main__":
     args = parseargs()
 
-    if args["vcf"] is not None:
+    if args["vcf"] is not None \
+       or args["vcf_gz"] is not None:
         import_vcf(args)
     elif args["fasta"] is not None:
         import_fasta(args)
-    else:
-        print "Need to specify VCF or FASTA file for import"
-        sys.exit(1)

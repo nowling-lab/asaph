@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from exceptions import NotImplementedError
+import gzip
 import os
 import sys
 
@@ -80,23 +80,34 @@ def parse_vcf_line(ln, individual_names):
     return (variant_label, alleles, individual_genotypes)
 
 class VCFStreamer(object):
-    def __init__(self, flname):
+    def __init__(self, flname, compressed):
         self.flname = flname
         self.individual_names = None
+        self.compressed = compressed
+
+    def __open__(self):
+        if self.compressed:
+            with gzip.open(self.flname) as fl:
+                for ln in fl:
+                    yield ln
+        else:
+            with open(self.flname) as fl:
+                for ln in fl:
+                    yield ln
 
     def __iter__(self):
-        with open(self.flname) as fl:
-            for ln in fl:
-                if ln.startswith("#CHROM"):
-                    column_names = ln[1:].strip().split()
-                    self.individual_names = column_names[len(DEFAULT_COLUMNS):]
-                    break
-                elif ln.startswith("#"):
-                    continue
-                
-            for ln in fl:
-                if not ln.startswith("#"):
-                    yield parse_vcf_line(ln, self.individual_names)
+        stream = self.__open__()
+        for ln in stream:
+            if ln.startswith("#CHROM"):
+                column_names = ln[1:].strip().split()
+                self.individual_names = column_names[len(DEFAULT_COLUMNS):]
+                break
+            elif ln.startswith("#"):
+                continue
+            
+        for ln in stream:
+            if not ln.startswith("#"):
+                yield parse_vcf_line(ln, self.individual_names)
 
 ## Filters            
 def select_individuals(stream, individual_ids):
@@ -187,12 +198,12 @@ class CategoricalFeaturesExtractor(object):
             yield (chrom, pos, (alleles[0], alleles[1])), tuple(het_column)
             
             
-def convert(groups_flname, vcf_flname, outbase, compress, feature_type):
+def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compressed_vcf):
     # dictionary of individual ids to population ids
     populations = read_groups(groups_flname)
 
     # returns triplets of (variant_label, variant_alleles, genotype_counts)
-    stream = VCFStreamer(vcf_flname)
+    stream = VCFStreamer(vcf_flname, compressed_vcf)
     selected_individuals = select_individuals(stream,
                                               populations.keys())
     # remove SNPs with < 2 known genotypes

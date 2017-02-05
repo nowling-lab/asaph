@@ -11,39 +11,29 @@ setup() {
 
     export TEST_TEMP_DIR=`dirname $(mktemp -u)`
     
-    export VCF_PATH="${TEST_TEMP_DIR}/test.vcf"
+    export VCF_GZ_PATH="${TEST_TEMP_DIR}/test.vcf.gz"
     export POPS_PATH="${TEST_TEMP_DIR}/populations.txt"
     export WORKDIR_PATH="${TEST_TEMP_DIR}/workdir"
     
     export IMPORT_CMD="${BATS_TEST_DIRNAME}/../bin/import"
     
     ${BATS_TEST_DIRNAME}/../bin/generate_data \
-			--output-vcf ${VCF_PATH} \
+			--output-vcf-gz ${VCF_GZ_PATH} \
 			--output-populations ${POPS_PATH} \
 			--individuals ${N_INDIVIDUALS} \
 			--snps ${N_SNPS}
 }
 
 teardown() {
-    rm ${VCF_PATH}
+    rm ${VCF_GZ_PATH}
     rm ${POPS_PATH}
     rm -rf ${WORKDIR_PATH}
 }
 
-@test "Run import with no arguments" {
-    run ${IMPORT_CMD}
-    [ "$status" -eq 2 ]
-}
-
-@test "Run import with --help option" {
-    run ${IMPORT_CMD} --help
-    [ "$status" -eq 0 ]
-}
-
-@test "Import data: vcf, dna, counts" {
+@test "Import data: vcf.gz, dna, counts" {
     run ${IMPORT_CMD} \
 	--workdir ${WORKDIR_PATH} \
-	--vcf ${VCF_PATH} \
+	--vcf-gz ${VCF_GZ_PATH} \
 	--populations ${POPS_PATH} \
 	--feature-type counts
     
@@ -53,10 +43,10 @@ teardown() {
     [ $(count_snps ${WORKDIR_PATH}) -eq ${N_SNPS} ]
 }
 
-@test "Import data: vcf, dna, categories" {
+@test "Import data: vcf.gz, dna, categories" {
     run ${IMPORT_CMD} \
 	--workdir ${WORKDIR_PATH} \
-	--vcf ${VCF_PATH} \
+	--vcf-gz ${VCF_GZ_PATH} \
 	--populations ${POPS_PATH} \
 	--feature-type categories
 
@@ -66,10 +56,10 @@ teardown() {
     [ $(count_snps ${WORKDIR_PATH}) -eq ${N_SNPS} ]
 }
 
-@test "Import data: vcf, dna, counts, feature_compression" {
+@test "Import data: vcf.gz, dna, counts, feature_compression" {
     run ${IMPORT_CMD} \
 	--workdir ${WORKDIR_PATH} \
-	--vcf ${VCF_PATH} \
+	--vcf-gz ${VCF_GZ_PATH} \
 	--populations ${POPS_PATH} \
 	--feature-type counts \
 	--compress
@@ -80,10 +70,10 @@ teardown() {
     [ $(count_snps ${WORKDIR_PATH}) -eq ${N_SNPS} ]
 }
 
-@test "Import data: vcf, dna, categories, feature_compression" {
+@test "Import data: vcf.gz, dna, categories, feature_compression" {
     run ${IMPORT_CMD} \
 	--workdir ${WORKDIR_PATH} \
-	--vcf ${VCF_PATH} \
+	--vcf-gz ${VCF_GZ_PATH} \
 	--populations ${POPS_PATH} \
 	--feature-type categories \
 	--compress

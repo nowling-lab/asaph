@@ -1,4 +1,5 @@
 import argparse
+import gzip
 import random
 
 header_left = "#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT"
@@ -30,6 +31,12 @@ def vcf_writer(flname, stream):
             fl.write(ln)
             fl.write("\n")
 
+def vcf_gz_writer(flname, stream):
+    with gzip.open(flname, "w") as fl:
+        for ln in stream:
+            fl.write(ln)
+            fl.write("\n")
+
 def pops_writer(flname, n_individuals):
     pops = { "population1" : [],
              "population2" : [] }
@@ -48,10 +55,13 @@ def pops_writer(flname, n_individuals):
 def parseargs():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--output-vcf",
-                        type=str,
-                        required=True)
+    exclusion = parser.add_mutually_exclusive_group(required=True)
+    exclusion.add_argument("--output-vcf",
+                           type=str)
 
+    exclusion.add_argument("--output-vcf-gz",
+                           type=str)
+    
     parser.add_argument("--output-populations",
                         type=str,
                         required=True)
@@ -70,9 +80,14 @@ def parseargs():
 if __name__ == "__main__":
     args = parseargs()
 
-    vcf_writer(args.output_vcf,
-               generate_lines(args.individuals, args.snps))
-
     pops_writer(args.output_populations,
                 args.individuals)
+
+    if args.output_vcf:
+        vcf_writer(args.output_vcf,
+                   generate_lines(args.individuals, args.snps))
+    elif args.output_vcf_gz:
+        vcf_gz_writer(args.output_vcf_gz,
+                      generate_lines(args.individuals, args.snps))
+
     
