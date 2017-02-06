@@ -50,6 +50,7 @@ class ConstrainedBaggingRandomForest(object):
         return X_new, y_new
 
     def feature_importances(self, X, y):
+        y = np.array(y)
         feature_importances = np.zeros(X.shape[1])
         for i in xrange(self.n_trees):
             dt = DecisionTreeClassifier(max_features="sqrt")
