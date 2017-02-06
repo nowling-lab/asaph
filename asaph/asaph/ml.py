@@ -32,31 +32,20 @@ class ConstrainedBaggingRandomForest(object):
         self.n_resamples = n_resamples
 
     def _resample(self, X, y):
-        n_samples = X.shape[0] + self.n_resamples
-        n_features = X.shape[1]
-        
-        X_new = np.zeros((n_samples, n_features))
-        y_new = np.zeros(n_samples)
-
-        for i in xrange(X.shape[0]):
-            X_new[i, :] = X[i, :]
-            y_new[i] = y[i]
-
-        for i in xrange(X.shape[0], n_samples):
+        new_indices = list(xrange(X.shape[0]))
+        for i in xrange(self.n_resamples):
             idx = random.randint(0, X.shape[0] - 1)
-            X_new[i, :] = X[idx, :]
-            y_new[i] = y[idx]
+            new_indices.append(idx)
+
+        X_new = X[new_indices, :]
+        y_new = y[new_indices]
 
         return X_new, y_new
 
     def _bootstrap(self, X, y):
-        X_new = np.zeros(X.shape)
-        y_new = np.zeros(X.shape[0])
-
-        for i in xrange(X.shape[0]):
-            idx = random.randint(0, X.shape[0] - 1)
-            X_new[i, :] = X[idx, :]
-            y_new[i] = y[idx]
+        new_indices = [random.randint(0, X.shape[0] - 1) for i in xrange(X.shape[0])]
+        X_new = X[new_indices, :]
+        y_new = y[new_indices]
 
         return X_new, y_new
 
@@ -74,4 +63,3 @@ class ConstrainedBaggingRandomForest(object):
         feature_importances = feature_importances / self.n_trees
 
         return feature_importances
-        
