@@ -72,7 +72,7 @@ def analyze_rankings(args):
     all_snps = read_rf_snps(workdir)
     ordered_trees = sorted(all_snps.keys())
 
-    thresholds = [0.05, 0.1, 0.25, 0.5]
+    thresholds = [0.01, 0.05, 0.1, 0.25, 0.5]
 
     common_feature_counts = []
     snp1_feature_counts = []
