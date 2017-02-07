@@ -55,7 +55,7 @@ class ConstrainedBaggingRandomForest(object):
                 rf = RandomForestClassifier(n_estimators=n_classifiers,
                                             n_jobs=-1)
                 rf.fit(X, y)
-                feature_importaces += rf.feature_importances_ * n_classifiers
+                feature_importances += rf.feature_importances_ * n_classifiers
                 completed_trees += n_classifiers
             else:
                 for i in xrange(self.n_trees):
