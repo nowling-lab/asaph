@@ -38,7 +38,7 @@ def write_snps(basedir, snps, model_id):
 
     flname = os.path.join(model_dir, model_id)
     serialize(flname, snps)
-    
+
 def read_snps(basedir):
     model_dir = os.path.join(basedir, "models", "lr")
     if not os.path.exists(model_dir):
@@ -78,7 +78,7 @@ def rankings(args):
     figures_dir = os.path.join(workdir, "figures")
     if not os.path.exists(figures_dir):
         os.makedirs(figures_dir)
-    
+
     snp_models = read_snps(workdir)
 
     if args.method not in snp_models:
@@ -100,7 +100,7 @@ def rankings(args):
     plt.xlabel("SNPs (ordered)", fontsize=16)
     plt.ylabel("Weight", fontsize=16)
     plt.savefig(fig_flname, DPI=300)
-    
+
 
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - Logistic Regression")
@@ -115,14 +115,14 @@ def parseargs():
                                          help="Train Logistic Regression model")
     train_parser.add_argument("--method",
                               choices=["sgd-l2", "sgd-en"],
-                              required=True,
+                              default="sgd-l2",
                               help="LR algorithm to use")
-    
+
     output_parser = subparsers.add_parser("rankings",
                                           help="Output rankings and plots")
     output_parser.add_argument("--method",
                                choices=["sgd-l2", "sgd-en"],
-                               required=True,
+                               default="sgd-l2",
                                help="LR algorithm to use")
 
     return parser.parse_args()
