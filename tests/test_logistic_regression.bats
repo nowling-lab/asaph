@@ -12,7 +12,7 @@ load model_setup_helper
     [ "$status" -eq 0 ]
 }
 
-@test "Train logistic regression model with sgd-l2 method" {
+@test "Train and output logistic regression model with sgd-l2 method" {
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
@@ -31,7 +31,7 @@ load model_setup_helper
     [ -e "${WORKDIR_PATH}/figures/lr_weights_sgd-l2.png" ]
 }
 
-@test "Train logistic regression model with sgd-en method" {
+@test "Train and output logistic regression model with sgd-en method" {
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
