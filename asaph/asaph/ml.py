@@ -19,6 +19,7 @@ import random
 import numpy as np
 
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 
 class ConstrainedBaggingRandomForest(object):
     """
@@ -52,6 +53,15 @@ class ConstrainedBaggingRandomForest(object):
     def feature_importances(self, X, y):
         y = np.array(y)
         feature_importances = np.zeros(X.shape[1])
+        completed_trees = 0
+        batch_size = 100
+        while completed_trees < self.n_trees:
+            n_classifiers = min(batch_size, self.n_trees - completed_trees)
+            rf = RandomForestClassifier(n_jobs=-1)
+            rf.train(X, y)
+            feature_importaces += rf.feature_importances_
+            completed_trees += n_classifiers
+        """
         for i in xrange(self.n_trees):
             dt = DecisionTreeClassifier(max_features="sqrt")
             if self.n_resamples == -1:
@@ -60,6 +70,7 @@ class ConstrainedBaggingRandomForest(object):
                 X_new, y_new = self._resample(X, y)
             dt.fit(X_new, y_new)
             feature_importances += dt.feature_importances_
+        """
 
         feature_importances = feature_importances / self.n_trees
 
