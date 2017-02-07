@@ -29,7 +29,7 @@ from asaph.ml import ConstrainedBaggingRandomForest
 from asaph.newioutils import read_features
 from asaph.newioutils import read_rf_snps
 from asaph.newioutils import write_rf_snps
-    
+
 def train_model(args):
     workdir = args["workdir"]
 
@@ -46,14 +46,16 @@ def train_model(args):
     features = read_features(workdir)
 
     rf = ConstrainedBaggingRandomForest(n_trees,
-                                        n_resamples)
+                                        n_resamples,
+                                        args["batch_size"])
     feature_importances = rf.feature_importances(features.feature_matrix,
                                                  features.class_labels)
     snp_importances = features.rank_snps(feature_importances)
     write_rf_snps(workdir, snp_importances, n_trees, "model1")
 
     rf = ConstrainedBaggingRandomForest(n_trees,
-                                        n_resamples)
+                                        n_resamples,
+                                        args["batch_size"])
     feature_importances = rf.feature_importances(features.feature_matrix,
                                                  features.class_labels)
     snp_importances = features.rank_snps(feature_importances)
@@ -70,15 +72,15 @@ def analyze_rankings(args):
     all_snps = read_rf_snps(workdir)
     ordered_trees = sorted(all_snps.keys())
 
-    thresholds = [0.05, 0.1, 0.25, 0.5] 
-    
+    thresholds = [0.05, 0.1, 0.25, 0.5]
+
     common_feature_counts = []
     snp1_feature_counts = []
     snp2_feature_counts = []
     common_feature_threshold_percentages = defaultdict(list)
 
     used_trees = []
-    
+
     for n_trees in ordered_trees:
         models = all_snps[n_trees]
         if len(models) != 2:
@@ -90,7 +92,7 @@ def analyze_rankings(args):
         common_feature_counts.append(snps1.count_intersection(snps2))
         snp1_feature_counts.append(len(snps1))
         snp2_feature_counts.append(len(snps2))
-            
+
         for threshold in thresholds:
             n = max(1, int(threshold * min(len(snps1), len(snps2))))
             percentage = 100.0 * float(snps1.take(n).count_intersection(snps2.take(n))) \
@@ -109,7 +111,7 @@ def analyze_rankings(args):
     plt.ylim([0, max(max(common_feature_counts), max(snp1_feature_counts), max(snp2_feature_counts)) + 10])
     plt.xlim([min(ordered_trees), max(ordered_trees)])
 
-    plt.savefig(os.path.join(figures_dir, "snp_counts.png"), DPI=200) 
+    plt.savefig(os.path.join(figures_dir, "snp_counts.png"), DPI=200)
     plt.savefig(os.path.join(figures_dir, "snp_counts.pdf"), DPI=200)
 
     plt.clf()
@@ -127,7 +129,7 @@ def analyze_rankings(args):
     plt.ylim([0, 100])
     plt.xlim([min(ordered_trees), max(ordered_trees)])
 
-    plt.savefig(os.path.join(figures_dir, "common_snps.png"), DPI=200) 
+    plt.savefig(os.path.join(figures_dir, "common_snps.png"), DPI=200)
     plt.savefig(os.path.join(figures_dir, "common_snps.pdf"), DPI=200)
 
 def output_rankings(args):
@@ -170,11 +172,16 @@ def parseargs():
     train_parser.add_argument("--trees",
                               type=int,
                               help="Number of trees in Random Forest")
-    
+
     train_parser.add_argument("--resamples",
                               default=-1,
                               type=int,
                               help="Number of additional samples")
+
+    train_parser.add_argument("--batch_size",
+                              default=100,
+                              type=int,
+                              help="Number of trees to train in each batch. Trade off between speed and memory usage.")
 
     analyze_parser = subparsers.add_parser("analyze-rankings",
                                            help="Analyze rankings")

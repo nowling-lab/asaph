@@ -28,9 +28,10 @@ class ConstrainedBaggingRandomForest(object):
     underlying Decision Trees.
     """
 
-    def __init__(self, n_trees, n_resamples):
+    def __init__(self, n_trees, n_resamples, batch_size):
         self.n_trees = n_trees
         self.n_resamples = n_resamples
+        self.batch_size = batch_size
 
     def _resample(self, X, y):
         new_indices = list(xrange(X.shape[0]))
@@ -43,35 +44,25 @@ class ConstrainedBaggingRandomForest(object):
 
         return X_new, y_new
 
-    def _bootstrap(self, X, y):
-        new_indices = [random.randint(0, X.shape[0] - 1) for i in xrange(X.shape[0])]
-        X_new = X[new_indices, :]
-        y_new = y[new_indices]
-
-        return X_new, y_new
-
     def feature_importances(self, X, y):
         y = np.array(y)
         feature_importances = np.zeros(X.shape[1])
-        completed_trees = 0
-        batch_size = 100
-        while completed_trees < self.n_trees:
-            n_classifiers = min(batch_size, self.n_trees - completed_trees)
-            rf = RandomForestClassifier(n_jobs=-1)
-            rf.fit(X, y)
-            feature_importaces += rf.feature_importances_
-            completed_trees += n_classifiers
-        """
-        for i in xrange(self.n_trees):
-            dt = DecisionTreeClassifier(max_features="sqrt")
-            if self.n_resamples == -1:
-                X_new, y_new = self._bootstrap(X, y)
+        if self.n_resamples == -1:
+            completed_trees = 0
+            batch_size = 100
+            while completed_trees < self.n_trees:
+                n_classifiers = min(batch_size, self.n_trees - completed_trees)
+                rf = RandomForestClassifier(n_estimators=n_classifiers,
+                                            n_jobs=-1)
+                rf.fit(X, y)
+                feature_importaces += rf.feature_importances_ * n_classifiers
+                completed_trees += n_classifiers
             else:
-                X_new, y_new = self._resample(X, y)
-            dt.fit(X_new, y_new)
-            feature_importances += dt.feature_importances_
-        """
+                for i in xrange(self.n_trees):
+                    dt = DecisionTreeClassifier(max_features="sqrt")
+                    X_new, y_new = self._resample(X, y)
+                    dt.fit(X_new, y_new)
+                    feature_importances += dt.feature_importances_
 
         feature_importances = feature_importances / self.n_trees
-
         return feature_importances
