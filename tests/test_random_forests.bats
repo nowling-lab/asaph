@@ -1,12 +1,112 @@
 #!/usr/bin/env bats
 
+load model_setup_helper
+
 @test "Run random_forests with no arguments" {
-      
-      run ${BATS_TEST_DIRNAME}/../bin/random_forests
-      [ "$status" -eq 2 ]
+    run ${BATS_TEST_DIRNAME}/../bin/random_forests
+    [ "$status" -eq 2 ]
 }
 
 @test "Run random_forests with --help option" {
-      run ${BATS_TEST_DIRNAME}/../bin/random_forests --help
-      [ "$status" -eq 0 ]
+    run ${BATS_TEST_DIRNAME}/../bin/random_forests --help
+    [ "$status" -eq 0 ]
+}
+
+@test "Run random_forests workflow" {
+    run ${BATS_TEST_DIRNAME}/../bin/random_forests \
+	--workdir ${WORKDIR_PATH} \
+	train \
+	--trees 100
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/models/rf/100" ]
+    [ -d "${WORKDIR_PATH}/models/rf/100" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/random_forests \
+	--workdir ${WORKDIR_PATH} \
+	train \
+	--trees 250
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/models/rf/250" ]
+    [ -d "${WORKDIR_PATH}/models/rf/250" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/random_forests \
+	--workdir ${WORKDIR_PATH} \
+	train \
+	--trees 500
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/models/rf/500" ]
+    [ -d "${WORKDIR_PATH}/models/rf/500" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/random_forests \
+	--workdir ${WORKDIR_PATH} \
+	analyze-rankings
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/figures/common_snps.png" ]
+    [ -e "${WORKDIR_PATH}/figures/common_snps.pdf" ]
+    [ -e "${WORKDIR_PATH}/figures/snp_counts.png" ]
+    [ -e "${WORKDIR_PATH}/figures/snp_counts.pdf" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/random_forests \
+	--workdir ${WORKDIR_PATH} \
+	output-rankings \
+	--trees 250 \
+	--ranks-file ${WORKDIR_PATH}/rf_rankings.tsv
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/rf_rankings.tsv" ]
+}
+
+@test "Run random_forests workflow with resampling" {
+    run ${BATS_TEST_DIRNAME}/../bin/random_forests \
+	--workdir ${WORKDIR_PATH} \
+	train \
+	--trees 100 \
+	--resamples 10
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/models/rf/100" ]
+    [ -d "${WORKDIR_PATH}/models/rf/100" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/random_forests \
+	--workdir ${WORKDIR_PATH} \
+	train \
+	--trees 250 \
+	--resamples 10
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/models/rf/250" ]
+    [ -d "${WORKDIR_PATH}/models/rf/250" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/random_forests \
+	--workdir ${WORKDIR_PATH} \
+	train \
+	--trees 500 \
+	--resamples 10
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/models/rf/500" ]
+    [ -d "${WORKDIR_PATH}/models/rf/500" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/random_forests \
+	--workdir ${WORKDIR_PATH} \
+	analyze-rankings
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/figures/common_snps.png" ]
+    [ -e "${WORKDIR_PATH}/figures/common_snps.pdf" ]
+    [ -e "${WORKDIR_PATH}/figures/snp_counts.png" ]
+    [ -e "${WORKDIR_PATH}/figures/snp_counts.pdf" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/random_forests \
+	--workdir ${WORKDIR_PATH} \
+	output-rankings \
+	--trees 250 \
+	--ranks-file ${WORKDIR_PATH}/rf_rankings.tsv
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/rf_rankings.tsv" ]
 }
