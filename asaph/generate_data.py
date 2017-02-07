@@ -74,11 +74,18 @@ def parseargs():
                         type=int,
                         required=True)
 
+    parser.add_argument("--seed",
+                        type=int,
+                        required=False)
+
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parseargs()
+
+    if args.seed:
+        random.seed(args.seed)
 
     pops_writer(args.output_populations,
                 args.individuals)

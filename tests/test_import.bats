@@ -23,6 +23,7 @@ setup() {
     export IMPORT_CMD="${BATS_TEST_DIRNAME}/../bin/import"
 
     ${BATS_TEST_DIRNAME}/../bin/generate_data \
+			--seed 1234 \
 			--output-vcf ${VCF_PATH} \
 			--output-populations ${POPS_PATH} \
 			--individuals ${N_INDIVIDUALS} \
