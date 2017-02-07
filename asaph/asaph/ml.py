@@ -49,9 +49,9 @@ class ConstrainedBaggingRandomForest(object):
         feature_importances = np.zeros(X.shape[1])
         if self.n_resamples == -1:
             completed_trees = 0
-            batch_size = 100
             while completed_trees < self.n_trees:
-                n_classifiers = min(batch_size, self.n_trees - completed_trees)
+                n_classifiers = min(self.batch_size, self.n_trees - completed_trees)
+                print "Training batch of", n_classifiers, "trees"
                 rf = RandomForestClassifier(n_estimators=n_classifiers,
                                             n_jobs=-1)
                 rf.fit(X, y)
