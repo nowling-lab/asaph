@@ -53,7 +53,7 @@ class ConstrainedBaggingRandomForest(object):
                 n_classifiers = min(self.batch_size, self.n_trees - completed_trees)
                 print "Training batch of", n_classifiers, "trees"
                 rf = RandomForestClassifier(n_estimators=n_classifiers,
-                                            n_jobs=-1)
+                                            n_jobs=1)
                 rf.fit(X, y)
                 feature_importances += rf.feature_importances_ * n_classifiers
                 completed_trees += n_classifiers
