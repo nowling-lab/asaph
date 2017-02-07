@@ -125,7 +125,7 @@ def analyze_rankings(args):
                      c, label="Top %s%%" % label)
     plt.xlabel("Number of Trees", fontsize=16)
     plt.ylabel("Common SNPs (%)", fontsize=16)
-    plt.legend(loc="lower right")
+    plt.legend(loc="upper left")
     plt.ylim([0, 100])
     plt.xlim([min(ordered_trees), max(ordered_trees)])
 
