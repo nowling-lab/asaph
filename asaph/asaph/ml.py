@@ -57,12 +57,12 @@ class ConstrainedBaggingRandomForest(object):
                 rf.fit(X, y)
                 feature_importances += rf.feature_importances_ * n_classifiers
                 completed_trees += n_classifiers
-            else:
-                for i in xrange(self.n_trees):
-                    dt = DecisionTreeClassifier(max_features="sqrt")
-                    X_new, y_new = self._resample(X, y)
-                    dt.fit(X_new, y_new)
-                    feature_importances += dt.feature_importances_
+        else:
+            for i in xrange(self.n_trees):
+                dt = DecisionTreeClassifier(max_features="sqrt")
+                X_new, y_new = self._resample(X, y)
+                dt.fit(X_new, y_new)
+                feature_importances += dt.feature_importances_
 
         feature_importances = feature_importances / self.n_trees
         return feature_importances
