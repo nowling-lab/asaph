@@ -178,7 +178,7 @@ def parseargs():
                               type=int,
                               help="Number of additional samples")
 
-    train_parser.add_argument("--batch_size",
+    train_parser.add_argument("--batch-size",
                               default=100,
                               type=int,
                               help="Number of trees to train in each batch. Trade off between speed and memory usage.")
