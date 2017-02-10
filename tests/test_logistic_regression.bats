@@ -12,7 +12,7 @@ load model_setup_helper
     [ "$status" -eq 0 ]
 }
 
-@test "Train and output logistic regression ensemble with bagging, sgd-l2 method" {
+@test "Logistic Regression workflow with bagging, sgd-l2" {
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
@@ -48,7 +48,16 @@ load model_setup_helper
 
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
-	rankings \
+	analyze-rankings \
+	--method sgd-l2
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/figures/snp_ranking_overlaps_sgd-l2.png" ]
+    [ -e "${WORKDIR_PATH}/figures/snp_ranking_overlaps_sgd-l2.pdf" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	output-rankings \
 	--method sgd-l2 \
 	--n-models 75
 
@@ -58,7 +67,7 @@ load model_setup_helper
     [ -e "${WORKDIR_PATH}/figures/lr_weights_sgd-l2_75.png" ]
 }
 
-@test "Train and output logistic regression ensemble with bagging, sgd-en method" {
+@test "Logistic Regression workflow with bagging, sgd-en" {
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
@@ -94,7 +103,16 @@ load model_setup_helper
 
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
-	rankings \
+	analyze-rankings \
+	--method sgd-en
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/figures/snp_ranking_overlaps_sgd-en.png" ]
+    [ -e "${WORKDIR_PATH}/figures/snp_ranking_overlaps_sgd-en.pdf" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	output-rankings \
 	--method sgd-en \
 	--n-models 75
 
@@ -104,7 +122,7 @@ load model_setup_helper
     [ -e "${WORKDIR_PATH}/figures/lr_weights_sgd-en_75.png" ]
 }
 
-@test "Train and output logistic regression ensemble with bagging, default method" {
+@test "Logistic Regression workflow with bagging, default method" {
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
@@ -137,7 +155,15 @@ load model_setup_helper
 
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
-	rankings \
+	analyze-rankings
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/figures/snp_ranking_overlaps_sgd-l2.png" ]
+    [ -e "${WORKDIR_PATH}/figures/snp_ranking_overlaps_sgd-l2.pdf" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	output-rankings \
 	--n-models 75
 
     [ "$status" -eq 0 ]

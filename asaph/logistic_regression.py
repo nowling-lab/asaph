@@ -56,6 +56,52 @@ def read_snps(basedir, method):
 
     return models
 
+def analyze_rankings(args):
+    workdir = args.workdir
+
+    figures_dir = os.path.join(workdir, "figures")
+    if not os.path.exists(figures_dir):
+        os.makedirs(figures_dir)
+
+    all_snps = read_snps(workdir, args.method)
+    ordered_models = sorted(all_snps.keys())
+
+    thresholds = [0.01, 0.05, 0.1, 0.25, 0.5]
+
+    common_feature_threshold_percentages = defaultdict(list)
+    used_models = []
+    for n_models in ordered_models:
+        models = all_snps[n_models]
+        if len(models) != 2:
+            continue
+
+        snps1, snps2 = models
+        used_models.append(n_models)
+
+        for threshold in thresholds:
+            n = max(1, int(threshold * min(len(snps1), len(snps2))))
+            percentage = 100.0 * float(snps1.take(n).count_intersection(snps2.take(n))) \
+                         / float(n)
+            common_feature_threshold_percentages[threshold].append(percentage)
+
+    plt.clf()
+    colors = ["r.-", "g.-", "b.-", "m.-", "c.-"]
+    for i, threshold in enumerate(thresholds):
+        c = colors[i]
+        label = str(int(100.0 * threshold))
+        plt.semilogx(used_models, common_feature_threshold_percentages[threshold],
+                     c, label="Top %s%%" % label)
+    #plt.hold(True)
+    plt.grid(True)
+
+    plt.xlabel("Number of Models", fontsize=16)
+    plt.ylabel("Overlapping SNPs (%)", fontsize=16)
+    plt.legend(loc="upper left")
+    plt.ylim([0, 100])
+    plt.xlim([min(used_models), max(used_models)])
+
+    plt.savefig(os.path.join(figures_dir, "snp_ranking_overlaps_%s.png" % args.method), DPI=200)
+    plt.savefig(os.path.join(figures_dir, "snp_ranking_overlaps_%s.pdf" % args.method), DPI=200)
 
 def train(args):
     workdir = args.workdir
@@ -91,7 +137,7 @@ def train(args):
     snp_importances = features.rank_snps(feature_importances)
     write_snps(workdir, snp_importances, args.method, args.n_models, "2")
 
-def rankings(args):
+def output_rankings(args):
     workdir = args.workdir
 
     figures_dir = os.path.join(workdir, "figures")
@@ -163,7 +209,15 @@ def parseargs():
                               default=100,
                               help="Number of models to train in each batch.")
 
-    output_parser = subparsers.add_parser("rankings",
+    analyze_parser = subparsers.add_parser("analyze-rankings",
+                                           help="Analyze rankings")
+
+    analyze_parser.add_argument("--method",
+                              choices=["sgd-l2", "sgd-en"],
+                              default="sgd-l2",
+                              help="LR algorithm to use")
+
+    output_parser = subparsers.add_parser("output-rankings",
                                           help="Output rankings and plots")
     output_parser.add_argument("--method",
                                choices=["sgd-l2", "sgd-en"],
@@ -182,8 +236,10 @@ if __name__ == "__main__":
 
     if args.mode == "train":
         train(args)
-    elif args.mode == "rankings":
-        rankings(args)
+    elif args.mode == "analyze-rankings":
+        analyze_rankings(args)
+    elif args.mode == "output-rankings":
+        output_rankings(args)
     else:
         print "Unknown mode '%s'" % args.mode
         sys.exit(1)
