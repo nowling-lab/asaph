@@ -45,8 +45,8 @@ load model_setup_helper
 	analyze-rankings
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/figures/common_snps.png" ]
-    [ -e "${WORKDIR_PATH}/figures/common_snps.pdf" ]
+    [ -e "${WORKDIR_PATH}/figures/snp_ranking_overlaps_rf.png" ]
+    [ -e "${WORKDIR_PATH}/figures/snp_ranking_overlaps_rf.pdf" ]
     [ -e "${WORKDIR_PATH}/figures/snp_counts.png" ]
     [ -e "${WORKDIR_PATH}/figures/snp_counts.pdf" ]
 
@@ -96,8 +96,8 @@ load model_setup_helper
 	analyze-rankings
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/figures/common_snps.png" ]
-    [ -e "${WORKDIR_PATH}/figures/common_snps.pdf" ]
+    [ -e "${WORKDIR_PATH}/figures/snp_ranking_overlaps_rf.png" ]
+    [ -e "${WORKDIR_PATH}/figures/snp_ranking_overlaps_rf.pdf" ]
     [ -e "${WORKDIR_PATH}/figures/snp_counts.png" ]
     [ -e "${WORKDIR_PATH}/figures/snp_counts.pdf" ]
 

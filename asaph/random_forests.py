@@ -109,7 +109,7 @@ def analyze_rankings(args):
     plt.ylabel("SNPs (Count)", fontsize=16)
     plt.legend(loc="lower right")
     plt.ylim([0, max(max(common_feature_counts), max(snp1_feature_counts), max(snp2_feature_counts)) + 10])
-    plt.xlim([min(ordered_trees), max(ordered_trees)])
+    plt.xlim([min(used_trees), max(used_trees)])
 
     plt.savefig(os.path.join(figures_dir, "snp_counts.png"), DPI=200)
     plt.savefig(os.path.join(figures_dir, "snp_counts.pdf"), DPI=200)
@@ -124,13 +124,13 @@ def analyze_rankings(args):
         plt.semilogx(used_trees, common_feature_threshold_percentages[threshold],
                      c, label="Top %s%%" % label)
     plt.xlabel("Number of Trees", fontsize=16)
-    plt.ylabel("Common SNPs (%)", fontsize=16)
+    plt.ylabel("Overlapping SNPs (%)", fontsize=16)
     plt.legend(loc="upper left")
     plt.ylim([0, 100])
-    plt.xlim([min(ordered_trees), max(ordered_trees)])
+    plt.xlim([min(used_trees), max(used_trees)])
 
-    plt.savefig(os.path.join(figures_dir, "common_snps.png"), DPI=200)
-    plt.savefig(os.path.join(figures_dir, "common_snps.pdf"), DPI=200)
+    plt.savefig(os.path.join(figures_dir, "snp_ranking_overlaps_rf.png"), DPI=200)
+    plt.savefig(os.path.join(figures_dir, "snp_ranking_overlaps_rf.pdf"), DPI=200)
 
 def output_rankings(args):
     workdir = args["workdir"]
