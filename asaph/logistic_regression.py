@@ -96,7 +96,7 @@ def analyze_rankings(args):
 
     plt.xlabel("Number of Models", fontsize=16)
     plt.ylabel("Overlapping SNPs (%)", fontsize=16)
-    plt.legend(loc="upper left")
+    plt.legend(loc="lower right")
     plt.ylim([0, 100])
     plt.xlim([min(used_models), max(used_models)])
 
