@@ -1,6 +1,6 @@
 setup() {
     N_INDIVIDUALS=20
-    N_SNPS=10000
+    N_SNPS=1000
 
     export TEST_TEMP_DIR=`dirname $(mktemp -u)`
 
