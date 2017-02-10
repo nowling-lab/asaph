@@ -17,9 +17,42 @@ limitations under the License.
 import random
 
 import numpy as np
+import numpy.linalg as la
 
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import BaggingClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import SGDClassifier
+
+class LogisticRegressionEnsemble(object):
+    """
+    Implementation of an ensemble of Logistic
+    Regression classifiers that supports bagging.
+    """
+
+    def __init__(self, n_models, penalty, batch_size, bagging=True):
+        self.n_models = n_models
+        self.bagging = bagging
+        self.batch_size = batch_size
+        self.penalty = penalty
+
+    def feature_importances(self, X, y):
+        y = np.array(y)
+        feature_importances = np.zeros(X.shape[1])
+        trained_models = 0
+        while trained_models < self.n_models:
+            to_train = min(self.batch_size, self.n_models - trained_models)
+            print "Training batch of", to_train, "trees"
+            ensemble = BaggingClassifier(SGDClassifier(loss="log",
+                                                       penalty=self.penalty),
+                                         n_estimators=to_train,
+                                         bootstrap=self.bagging)
+            ensemble.fit(X, y)
+            for model in ensemble.estimators_:
+                feature_importances += model.coef_[0] / la.norm(model.coef_)
+            trained_models += to_train
+
+        return feature_importances / self.n_models
 
 class ConstrainedBaggingRandomForest(object):
     """

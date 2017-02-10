@@ -25,31 +25,34 @@ matplotlib.use("PDF")
 import matplotlib.pyplot as plt
 
 import numpy as np
-from sklearn.linear_model import SGDClassifier
 
+from asaph.ml import LogisticRegressionEnsemble
 from asaph.newioutils import read_features
 from asaph.newioutils import serialize
 from asaph.newioutils import deserialize
 
-def write_snps(basedir, snps, model_id):
-    model_dir = os.path.join(basedir, "models", "lr")
+def write_snps(basedir, snps, method, n_models, model_id):
+    model_dir = os.path.join(basedir, "models", "lr-" + method, str(n_models))
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
 
     flname = os.path.join(model_dir, model_id)
     serialize(flname, snps)
 
-def read_snps(basedir):
-    model_dir = os.path.join(basedir, "models", "lr")
+def read_snps(basedir, method):
+    model_dir = os.path.join(basedir, "models", "lr-" + method)
     if not os.path.exists(model_dir):
         return dict()
 
+    model_dirs = glob.glob(os.path.join(model_dir, "*"))
+
     models = defaultdict(list)
-    model_flnames = glob.glob(os.path.join(model_dir, "*"))
-    for flname in model_flnames:
-        snps = deserialize(flname)
-        model_id = os.path.basename(flname)
-        models[model_id] = snps
+    for model_dir in model_dirs:
+        model_flnames = glob.glob(os.path.join(model_dir, "*"))
+        for flname in model_flnames:
+            snps = deserialize(flname)
+            n_models = int(os.path.basename(os.path.dirname(flname)))
+            models[n_models].append(snps)
 
     return models
 
@@ -58,19 +61,35 @@ def train(args):
     workdir = args.workdir
 
     if args.method == "sgd-l2":
-        lr = SGDClassifier(loss="log",
-                           penalty="l2")
+        penalty = "l2"
     elif args.method  == "sgd-en":
-        lr = SGDClassifier(loss="log",
-                           penalty="elasticnet")
+        penalty = "elasticnet"
     else:
         raise Exception, "Unknown method '%s'" % args.method
 
+    bagging = not args.no_bagging
+
     features = read_features(workdir)
-    lr.fit(features.feature_matrix,
-           features.class_labels)
-    snp_importances = features.rank_snps(lr.coef_[0, :])
-    write_snps(workdir, snp_importances, args.method)
+
+    print "Training Ensemble 1"
+    lr1 = LogisticRegressionEnsemble(args.n_models,
+                                     penalty,
+                                     args.batch_size,
+                                     bagging=bagging)
+    feature_importances = lr1.feature_importances(features.feature_matrix,
+                                                  features.class_labels)
+    snp_importances = features.rank_snps(feature_importances)
+    write_snps(workdir, snp_importances, args.method, args.n_models, "1")
+
+    print "Training ensemble 2"
+    lr2 = LogisticRegressionEnsemble(args.n_models,
+                                     penalty,
+                                     args.batch_size,
+                                     bagging=bagging)
+    feature_importances = lr2.feature_importances(features.feature_matrix,
+                                                  features.class_labels)
+    snp_importances = features.rank_snps(feature_importances)
+    write_snps(workdir, snp_importances, args.method, args.n_models, "2")
 
 def rankings(args):
     workdir = args.workdir
@@ -79,21 +98,33 @@ def rankings(args):
     if not os.path.exists(figures_dir):
         os.makedirs(figures_dir)
 
-    snp_models = read_snps(workdir)
+    rankings_dir = os.path.join(workdir, "rankings")
+    if not os.path.exists(rankings_dir):
+        os.makedirs(rankings_dir)
 
-    if args.method not in snp_models:
+    snp_models = read_snps(workdir, args.method)
+
+    if len(snp_models) == 0:
         raise Exception, "Model type '%s' hasn't been trained yet." % args.method
 
-    model = snp_models[args.method]
+    if args.n_models not in snp_models:
+        raise Exception, "No ensemble with '%s' models has been trained yet." \
+            % args.n_models
 
-    ranks_flname = os.path.join(workdir, "rankings_lr_%s.tsv" % args.method)
+    model = snp_models[args.n_models][0]
+
+    ranks_flname = os.path.join(rankings_dir,
+                                "rankings_lr_%s_%s.tsv" \
+                                % (args.method, args.n_models))
+
     with open(ranks_flname, "w") as fl:
         for i in xrange(len(model)):
             chrom, pos = model.labels[i]
             importance = model.importances[i]
             fl.write("%s\t%s\t%s\n" % (chrom, pos, importance))
 
-    fig_flname = os.path.join(figures_dir, "lr_weights_%s.png" % args.method)
+    fig_flname = os.path.join(figures_dir, "lr_weights_%s_%s.png" % \
+                              (args.method, args.n_models))
     plt.clf()
     plt.grid(True)
     plt.plot(model.importances, "m.-")
@@ -118,12 +149,31 @@ def parseargs():
                               default="sgd-l2",
                               help="LR algorithm to use")
 
+    train_parser.add_argument("--no-bagging",
+                              action="store_true",
+                              help="Disable bagging")
+
+    train_parser.add_argument("--n-models",
+                              type=int,
+                              required=True,
+                              help="Number of models to train in LR ensemble")
+
+    train_parser.add_argument("--batch-size",
+                              type=int,
+                              default=100,
+                              help="Number of models to train in each batch.")
+
     output_parser = subparsers.add_parser("rankings",
                                           help="Output rankings and plots")
     output_parser.add_argument("--method",
                                choices=["sgd-l2", "sgd-en"],
                                default="sgd-l2",
                                help="LR algorithm to use")
+
+    output_parser.add_argument("--n-models",
+                              type=int,
+                              required=True,
+                              help="Pick LR ensemble with this many models.")
 
     return parser.parse_args()
 

@@ -12,57 +12,136 @@ load model_setup_helper
     [ "$status" -eq 0 ]
 }
 
-@test "Train and output logistic regression model with sgd-l2 method" {
+@test "Train and output logistic regression ensemble with bagging, sgd-l2 method" {
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
-	--method sgd-l2
+	--method sgd-l2 \
+	--n-models 50
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/models/lr/sgd-l2" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-l2/50" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-l2/50/1" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-l2/50/2" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	train \
+	--method sgd-l2 \
+	--n-models 75
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-l2/75" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-l2/75/1" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-l2/75/2" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	train \
+	--method sgd-l2 \
+	--n-models 150
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-l2/150" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-l2/150/1" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-l2/150/2" ]
 
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	rankings \
-	--method sgd-l2
+	--method sgd-l2 \
+	--n-models 75
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/rankings_lr_sgd-l2.tsv" ]
-    [ -e "${WORKDIR_PATH}/figures/lr_weights_sgd-l2.png" ]
+    [ -e "${WORKDIR_PATH}/rankings" ]
+    [ -e "${WORKDIR_PATH}/rankings/rankings_lr_sgd-l2_75.tsv" ]
+    [ -e "${WORKDIR_PATH}/figures/lr_weights_sgd-l2_75.png" ]
 }
 
-@test "Train and output logistic regression model with sgd-en method" {
+@test "Train and output logistic regression ensemble with bagging, sgd-en method" {
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
-	--method sgd-en
+	--method sgd-en \
+	--n-models 50
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/models/lr/sgd-en" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-en/50" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-en/50/1" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-en/50/2" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	train \
+	--method sgd-en \
+	--n-models 75
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-en/75" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-en/75/1" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-en/75/2" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	train \
+	--method sgd-en \
+	--n-models 150
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-en/150" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-en/150/1" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-en/150/2" ]
 
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	rankings \
-	--method sgd-en
+	--method sgd-en \
+	--n-models 75
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/rankings_lr_sgd-en.tsv" ]
-    [ -e "${WORKDIR_PATH}/figures/lr_weights_sgd-en.png" ]
+    [ -e "${WORKDIR_PATH}/rankings" ]
+    [ -e "${WORKDIR_PATH}/rankings/rankings_lr_sgd-en_75.tsv" ]
+    [ -e "${WORKDIR_PATH}/figures/lr_weights_sgd-en_75.png" ]
 }
 
-@test "Train logistic regression model with default method" {
+@test "Train and output logistic regression ensemble with bagging, default method" {
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
-	train
+	train \
+	--n-models 50
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/models/lr/sgd-l2" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-l2/50" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-l2/50/1" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-l2/50/2" ]
 
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
-	rankings
+	train \
+	--n-models 75
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/rankings_lr_sgd-l2.tsv" ]
-    [ -e "${WORKDIR_PATH}/figures/lr_weights_sgd-l2.png" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-l2/75" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-l2/75/1" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-l2/75/2" ]
+
+        run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	train \
+	--n-models 150
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-l2/150" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-l2/150/1" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sgd-l2/150/2" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	rankings \
+	--n-models 75
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/rankings" ]
+    [ -e "${WORKDIR_PATH}/rankings/rankings_lr_sgd-l2_75.tsv" ]
+    [ -e "${WORKDIR_PATH}/figures/lr_weights_sgd-l2_75.png" ]
 }
