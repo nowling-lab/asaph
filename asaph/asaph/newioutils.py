@@ -31,18 +31,6 @@ SAMPLE_LABELS_FLNAME = "sample_labels"
 FEATURE_MATRIX_FLNAME = "feature_matrix.npy"
 SNP_FEATURE_INDICES_FLNAME = "snp_feature_indices"
 
-def to_json(flname, obj):
-    fl = open(flname, "w")
-    cPickle.dump(obj, fl)
-    fl.close()
-
-def from_json(flname):
-    fl = open(flname)
-    obj = cPickle.load(fl)
-    fl.close()
-
-    return obj
-
 def serialize(flname, obj):
     fl = open(flname, "w")
     cPickle.dump(obj, fl)
@@ -79,9 +67,9 @@ def write_rf_snps(basedir, snps, n_trees, model_id):
         os.makedirs(model_dir)
 
     flname = os.path.join(model_dir, model_id)
-    to_json(flname, snps)
+    serialize(flname, snps)
 
-    
+
 def read_rf_snps(basedir):
     model_base_dir = os.path.join(basedir, "models", "rf")
     if not os.path.exists(model_base_dir):
@@ -94,7 +82,7 @@ def read_rf_snps(basedir):
         model_flnames = glob.glob(os.path.join(model_dir, "*"))
 
         for flname in model_flnames:
-            snps = from_json(flname)
+            snps = deserialize(flname)
             n_trees = int(os.path.basename(os.path.dirname(flname)))
             models[n_trees].append(snps)
 
