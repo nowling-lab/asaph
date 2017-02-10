@@ -52,7 +52,7 @@ class LogisticRegressionEnsemble(object):
                 feature_importances += model.coef_[0] / la.norm(model.coef_)
             trained_models += to_train
 
-        return feature_importances / self.n_models
+        return np.abs(feature_importances / self.n_models)
 
 class ConstrainedBaggingRandomForest(object):
     """
