@@ -31,20 +31,25 @@ def read_rankings(flname):
 
     return rankings
 
-def analyze_rankings(ranking_flname_1, ranking_flname_2):
+def analyze_rankings(universe_size, ranking_flname_1, ranking_flname_2):
     rankings_1 = read_rankings(ranking_flname_1)
     rankings_2 = read_rankings(ranking_flname_2)
 
     thresholds = [0.01, 0.05, 0.1, 0.25, 0.5]
     min_len = min(len(rankings_1), len(rankings_2))
+    if universe_size == None:
+        universe_size = min_len
     for t in thresholds:
-        cutoff = int(t * min_len) + 1
+        cutoff = min(int(t * universe_size) + 1, min_len)
         intersection = set(rankings_1[:cutoff]).intersection(rankings_2[:cutoff])
         percentage = 100.0 * float(len(intersection)) / float(cutoff)
         print t, percentage
 
 def parseargs():
     parser = argparse.ArgumentParser()
+
+    parser.add_argument("--universe-size",
+                        type=int)
 
     parser.add_argument("--rankings-fl-1",
                         type=str,
@@ -59,6 +64,7 @@ def parseargs():
 if __name__ == "__main__":
     args = parseargs()
 
-    analyze_rankings(args.rankings_fl_1,
+    analyze_rankings(universe_size,
+                     args.rankings_fl_1,
                      args.rankings_fl_2)
 
