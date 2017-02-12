@@ -16,6 +16,8 @@ limitations under the License.
 
 from collections import defaultdict
 
+import numpy as np
+
 import matplotlib
 matplotlib.use("PDF")
 import matplotlib.pyplot as plt
@@ -71,7 +73,7 @@ def plot_similarity_curves(flname_base, thresholds, n_models, common_feature_per
     colors = ["r.-", "g.-", "b.-", "m.-", "c.-"]
     for i, threshold in enumerate(thresholds):
         c = colors[i]
-        label = str(int(100.0 * threshold))
+        label = str(100.0 * threshold)
         plt.semilogx(n_models, common_feature_percentages[threshold],
                      c, label="Top %s%%" % label)
 
@@ -81,6 +83,7 @@ def plot_similarity_curves(flname_base, thresholds, n_models, common_feature_per
     plt.legend(loc="lower right")
     plt.ylim([0, 100])
     plt.xlim([min(n_models), max(n_models)])
+    plt.yticks(np.linspace(0., 100., num=11))
 
     plt.savefig(flname_base + ".png", DPI=200)
     plt.savefig(flname_base + ".pdf", DPI=200)
