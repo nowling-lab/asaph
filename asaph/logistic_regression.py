@@ -80,7 +80,7 @@ def analyze_rankings(args):
                                                              project_summary.filtered_positions)
 
     analysis_flname = os.path.join(analysis_dir,
-                                   "snp_ranking_overlaps_ " + args.method + ".tsv")
+                                   "snp_ranking_overlaps_" + args.method + ".tsv")
     write_similarity_curves(analysis_flname,
                             args.thresholds,
                             n_models,
