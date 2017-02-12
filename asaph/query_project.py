@@ -17,17 +17,16 @@ limitations under the License.
 import argparse
 import os
 
-from asaph.newioutils import read_features
+from asaph.newioutils import *
 
 def query_project(workdir):
     if not os.path.exists(workdir):
         raise Exception, "workdir '%s' does not exist." % workdir
 
-    features = read_features(workdir)
+    project_summary = deserialize(os.path.join(workdir, PROJECT_SUMMARY_FLNAME))
 
-    print "Number of positions:", len(features.snp_feature_map)
-    print "Number of samples:", len(features.sample_labels)
-    print "Number of features:", features.feature_matrix.shape[1]
+    for field, value in project_summary._asdict().iteritems():
+        print field, value
 
 def parseargs():
     parser = argparse.ArgumentParser()
