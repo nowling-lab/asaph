@@ -31,11 +31,10 @@ def read_rankings(flname):
 
     return rankings
 
-def analyze_rankings(universe_size, ranking_flname_1, ranking_flname_2):
+def analyze_rankings(universe_size, thresholds, ranking_flname_1, ranking_flname_2):
     rankings_1 = read_rankings(ranking_flname_1)
     rankings_2 = read_rankings(ranking_flname_2)
 
-    thresholds = [0.01, 0.05, 0.1, 0.25, 0.5]
     min_len = min(len(rankings_1), len(rankings_2))
     if universe_size == None:
         universe_size = min_len
@@ -59,12 +58,18 @@ def parseargs():
                         type=str,
                         required=True)
 
+    parser.add_argument("--thresholds",
+                        type=int,
+                        nargs="+",
+                        default=[0.01, 0.05, 0.1, 0.25])
+
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = parseargs()
 
-    analyze_rankings(universe_size,
+    analyze_rankings(args.universe_size,
+                     args.thresholds,
                      args.rankings_fl_1,
                      args.rankings_fl_2)
 
