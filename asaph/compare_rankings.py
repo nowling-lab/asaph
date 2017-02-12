@@ -61,7 +61,7 @@ def parseargs():
     parser.add_argument("--thresholds",
                         type=float,
                         nargs="+",
-                        default=[0.01, 0.05, 0.1, 0.25])
+                        default=[0.0001, 0.001, 0.01, 0.1])
 
     return parser.parse_args()
 

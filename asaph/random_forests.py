@@ -25,6 +25,10 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
+from asaph.analysis import plot_sampled_snps_curves
+from asaph.analysis import plot_similarity_curves
+from asaph.analysis import sampled_snps_curves
+from asaph.analysis import similarity_curves
 from asaph.ml import ConstrainedBaggingRandomForest
 from asaph.newioutils import read_features
 from asaph.newioutils import read_rf_snps
@@ -65,72 +69,27 @@ def analyze_rankings(args):
     workdir = args["workdir"]
 
     figures_dir = os.path.join(workdir, "figures")
-
     if not os.path.exists(figures_dir):
         os.makedirs(figures_dir)
 
     all_snps = read_rf_snps(workdir)
-    ordered_trees = sorted(all_snps.keys())
 
-    thresholds = [0.01, 0.05, 0.1, 0.25, 0.5]
+    n_models, common_feature_percentages = similarity_curves(args["thresholds"],
+                                                             all_snps)
+    flname_base = os.path.join(figures_dir, "snp_ranking_overlaps_rf")
+    plot_similarity_curves(flname_base,
+                           args["thresholds"],
+                           n_models,
+                           common_feature_percentages)
 
-    common_feature_counts = []
-    snp1_feature_counts = []
-    snp2_feature_counts = []
-    common_feature_threshold_percentages = defaultdict(list)
-
-    used_trees = []
-
-    for n_trees in ordered_trees:
-        models = all_snps[n_trees]
-        if len(models) != 2:
-            continue
-
-        snps1, snps2 = models
-        used_trees.append(n_trees)
-
-        common_feature_counts.append(snps1.count_intersection(snps2))
-        snp1_feature_counts.append(len(snps1))
-        snp2_feature_counts.append(len(snps2))
-
-        for threshold in thresholds:
-            n = max(1, int(threshold * min(len(snps1), len(snps2))))
-            percentage = 100.0 * float(snps1.take(n).count_intersection(snps2.take(n))) \
-                         / float(n)
-            common_feature_threshold_percentages[threshold].append(percentage)
-
-    plt.clf()
-    plt.hold(True)
-    plt.grid(True)
-    plt.semilogx(used_trees, common_feature_counts, "k.-", label="Common")
-    plt.semilogx(used_trees, snp1_feature_counts, "c.-", label="Model 1")
-    plt.semilogx(used_trees, snp2_feature_counts, "m.-", label="Model 2")
-    plt.xlabel("Number of Trees", fontsize=16)
-    plt.ylabel("SNPs (Count)", fontsize=16)
-    plt.legend(loc="lower right")
-    plt.ylim([0, max(max(common_feature_counts), max(snp1_feature_counts), max(snp2_feature_counts)) + 10])
-    plt.xlim([min(used_trees), max(used_trees)])
-
-    plt.savefig(os.path.join(figures_dir, "snp_counts.png"), DPI=200)
-    plt.savefig(os.path.join(figures_dir, "snp_counts.pdf"), DPI=200)
-
-    plt.clf()
-    plt.hold(True)
-    plt.grid(True)
-    colors = ["r.-", "g.-", "b.-", "m.-", "c.-"]
-    for i, threshold in enumerate(thresholds):
-        c = colors[i]
-        label = str(int(100.0 * threshold))
-        plt.semilogx(used_trees, common_feature_threshold_percentages[threshold],
-                     c, label="Top %s%%" % label)
-    plt.xlabel("Number of Trees", fontsize=16)
-    plt.ylabel("Overlapping SNPs (%)", fontsize=16)
-    plt.legend(loc="upper left")
-    plt.ylim([0, 100])
-    plt.xlim([min(used_trees), max(used_trees)])
-
-    plt.savefig(os.path.join(figures_dir, "snp_ranking_overlaps_rf.png"), DPI=200)
-    plt.savefig(os.path.join(figures_dir, "snp_ranking_overlaps_rf.pdf"), DPI=200)
+    n_models, common_feature_counts, snp1_feature_counts, \
+        snp2_feature_counts = sampled_snps_curves(all_snps)
+    flname_base = os.path.join(figures_dir, "snp_counts")
+    plot_sampled_snps_curves(flname_base,
+                             n_models,
+                             common_feature_counts,
+                             snp1_feature_counts,
+                             snp2_feature_counts)
 
 def output_rankings(args):
     workdir = args["workdir"]
@@ -185,6 +144,12 @@ def parseargs():
 
     analyze_parser = subparsers.add_parser("analyze-rankings",
                                            help="Analyze rankings")
+
+    analyze_parser.add_argument("--thresholds",
+                                type=float,
+                                nargs="+",
+                                default=[0.0001,0.001,0.01,0.1],
+                                help="Thresholds for similarity curves")
 
     output_parser = subparsers.add_parser("output-rankings",
                                           help="Output rankings")
