@@ -201,6 +201,16 @@ class CategoricalFeaturesExtractor(object):
             yield (chrom, pos, (alleles[1], alleles[1])), tuple(homo2_column)
             yield (chrom, pos, (alleles[0], alleles[1])), tuple(het_column)
 
+class StreamCounter(object):
+    def __init__(self, stream):
+        self.count = 0
+        self.stream = stream
+
+    def __iter__(self):
+        for item in self.stream:
+            self.count += 1
+            yield item
+
 
 def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compressed_vcf):
     # dictionary of individual ids to population ids
@@ -213,11 +223,15 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
     # remove SNPs with < 2 known genotypes
     variants = filter_invariants(selected_individuals)
 
+    filtered_positions_counter = StreamCounter(variants)
+
     # extract features
     if feature_type == "counts":
-        extractor = CountFeaturesExtractor(variants, populations.keys())
+        extractor = CountFeaturesExtractor(filtered_positions_counter,
+                                           populations.keys())
     elif feature_type == "categories":
-        extractor = CategoricalFeaturesExtractor(variants, populations.keys())
+        extractor = CategoricalFeaturesExtractor(filtered_positions_counter,
+                                                 populations.keys())
     else:
         raise Exception, "Unknown feature type: %s" % feature_type
 
@@ -225,9 +239,7 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
     column_idx = 0
     col_dict = dict()
     feature_columns = []
-    filtered_positions = 0
     for feature_idx, ((chrom, pos, _), column) in enumerate(extractor):
-        filtered_positions += 1
         if compress:
             if column not in col_dict:
                 col_dict[column] = column_idx
@@ -255,7 +267,7 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
     class_labels = [populations[ident] for ident in extractor.rows_to_names]
 
     project_summary = ProjectSummary(original_positions = stream.positions_read,
-                                     filtered_positions = filtered_positions,
+                                     filtered_positions = filtered_positions_counter.count,
                                      n_features = feature_matrix.shape[1],
                                      feature_encoding = feature_type,
                                      compressed = compress,
