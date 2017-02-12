@@ -69,6 +69,17 @@ def similarity_curves(thresholds, all_models, universe_size):
 
     return used_models, common_feature_threshold_percentages
 
+def write_similarity_curves(flname, thresholds, n_models, common_feature_percentages):
+    with open(flname, "w") as fl:
+        fl.write("threshold\t")
+        fl.write("\t".join(map(str, n_models)))
+        fl.write("\n")
+        for t in thresholds:
+            fl.write(str(t))
+            fl.write("\t")
+            fl.write("\t".join(map(str, common_feature_percentages[t])))
+            fl.write("\n")
+
 def plot_similarity_curves(flname_base, thresholds, n_models, common_feature_percentages):
     plt.clf()
 

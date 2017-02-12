@@ -26,6 +26,7 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
+from asaph.analysis import write_similarity_curves
 from asaph.analysis import plot_similarity_curves
 from asaph.analysis import similarity_curves
 from asaph.models import ProjectSummary
@@ -67,12 +68,23 @@ def analyze_rankings(args):
     if not os.path.exists(figures_dir):
         os.makedirs(figures_dir)
 
+    analysis_dir = os.path.join(workdir, "analysis")
+    if not os.path.exists(analysis_dir):
+        os.makedirs(analysis_dir)
+
     project_summary = deserialize(os.path.join(workdir, PROJECT_SUMMARY_FLNAME))
     all_snps = read_snps(workdir, args.method)
 
     n_models, common_feature_percentages = similarity_curves(args.thresholds,
                                                              all_snps,
                                                              project_summary.filtered_positions)
+
+    analysis_flname = os.path.join(analysis_dir,
+                                   "snp_ranking_overlaps_ " + args.method + ".tsv")
+    write_similarity_curves(analysis_flname,
+                            args.thresholds,
+                            n_models,
+                            common_feature_percentages)
 
     flname_base = os.path.join(figures_dir, "snp_ranking_overlaps_" + args.method)
     plot_similarity_curves(flname_base,
