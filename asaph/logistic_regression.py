@@ -78,20 +78,13 @@ def analyze_rankings(args):
 def train(args):
     workdir = args.workdir
 
-    if args.method == "sgd-l2":
-        penalty = "l2"
-    elif args.method  == "sgd-en":
-        penalty = "elasticnet"
-    else:
-        raise Exception, "Unknown method '%s'" % args.method
-
     bagging = not args.no_bagging
 
     features = read_features(workdir)
 
     print "Training Ensemble 1"
     lr1 = LogisticRegressionEnsemble(args.n_models,
-                                     penalty,
+                                     args.method,
                                      args.batch_size,
                                      bagging=bagging)
     feature_importances = lr1.feature_importances(features.feature_matrix,
@@ -101,7 +94,7 @@ def train(args):
 
     print "Training ensemble 2"
     lr2 = LogisticRegressionEnsemble(args.n_models,
-                                     penalty,
+                                     args.method,
                                      args.batch_size,
                                      bagging=bagging)
     feature_importances = lr2.feature_importances(features.feature_matrix,
@@ -152,6 +145,9 @@ def output_rankings(args):
 
 
 def parseargs():
+    method_choices = ["sgd-l2", "sgd-en", "sag-l2"]
+    default_method = "sgd-l2"
+
     parser = argparse.ArgumentParser(description="Asaph - Logistic Regression")
 
     parser.add_argument("--workdir",
@@ -163,8 +159,8 @@ def parseargs():
     train_parser = subparsers.add_parser("train",
                                          help="Train Logistic Regression model")
     train_parser.add_argument("--method",
-                              choices=["sgd-l2", "sgd-en"],
-                              default="sgd-l2",
+                              choices=method_choices,
+                              default=default_method,
                               help="LR algorithm to use")
 
     train_parser.add_argument("--no-bagging",
@@ -185,8 +181,8 @@ def parseargs():
                                            help="Analyze rankings")
 
     analyze_parser.add_argument("--method",
-                              choices=["sgd-l2", "sgd-en"],
-                              default="sgd-l2",
+                              choices=method_choices,
+                              default=default_method,
                               help="LR algorithm to use")
 
     analyze_parser.add_argument("--thresholds",
@@ -198,8 +194,8 @@ def parseargs():
     output_parser = subparsers.add_parser("output-rankings",
                                           help="Output rankings and plots")
     output_parser.add_argument("--method",
-                               choices=["sgd-l2", "sgd-en"],
-                               default="sgd-l2",
+                               choices=method_choices,
+                               default=default_method,
                                help="LR algorithm to use")
 
     output_parser.add_argument("--n-models",

@@ -125,7 +125,6 @@ load model_setup_helper
     [ -e "${WORKDIR_PATH}/figures/lr_weights_sgd-l2_75.png" ]
 }
 
-
 @test "Logistic Regression workflow with bagging, sgd-en" {
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
@@ -239,6 +238,119 @@ load model_setup_helper
     [ -e "${WORKDIR_PATH}/figures/lr_weights_sgd-en_75.png" ]
 }
 
+@test "Logistic Regression workflow with bagging, sag-l2" {
+    run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	train \
+	--method sag-l2 \
+	--n-models 50
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/models/lr-sag-l2/50" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sag-l2/50/1" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sag-l2/50/2" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	train \
+	--method sag-l2 \
+	--n-models 75
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/models/lr-sag-l2/75" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sag-l2/75/1" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sag-l2/75/2" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	train \
+	--method sag-l2 \
+	--n-models 150
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/models/lr-sag-l2/150" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sag-l2/150/1" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sag-l2/150/2" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	analyze-rankings \
+	--method sag-l2
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/figures/snp_ranking_overlaps_sag-l2.png" ]
+    [ -e "${WORKDIR_PATH}/figures/snp_ranking_overlaps_sag-l2.pdf" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	output-rankings \
+	--method sag-l2 \
+	--n-models 75
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/rankings" ]
+    [ -e "${WORKDIR_PATH}/rankings/rankings_lr_sag-l2_75.tsv" ]
+    [ -e "${WORKDIR_PATH}/figures/lr_weights_sag-l2_75.png" ]
+}
+
+@test "Logistic Regression workflow with no bagging, sag-l2" {
+    run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	train \
+	--method sag-l2 \
+	--no-bagging \
+	--n-models 50
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/models/lr-sag-l2/50" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sag-l2/50/1" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sag-l2/50/2" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	train \
+	--method sag-l2 \
+	--no-bagging \
+	--n-models 75
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/models/lr-sag-l2/75" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sag-l2/75/1" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sag-l2/75/2" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	train \
+	--method sag-l2 \
+	--no-bagging \
+	--n-models 150
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/models/lr-sag-l2/150" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sag-l2/150/1" ]
+    [ -e "${WORKDIR_PATH}/models/lr-sag-l2/150/2" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	analyze-rankings \
+	--method sag-l2
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/figures/snp_ranking_overlaps_sag-l2.png" ]
+    [ -e "${WORKDIR_PATH}/figures/snp_ranking_overlaps_sag-l2.pdf" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
+	--workdir ${WORKDIR_PATH} \
+	output-rankings \
+	--method sag-l2 \
+	--n-models 75
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/rankings" ]
+    [ -e "${WORKDIR_PATH}/rankings/rankings_lr_sag-l2_75.tsv" ]
+    [ -e "${WORKDIR_PATH}/figures/lr_weights_sag-l2_75.png" ]
+}
+
 @test "Logistic Regression workflow with bagging, default method" {
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
@@ -288,6 +400,7 @@ load model_setup_helper
     [ -e "${WORKDIR_PATH}/rankings/rankings_lr_sgd-l2_75.tsv" ]
     [ -e "${WORKDIR_PATH}/figures/lr_weights_sgd-l2_75.png" ]
 }
+
 
 @test "Logistic Regression workflow with no bagging, default method" {
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \

@@ -22,6 +22,7 @@ import numpy.linalg as la
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import BaggingClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
 
 class LogisticRegressionEnsemble(object):
@@ -30,11 +31,22 @@ class LogisticRegressionEnsemble(object):
     Regression classifiers that supports bagging.
     """
 
-    def __init__(self, n_models, penalty, batch_size, bagging=True):
+    def __init__(self, n_models, method, batch_size, bagging=True):
         self.n_models = n_models
         self.bagging = bagging
         self.batch_size = batch_size
-        self.penalty = penalty
+        self.method = method
+
+    def get_base(self, n_samples):
+        if self.method == "sag-l2":
+            # copied from http://scikit-learn.org/stable/auto_examples/linear_model/plot_sgd_comparison.html#sphx-glr-auto-examples-linear-model-plot-sgd-comparison-py
+            return LogisticRegression(solver="sag", tol=1e-1, C=1.e4 / n_samples)
+        elif self.method == "sgd-l2":
+            return SGDClassifier(loss="log", penalty="l2")
+        elif self.method == "sgd-en":
+            return SGDClassifier(loss="log", penalty="elasticnet")
+        else:
+            raise Exception, "Unknown logistic regression method '%s'" % self.method
 
     def feature_importances(self, X, y):
         y = np.array(y)
@@ -42,15 +54,14 @@ class LogisticRegressionEnsemble(object):
         trained_models = 0
         while trained_models < self.n_models:
             to_train = min(self.batch_size, self.n_models - trained_models)
-            print "Training batch of", to_train, "trees"
-            ensemble = BaggingClassifier(SGDClassifier(loss="log",
-                                                       penalty=self.penalty),
+            ensemble = BaggingClassifier(self.get_base(X.shape[0]),
                                          n_estimators=to_train,
                                          bootstrap=self.bagging)
             ensemble.fit(X, y)
             for model in ensemble.estimators_:
                 feature_importances += model.coef_[0] / la.norm(model.coef_)
             trained_models += to_train
+            print "Trained %s models" % trained_models
 
         return np.abs(feature_importances / self.n_models)
 
