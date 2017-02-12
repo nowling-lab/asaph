@@ -46,7 +46,7 @@ def sampled_snps_curves(all_models):
         snp1_feature_counts, \
         snp2_feature_counts
 
-def similarity_curves(thresholds, all_models):
+def similarity_curves(thresholds, all_models, universe_size):
     ordered_models = sorted(all_models.keys())
 
     common_feature_threshold_percentages = defaultdict(list)
@@ -59,8 +59,10 @@ def similarity_curves(thresholds, all_models):
         snps1, snps2 = models
         used_models.append(n_models)
 
+        min_snps = min(len(snps1), len(snps2))
         for threshold in thresholds:
-            n = max(1, int(threshold * min(len(snps1), len(snps2))))
+            cutoff = min(int(threshold * universe_size), min_snps)
+            n = max(1, cutoff)
             percentage = 100.0 * float(snps1.take(n).count_intersection(snps2.take(n))) \
                          / float(n)
             common_feature_threshold_percentages[threshold].append(percentage)

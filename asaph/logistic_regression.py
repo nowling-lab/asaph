@@ -28,10 +28,12 @@ import numpy as np
 
 from asaph.analysis import plot_similarity_curves
 from asaph.analysis import similarity_curves
+from asaph.models import ProjectSummary
 from asaph.ml import LogisticRegressionEnsemble
 from asaph.newioutils import read_features
 from asaph.newioutils import serialize
 from asaph.newioutils import deserialize
+from asaph.newioutils import PROJECT_SUMMARY_FLNAME
 
 def write_snps(basedir, snps, method, n_models, model_id):
     model_dir = os.path.join(basedir, "models", "lr-" + method, str(n_models))
@@ -65,9 +67,12 @@ def analyze_rankings(args):
     if not os.path.exists(figures_dir):
         os.makedirs(figures_dir)
 
+    project_summary = deserialize(os.path.join(workdir, PROJECT_SUMMARY_FLNAME))
     all_snps = read_snps(workdir, args.method)
 
-    n_models, common_feature_percentages = similarity_curves(args.thresholds, all_snps)
+    n_models, common_feature_percentages = similarity_curves(args.thresholds,
+                                                             all_snps,
+                                                             project_summary.filtered_positions)
 
     flname_base = os.path.join(figures_dir, "snp_ranking_overlaps_" + args.method)
     plot_similarity_curves(flname_base,
