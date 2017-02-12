@@ -56,6 +56,7 @@ teardown() {
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
     [ -d "${WORKDIR_PATH}" ]
+    [ -e "${WORKDIR_PATH}/project_summary" ]
     [ $(count_snps ${WORKDIR_PATH}) -eq ${N_SNPS} ]
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
@@ -70,6 +71,7 @@ teardown() {
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
     [ -d "${WORKDIR_PATH}" ]
+    [ -e "${WORKDIR_PATH}/project_summary" ]
     [ $(count_snps ${WORKDIR_PATH}) -eq ${N_SNPS} ]
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
@@ -85,6 +87,7 @@ teardown() {
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
     [ -d "${WORKDIR_PATH}" ]
+    [ -e "${WORKDIR_PATH}/project_summary" ]
     [ $(count_snps ${WORKDIR_PATH}) -eq ${N_SNPS} ]
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
@@ -100,6 +103,7 @@ teardown() {
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
     [ -d "${WORKDIR_PATH}" ]
+    [ -e "${WORKDIR_PATH}/project_summary" ]
     [ $(count_snps ${WORKDIR_PATH}) -eq ${N_SNPS} ]
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }

@@ -30,6 +30,7 @@ CLASS_LABELS_FLNAME = "class_labels"
 SAMPLE_LABELS_FLNAME = "sample_labels"
 FEATURE_MATRIX_FLNAME = "feature_matrix.npy"
 SNP_FEATURE_INDICES_FLNAME = "snp_feature_indices"
+PROJECT_SUMMARY_FLNAME = "project_summary"
 
 def serialize(flname, obj):
     fl = open(flname, "w")

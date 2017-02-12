@@ -22,6 +22,8 @@ import numpy as np
 
 from newioutils import *
 
+from models import ProjectSummary
+
 DEFAULT_COLUMNS = {'CHROM' : 0, 'POS' : 1, 'ID' : 2, 'REF' : 3, 'ALT' : 4, 'QUAL' : 5, 'FILTER' : 6, 'INFO' : 7, 'FORMAT' : 8}
 
 UNKNOWN_GENOTYPE = (0, 0)
@@ -49,7 +51,7 @@ def parse_vcf_line(ln, individual_names):
     individual_genotypes is a dictionary of individual ids to pairs
     of (ref_count, alt_count)
     """
-    
+
     cols = ln.strip().split()
     # TODO: Allow for more than 1 alternative sequence
     alleles = (cols[DEFAULT_COLUMNS["REF"]],
@@ -58,7 +60,7 @@ def parse_vcf_line(ln, individual_names):
     individual_genotypes = {}
     for i, col in enumerate(cols[len(DEFAULT_COLUMNS):]):
         genotype_pair = col.split(":")[0]
-        
+
         ref_count = 0
         alt_count = 0
 
@@ -84,6 +86,7 @@ class VCFStreamer(object):
         self.flname = flname
         self.individual_names = None
         self.compressed = compressed
+        self.positions_read = 0
 
     def __open__(self):
         if self.compressed:
@@ -104,12 +107,13 @@ class VCFStreamer(object):
                 break
             elif ln.startswith("#"):
                 continue
-            
+
         for ln in stream:
             if not ln.startswith("#"):
+                self.positions_read += 1
                 yield parse_vcf_line(ln, self.individual_names)
 
-## Filters            
+## Filters
 def select_individuals(stream, individual_ids):
     """
     Filter stream of pairs, only keeping genotypes
@@ -129,7 +133,7 @@ def filter_invariants(stream):
         observed_genotypes = set(genotypes.itervalues())
         if len(observed_genotypes) >= 2:
             yield (label, alleles, genotypes)
-        
+
 def filter_unknown(class_labels, stream):
     """
     Filter out variants where 1 or more classes contains all unknown genotypes.
@@ -145,7 +149,7 @@ def filter_unknown(class_labels, stream):
                 entire_class_unknown = True
 
         if not entire_class_unknown:
-            yield (label, variant_alleles, genotypes)    
+            yield (label, variant_alleles, genotypes)
 
 ## Feature extraction
 class CountFeaturesExtractor(object):
@@ -196,8 +200,8 @@ class CategoricalFeaturesExtractor(object):
             yield (chrom, pos, (alleles[0], alleles[0])), tuple(homo1_column)
             yield (chrom, pos, (alleles[1], alleles[1])), tuple(homo2_column)
             yield (chrom, pos, (alleles[0], alleles[1])), tuple(het_column)
-            
-            
+
+
 def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compressed_vcf):
     # dictionary of individual ids to population ids
     populations = read_groups(groups_flname)
@@ -221,7 +225,9 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
     column_idx = 0
     col_dict = dict()
     feature_columns = []
+    filtered_positions = 0
     for feature_idx, ((chrom, pos, _), column) in enumerate(extractor):
+        filtered_positions += 1
         if compress:
             if column not in col_dict:
                 col_dict[column] = column_idx
@@ -248,7 +254,15 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
 
     class_labels = [populations[ident] for ident in extractor.rows_to_names]
 
+    project_summary = ProjectSummary(original_positions = stream.positions_read,
+                                     filtered_positions = filtered_positions,
+                                     n_features = feature_matrix.shape[1],
+                                     feature_encoding = feature_type,
+                                     compressed = compress,
+                                     n_samples = len(class_labels))
+
     np.save(os.path.join(outbase, FEATURE_MATRIX_FLNAME), feature_matrix)
     serialize(os.path.join(outbase, SAMPLE_LABELS_FLNAME), extractor.rows_to_names)
     serialize(os.path.join(outbase, CLASS_LABELS_FLNAME), class_labels)
     serialize(os.path.join(outbase, SNP_FEATURE_INDICES_FLNAME), snp_features)
+    serialize(os.path.join(outbase, PROJECT_SUMMARY_FLNAME), project_summary)

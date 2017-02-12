@@ -15,13 +15,19 @@ limitations under the License.
 """
 
 from collections import defaultdict
+from collections import namedtuple
 import itertools
 import random
 
 import numpy as np
-from scipy.stats import rankdata
 
-from .ml import ConstrainedBaggingRandomForest
+ProjectSummary = namedtuple("ProjectSummary",
+                            ["original_positions",
+                             "filtered_positions",
+                             "n_features",
+                             "feature_encoding",
+                             "compressed",
+                             "n_samples"])
 
 class SNPs(object):
     def __init__(self, labels, importances, ranked):
@@ -29,12 +35,12 @@ class SNPs(object):
         self.labels = map(tuple, labels)
         self.importances = importances
         self.ranked = ranked
-        
+
     def rank(self):
         paired = zip(self.importances, self.labels)
         nonzero = filter(lambda t: t[0] != 0.0, paired)
         sorted_pairs = sorted(nonzero, reverse=True)
-        
+
         sorted_labels = [label for _, label in sorted_pairs]
         sorted_importances = [importance for importance, _ in sorted_pairs]
 
@@ -50,20 +56,20 @@ class SNPs(object):
         else:
             start = p1
             end = p2
-            
+
         if not self.ranked:
             ranked = self.rank()
             return SNPs(ranked.labels[start:end],
                         ranked.importances[start:end],
                         ranked.ranked)
-        
+
         return SNPs(self.labels[start:end],
                     self.importances[start:end],
                     self.ranked)
 
     def __len__(self):
         return len(self.labels)
-    
+
     def count_intersection(self, other):
         return len(set(self.labels).intersection(other.labels))
 
@@ -89,5 +95,4 @@ class Features(object):
             labels.append(snp_label)
 
         return SNPs(labels, importances, False).rank()
-        
 
