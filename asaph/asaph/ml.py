@@ -45,6 +45,8 @@ class LogisticRegressionEnsemble(object):
             return SGDClassifier(loss="log", penalty="l2")
         elif self.method == "sgd-en":
             return SGDClassifier(loss="log", penalty="elasticnet")
+        elif self.method == "asgd-l2":
+            return SGDClassifier(loss="log", penalty="l2", average=True)
         else:
             raise Exception, "Unknown logistic regression method '%s'" % self.method
 

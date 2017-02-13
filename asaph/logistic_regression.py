@@ -162,7 +162,7 @@ def output_rankings(args):
 
 
 def parseargs():
-    method_choices = ["sgd-l2", "sgd-en", "sag-l2"]
+    method_choices = ["sgd-l2", "sgd-en", "sag-l2", "asgd-l2"]
     default_method = "sgd-l2"
 
     parser = argparse.ArgumentParser(description="Asaph - Logistic Regression")
