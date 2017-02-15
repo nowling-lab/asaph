@@ -77,7 +77,7 @@ The `analyze-rankings` mode will generate two plots, comparisons of the number o
 
 The rankings will be output to a text file in the `<workdir>/rankings` directory.
 
-By default, LR models are trained with Stochastic Gradient Descent (SGD) and a L2 penalty.  Asaph also supports the average Stochastic Gradient Descent (ASGD) and Stochastic Average Gradient Descent (SAG) optimization algorithms. SGD additionally supports the elastic-net penalty. You can select different methods by using the `--methods` flag. If you do so, you'll need to use `--methods` each time you invoke `train`, `analyze-rankings`, and `output-rankings.
+By default, LR models are trained with Stochastic Gradient Descent (SGD) and a L2 penalty.  Asaph also supports the average Stochastic Gradient Descent (ASGD) and Stochastic Average Gradient Descent (SAG) optimization algorithms. SGD additionally supports the elastic-net penalty. You can select different methods by using the `--methods` flag. If you do so, you'll need to use `--methods` each time you invoke `train`, `analyze-rankings`, and `output-rankings`.
 
 You can also enable bagging, where the dataset is bootstrapped before each model is trained, with the `--bagging` flag for the `train` function. Bagging is disabled by default since we have found little impact from its usage.
 
