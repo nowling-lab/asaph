@@ -95,15 +95,13 @@ def analyze_rankings(args):
 def train(args):
     workdir = args.workdir
 
-    bagging = not args.no_bagging
-
     features = read_features(workdir)
 
     print "Training Ensemble 1"
     lr1 = LogisticRegressionEnsemble(args.n_models,
                                      args.method,
                                      args.batch_size,
-                                     bagging=bagging)
+                                     bagging=args.bagging)
     feature_importances = lr1.feature_importances(features.feature_matrix,
                                                   features.class_labels)
     snp_importances = features.rank_snps(feature_importances)
@@ -113,7 +111,7 @@ def train(args):
     lr2 = LogisticRegressionEnsemble(args.n_models,
                                      args.method,
                                      args.batch_size,
-                                     bagging=bagging)
+                                     bagging=args.bagging)
     feature_importances = lr2.feature_importances(features.feature_matrix,
                                                   features.class_labels)
     snp_importances = features.rank_snps(feature_importances)
@@ -180,9 +178,9 @@ def parseargs():
                               default=default_method,
                               help="LR algorithm to use")
 
-    train_parser.add_argument("--no-bagging",
+    train_parser.add_argument("--bagging",
                               action="store_true",
-                              help="Disable bagging")
+                              help="Enable bagging")
 
     train_parser.add_argument("--n-models",
                               type=int,

@@ -16,6 +16,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+	--bagging \
 	--method sgd-l2 \
 	--n-models 50
 
@@ -27,6 +28,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+	--bagging \
 	--method sgd-l2 \
 	--n-models 75
 
@@ -38,6 +40,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+	--bagging \
 	--method sgd-l2 \
 	--n-models 150
 
@@ -72,7 +75,6 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	train \
 	--method sgd-l2 \
-	--no-bagging \
 	--n-models 50
 
     [ "$status" -eq 0 ]
@@ -84,7 +86,6 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	train \
 	--method sgd-l2 \
-	--no-bagging \
 	--n-models 75
 
     [ "$status" -eq 0 ]
@@ -96,7 +97,6 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	train \
 	--method sgd-l2 \
-	--no-bagging \
 	--n-models 150
 
     [ "$status" -eq 0 ]
@@ -129,6 +129,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+	--bagging \
 	--method sgd-en \
 	--n-models 50
 
@@ -140,6 +141,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+	--bagging \
 	--method sgd-en \
 	--n-models 75
 
@@ -151,6 +153,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+	--bagging \
 	--method sgd-en \
 	--n-models 150
 
@@ -185,7 +188,6 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	train \
 	--method sgd-en \
-	--no-bagging \
 	--n-models 50
 
     [ "$status" -eq 0 ]
@@ -197,7 +199,6 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	train \
 	--method sgd-en \
-	--no-bagging \
 	--n-models 75
 
     [ "$status" -eq 0 ]
@@ -209,7 +210,6 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	train \
 	--method sgd-en \
-	--no-bagging \
 	--n-models 150
 
     [ "$status" -eq 0 ]
@@ -242,6 +242,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+	--bagging \
 	--method sag-l2 \
 	--n-models 50
 
@@ -253,6 +254,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+	--bagging \
 	--method sag-l2 \
 	--n-models 75
 
@@ -264,6 +266,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+	--bagging \
 	--method sag-l2 \
 	--n-models 150
 
@@ -298,7 +301,6 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	train \
 	--method sag-l2 \
-	--no-bagging \
 	--n-models 50
 
     [ "$status" -eq 0 ]
@@ -310,7 +312,6 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	train \
 	--method sag-l2 \
-	--no-bagging \
 	--n-models 75
 
     [ "$status" -eq 0 ]
@@ -322,7 +323,6 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	train \
 	--method sag-l2 \
-	--no-bagging \
 	--n-models 150
 
     [ "$status" -eq 0 ]
@@ -355,6 +355,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+	--bagging \
 	--method asgd-l2 \
 	--n-models 50
 
@@ -366,6 +367,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+	--bagging \
 	--method asgd-l2 \
 	--n-models 75
 
@@ -377,6 +379,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+	--bagging \
 	--method asgd-l2 \
 	--n-models 150
 
@@ -411,7 +414,6 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	train \
 	--method asgd-l2 \
-	--no-bagging \
 	--n-models 50
 
     [ "$status" -eq 0 ]
@@ -423,7 +425,6 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	train \
 	--method asgd-l2 \
-	--no-bagging \
 	--n-models 75
 
     [ "$status" -eq 0 ]
@@ -435,7 +436,6 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	train \
 	--method asgd-l2 \
-	--no-bagging \
 	--n-models 150
 
     [ "$status" -eq 0 ]
@@ -468,6 +468,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+	--bagging \
 	--n-models 50
 
     [ "$status" -eq 0 ]
@@ -478,6 +479,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+	--bagging \
 	--n-models 75
 
     [ "$status" -eq 0 ]
@@ -488,6 +490,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+	--bagging \
 	--n-models 150
 
     [ "$status" -eq 0 ]
@@ -519,7 +522,6 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
-	--no-bagging \
 	--n-models 50
 
     [ "$status" -eq 0 ]
@@ -530,7 +532,6 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
-	--no-bagging \
 	--n-models 75
 
     [ "$status" -eq 0 ]
@@ -541,7 +542,6 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
-	--no-bagging \
 	--n-models 150
 
     [ "$status" -eq 0 ]
