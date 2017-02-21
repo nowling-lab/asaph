@@ -117,3 +117,28 @@ def plot_sampled_snps_curves(flname_base, used_models, common_feature_counts,
 
     plt.savefig(flname_base + ".png", DPI=200)
     plt.savefig(flname_base + ".pdf", DPI=200)
+
+def histogram_sparse_to_dense(sparse):
+    n_entries = max(sparse.keys()) + 1
+    dense = [0] * n_entries
+    for key, count in sparse.iteritems():
+        dense[key] = count
+    return dense
+
+def plot_feature_histogram(flname, histogram):
+    xs = [0]
+    ys = [0]
+    for i, count in enumerate(histogram):
+        xs.append(i)
+        ys.append(count)
+        xs.append(i+1)
+        ys.append(count)
+    xs.append(i+1)
+    ys.append(0)
+    plt.clf()
+    plt.plot(xs, ys, "b-")
+    plt.grid(True)
+    plt.xlabel("Number of Features", fontsize=16)
+    plt.ylabel("Number of Trees", fontsize=16)
+
+    plt.savefig(flname, DPI=200)

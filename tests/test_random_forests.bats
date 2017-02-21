@@ -16,11 +16,13 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/random_forests \
 	--workdir ${WORKDIR_PATH} \
 	train \
+	--statistics \
 	--trees 100
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/models/rf/100" ]
     [ -d "${WORKDIR_PATH}/models/rf/100" ]
+    [ -e "${WORKDIR_PATH}/figures/features_used_histogram_rf_100_trees.png" ]
 
     run ${BATS_TEST_DIRNAME}/../bin/random_forests \
 	--workdir ${WORKDIR_PATH} \
@@ -65,11 +67,13 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	train \
 	--trees 100 \
+	--statistics \
 	--resamples 10
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/models/rf/100" ]
     [ -d "${WORKDIR_PATH}/models/rf/100" ]
+    [ -e "${WORKDIR_PATH}/figures/features_used_histogram_rf_100_trees.png" ]
 
     run ${BATS_TEST_DIRNAME}/../bin/random_forests \
 	--workdir ${WORKDIR_PATH} \

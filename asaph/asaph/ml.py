@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from collections import defaultdict
 import random
 
 import numpy as np
@@ -90,9 +91,13 @@ class ConstrainedBaggingRandomForest(object):
 
         return X_new, y_new
 
-    def feature_importances(self, X, y):
+    def feature_importances(self, X, y, statistics=False):
         y = np.array(y)
         feature_importances = np.zeros(X.shape[1])
+        if statistics:
+            used_features_histogram = defaultdict(int)
+        else:
+            used_features_histogram = None
         if self.n_resamples == -1:
             completed_trees = 0
             while completed_trees < self.n_trees:
@@ -102,13 +107,24 @@ class ConstrainedBaggingRandomForest(object):
                                             n_jobs=1)
                 rf.fit(X, y)
                 feature_importances += rf.feature_importances_ * n_classifiers
+                if statistics:
+                    for dt in rf.estimators_:
+                        tree = dt.tree_
+                        used_features = set(tree.feature)
+                        # leaves denoted by -2
+                        used_features.remove(-2)
+                        used_features_histogram[len(used_features)] += 1
                 completed_trees += n_classifiers
         else:
             for i in xrange(self.n_trees):
                 dt = DecisionTreeClassifier(max_features="sqrt")
                 X_new, y_new = self._resample(X, y)
                 dt.fit(X_new, y_new)
+                if statistics:
+                    used_features = set(dt.tree_.feature)
+                    used_features.remove(-2)
+                    used_features_histogram[len(used_features)] += 1
                 feature_importances += dt.feature_importances_
 
         feature_importances = feature_importances / self.n_trees
-        return feature_importances
+        return feature_importances, used_features_histogram

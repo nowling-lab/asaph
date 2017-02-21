@@ -30,6 +30,8 @@ from asaph.analysis import plot_sampled_snps_curves
 from asaph.analysis import plot_similarity_curves
 from asaph.analysis import sampled_snps_curves
 from asaph.analysis import similarity_curves
+from asaph.analysis import histogram_sparse_to_dense
+from asaph.analysis import plot_feature_histogram
 from asaph.ml import ConstrainedBaggingRandomForest
 from asaph.newioutils import read_features
 from asaph.newioutils import read_rf_snps
@@ -41,6 +43,10 @@ from asaph.newioutils import PROJECT_SUMMARY_FLNAME
 def train_model(args):
     workdir = args["workdir"]
 
+    figures_dir = os.path.join(workdir, "figures")
+    if not os.path.exists(figures_dir):
+        os.makedirs(figures_dir)
+    
     n_trees = args["trees"]
     if n_trees is None:
         print "Number of trees must be specified for training"
@@ -56,16 +62,27 @@ def train_model(args):
     rf = ConstrainedBaggingRandomForest(n_trees,
                                         n_resamples,
                                         args["batch_size"])
-    feature_importances = rf.feature_importances(features.feature_matrix,
-                                                 features.class_labels)
+    feature_importances, used_feature_counts = \
+                                               rf.feature_importances(
+                                                   features.feature_matrix,
+                                                   features.class_labels,
+                                                   statistics=args["statistics"])
+
+    if args["statistics"]:
+        dense = histogram_sparse_to_dense(used_feature_counts)
+        flname = os.path.join(figures_dir, "features_used_histogram_rf_%s_trees.png" \
+                              % args["trees"])
+        plot_feature_histogram(flname, dense)
+    
     snp_importances = features.rank_snps(feature_importances)
     write_rf_snps(workdir, snp_importances, n_trees, "model1")
 
     rf = ConstrainedBaggingRandomForest(n_trees,
                                         n_resamples,
                                         args["batch_size"])
-    feature_importances = rf.feature_importances(features.feature_matrix,
-                                                 features.class_labels)
+    feature_importances, _ = rf.feature_importances(features.feature_matrix,
+                                                    features.class_labels,
+                                                    statistics=False)
     snp_importances = features.rank_snps(feature_importances)
     write_rf_snps(workdir, snp_importances, n_trees, "model2")
 
@@ -160,6 +177,10 @@ def parseargs():
                               type=int,
                               help="Number of trees to train in each batch. Trade off between speed and memory usage.")
 
+    train_parser.add_argument("--statistics",
+                              action="store_true",
+                              help="Record statistics on forest")
+    
     analyze_parser = subparsers.add_parser("analyze-rankings",
                                            help="Analyze rankings")
 
