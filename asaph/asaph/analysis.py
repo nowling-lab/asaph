@@ -129,11 +129,11 @@ def plot_feature_histogram(flname, histogram):
     xs = [0]
     ys = [0]
     for i, count in enumerate(histogram):
-        xs.append(i)
+        xs.append(i-0.5)
         ys.append(count)
-        xs.append(i+1)
+        xs.append(i+0.5)
         ys.append(count)
-    xs.append(i+1)
+    xs.append(i+0.5)
     ys.append(0)
     plt.clf()
     plt.plot(xs, ys, "b-")

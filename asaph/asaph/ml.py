@@ -64,7 +64,7 @@ class LogisticRegressionEnsemble(object):
             for model in ensemble.estimators_:
                 feature_importances += model.coef_[0] / la.norm(model.coef_)
             trained_models += to_train
-            print "Trained %s models" % trained_models
+            print "Trained %s of %s models" % (trained_models, self.n_models)
 
         return np.abs(feature_importances / self.n_models)
 
@@ -91,40 +91,54 @@ class ConstrainedBaggingRandomForest(object):
 
         return X_new, y_new
 
-    def feature_importances(self, X, y, statistics=False):
+    def feature_importances(self, X, y, statistics=False, interactions=False):
         y = np.array(y)
         feature_importances = np.zeros(X.shape[1])
+
+        used_features_histogram = None
         if statistics:
             used_features_histogram = defaultdict(int)
-        else:
-            used_features_histogram = None
+
+        used_feature_sets = None
+        if interactions:
+            used_feature_sets = defaultdict(int)
+            
         if self.n_resamples == -1:
             completed_trees = 0
             while completed_trees < self.n_trees:
                 n_classifiers = min(self.batch_size, self.n_trees - completed_trees)
-                print "Training batch of", n_classifiers, "trees"
                 rf = RandomForestClassifier(n_estimators=n_classifiers,
                                             n_jobs=1)
                 rf.fit(X, y)
                 feature_importances += rf.feature_importances_ * n_classifiers
-                if statistics:
+                if statistics or interactions:
                     for dt in rf.estimators_:
                         tree = dt.tree_
                         used_features = set(tree.feature)
                         # leaves denoted by -2
                         used_features.remove(-2)
-                        used_features_histogram[len(used_features)] += 1
+                        if statistics:
+                            used_features_histogram[len(used_features)] += 1
+                        if interactions:
+                            used_feature_sets[frozenset(used_features)] += 1
                 completed_trees += n_classifiers
+                print "Trained", completed_trees, "of", self.n_trees, "trees"
         else:
             for i in xrange(self.n_trees):
                 dt = DecisionTreeClassifier(max_features="sqrt")
                 X_new, y_new = self._resample(X, y)
                 dt.fit(X_new, y_new)
-                if statistics:
+                if statistics or interactions:
                     used_features = set(dt.tree_.feature)
                     used_features.remove(-2)
-                    used_features_histogram[len(used_features)] += 1
+                    if statistics:
+                        used_features_histogram[len(used_features)] += 1
+                    if interactions:
+                        used_feature_sets[frozenset(used_features)] += 1
                 feature_importances += dt.feature_importances_
 
         feature_importances = feature_importances / self.n_trees
-        return feature_importances, used_features_histogram
+        if interactions:
+            used_feature_sets = dict(used_feature_sets)
+            
+        return feature_importances, used_features_histogram, used_feature_sets

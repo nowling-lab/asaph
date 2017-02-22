@@ -39,6 +39,15 @@ from asaph.newioutils import write_rf_snps
 
 from asaph.newioutils import deserialize
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
+from asaph.newioutils import serialize
+
+def write_interactions(basedir, n_trees, used_feature_sets):
+    model_dir = os.path.join(basedir, "models", "rf", str(n_trees))
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
+
+    flname = os.path.join(model_dir, "interactions")
+    serialize(flname, used_feature_sets)
 
 def train_model(args):
     workdir = args["workdir"]
@@ -62,25 +71,29 @@ def train_model(args):
     rf = ConstrainedBaggingRandomForest(n_trees,
                                         n_resamples,
                                         args["batch_size"])
-    feature_importances, used_feature_counts = \
+    feature_importances, used_feature_counts, used_feature_sets = \
                                                rf.feature_importances(
                                                    features.feature_matrix,
                                                    features.class_labels,
-                                                   statistics=args["statistics"])
+                                                   statistics=args["statistics"],
+                                                   interactions=args["interactions"])
 
+    snp_importances = features.rank_snps(feature_importances)
+    write_rf_snps(workdir, snp_importances, n_trees, "model1")
+    
     if args["statistics"]:
         dense = histogram_sparse_to_dense(used_feature_counts)
         flname = os.path.join(figures_dir, "features_used_histogram_rf_%s_trees.png" \
                               % args["trees"])
         plot_feature_histogram(flname, dense)
-    
-    snp_importances = features.rank_snps(feature_importances)
-    write_rf_snps(workdir, snp_importances, n_trees, "model1")
+
+    if args["interactions"]:
+        write_interactions(workdir, n_trees, used_feature_sets)
 
     rf = ConstrainedBaggingRandomForest(n_trees,
                                         n_resamples,
                                         args["batch_size"])
-    feature_importances, _ = rf.feature_importances(features.feature_matrix,
+    feature_importances, _, _ = rf.feature_importances(features.feature_matrix,
                                                     features.class_labels,
                                                     statistics=False)
     snp_importances = features.rank_snps(feature_importances)
@@ -180,6 +193,10 @@ def parseargs():
     train_parser.add_argument("--statistics",
                               action="store_true",
                               help="Record statistics on forest")
+
+    train_parser.add_argument("--interactions",
+                              action="store_true",
+                              help="Record feature interactions")
     
     analyze_parser = subparsers.add_parser("analyze-rankings",
                                            help="Analyze rankings")
