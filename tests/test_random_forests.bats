@@ -57,7 +57,8 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/random_forests \
 	--workdir ${WORKDIR_PATH} \
 	output-rankings \
-	--trees 100
+	--trees 100 \
+	--plot-similarities
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/rankings/rankings_rf_100.tsv" ]
@@ -112,7 +113,8 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/random_forests \
 	--workdir ${WORKDIR_PATH} \
 	output-rankings \
-	--trees 100
+	--trees 100 \
+	--plot-similarities
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/rankings/rankings_rf_100.tsv" ]

@@ -167,19 +167,18 @@ def output_rankings(args):
 
     ranks_flname = os.path.join(rankings_dir,
                                 "rankings_rf_%s.tsv" % n_trees)
-    fl = open(ranks_flname, "w")
-    for i in xrange(len(snps1)):
-        chrom, pos = snps1.labels[i]
-        importance = snps1.importances[i]
-        fl.write("%s\t%s\t%s\n" % (chrom, pos, importance))
+    with open(ranks_flname, "w") as fl:
+        for i in xrange(len(snps1)):
+            chrom, pos = snps1.labels[i]
+            importance = snps1.importances[i]
+            fl.write("%s\t%s\t%s\n" % (chrom, pos, importance))
 
-    similarities = similarity_within_model([snps1, snps2])
-    plot_flname = os.path.join(figures_dir,
-                               "within_model_similarity_rf_%s.png" % n_trees)
-    plot_similarity_within_model(plot_flname, similarities)
+    if args["plot_similarities"]:
+        similarities = similarity_within_model([snps1, snps2])
+        plot_flname = os.path.join(figures_dir,
+                                   "within_model_similarity_rf_%s.png" % n_trees)
+        plot_similarity_within_model(plot_flname, similarities)
         
-    fl.close()
-
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - Random Forests")
 
@@ -224,6 +223,10 @@ def parseargs():
     output_parser.add_argument("--trees",
                                type=int,
                                help="Number of trees in Random Forest")
+
+    output_parser.add_argument("--plot-similarities",
+                               action="store_true",
+                               help="Plot similarities for each level")
 
     return parser.parse_args()
 
