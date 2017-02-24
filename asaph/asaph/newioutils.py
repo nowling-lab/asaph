@@ -83,6 +83,8 @@ def read_rf_snps(basedir):
         model_flnames = glob.glob(os.path.join(model_dir, "*"))
 
         for flname in model_flnames:
+            if not os.path.basename(flname).startswith("model"):
+                continue
             snps = deserialize(flname)
             n_trees = int(os.path.basename(os.path.dirname(flname)))
             models[n_trees].append(snps)

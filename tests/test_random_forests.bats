@@ -57,11 +57,11 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/random_forests \
 	--workdir ${WORKDIR_PATH} \
 	output-rankings \
-	--trees 250
+	--trees 100
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/rankings/rankings_rf_250.tsv" ]
-    [ -e "${WORKDIR_PATH}/figures/within_model_similarity_rf_250.png" ]
+    [ -e "${WORKDIR_PATH}/rankings/rankings_rf_100.tsv" ]
+    [ -e "${WORKDIR_PATH}/figures/within_model_similarity_rf_100.png" ]
 }
 
 @test "Run random_forests workflow with resampling" {
@@ -112,9 +112,9 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/random_forests \
 	--workdir ${WORKDIR_PATH} \
 	output-rankings \
-	--trees 250
+	--trees 100
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/rankings/rankings_rf_250.tsv" ]
-    [ -e "${WORKDIR_PATH}/figures/within_model_similarity_rf_250.png" ]
+    [ -e "${WORKDIR_PATH}/rankings/rankings_rf_100.tsv" ]
+    [ -e "${WORKDIR_PATH}/figures/within_model_similarity_rf_100.png" ]
 }
