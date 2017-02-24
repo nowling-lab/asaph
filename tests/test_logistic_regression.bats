@@ -62,12 +62,14 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	output-rankings \
 	--method sgd-l2 \
-	--n-models 75
+	--n-models 75 \
+	--plot-similarities
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/rankings" ]
     [ -e "${WORKDIR_PATH}/rankings/rankings_lr_sgd-l2_75.tsv" ]
     [ -e "${WORKDIR_PATH}/figures/lr_weights_sgd-l2_75.png" ]
+    [ -e "${WORKDIR_PATH}/figures/within_model_similarity_lr_sgd-l2_75.png" ]
 }
 
 @test "Logistic Regression workflow with no bagging, sgd-l2" {
@@ -117,12 +119,14 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	output-rankings \
 	--method sgd-l2 \
-	--n-models 75
+	--n-models 75 \
+	--plot-similarities
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/rankings" ]
     [ -e "${WORKDIR_PATH}/rankings/rankings_lr_sgd-l2_75.tsv" ]
     [ -e "${WORKDIR_PATH}/figures/lr_weights_sgd-l2_75.png" ]
+    [ -e "${WORKDIR_PATH}/figures/within_model_similarity_lr_sgd-l2_75.png" ]
 }
 
 @test "Logistic Regression workflow with bagging, sgd-en" {
@@ -175,12 +179,14 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	output-rankings \
 	--method sgd-en \
-	--n-models 75
+	--n-models 75 \
+	--plot-similarities
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/rankings" ]
     [ -e "${WORKDIR_PATH}/rankings/rankings_lr_sgd-en_75.tsv" ]
     [ -e "${WORKDIR_PATH}/figures/lr_weights_sgd-en_75.png" ]
+    [ -e "${WORKDIR_PATH}/figures/within_model_similarity_lr_sgd-en_75.png" ]
 }
 
 @test "Logistic Regression workflow with no bagging, sgd-en" {
@@ -230,12 +236,14 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	output-rankings \
 	--method sgd-en \
-	--n-models 75
+	--n-models 75 \
+	--plot-similarities
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/rankings" ]
     [ -e "${WORKDIR_PATH}/rankings/rankings_lr_sgd-en_75.tsv" ]
     [ -e "${WORKDIR_PATH}/figures/lr_weights_sgd-en_75.png" ]
+    [ -e "${WORKDIR_PATH}/figures/within_model_similarity_lr_sgd-en_75.png" ]
 }
 
 @test "Logistic Regression workflow with bagging, sag-l2" {
@@ -288,12 +296,14 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	output-rankings \
 	--method sag-l2 \
-	--n-models 75
+	--n-models 75 \
+	--plot-similarities
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/rankings" ]
     [ -e "${WORKDIR_PATH}/rankings/rankings_lr_sag-l2_75.tsv" ]
     [ -e "${WORKDIR_PATH}/figures/lr_weights_sag-l2_75.png" ]
+    [ -e "${WORKDIR_PATH}/figures/within_model_similarity_lr_sag-l2_75.png" ]
 }
 
 @test "Logistic Regression workflow with no bagging, sag-l2" {
@@ -343,12 +353,14 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	output-rankings \
 	--method sag-l2 \
-	--n-models 75
+	--n-models 75 \
+	--plot-similarities
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/rankings" ]
     [ -e "${WORKDIR_PATH}/rankings/rankings_lr_sag-l2_75.tsv" ]
     [ -e "${WORKDIR_PATH}/figures/lr_weights_sag-l2_75.png" ]
+    [ -e "${WORKDIR_PATH}/figures/within_model_similarity_lr_sag-l2_75.png" ]
 }
 
 @test "Logistic Regression workflow with bagging, asgd-l2" {
@@ -401,12 +413,14 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	output-rankings \
 	--method asgd-l2 \
-	--n-models 75
+	--n-models 75 \
+	--plot-similarities
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/rankings" ]
     [ -e "${WORKDIR_PATH}/rankings/rankings_lr_asgd-l2_75.tsv" ]
     [ -e "${WORKDIR_PATH}/figures/lr_weights_asgd-l2_75.png" ]
+    [ -e "${WORKDIR_PATH}/figures/within_model_similarity_lr_asgd-l2_75.png" ]
 }
 
 @test "Logistic Regression workflow with no bagging, asgd-l2" {
@@ -456,12 +470,14 @@ load model_setup_helper
 	--workdir ${WORKDIR_PATH} \
 	output-rankings \
 	--method asgd-l2 \
-	--n-models 75
+	--n-models 75 \
+	--plot-similarities
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/rankings" ]
     [ -e "${WORKDIR_PATH}/rankings/rankings_lr_asgd-l2_75.tsv" ]
     [ -e "${WORKDIR_PATH}/figures/lr_weights_asgd-l2_75.png" ]
+    [ -e "${WORKDIR_PATH}/figures/within_model_similarity_lr_asgd-l2_75.png" ]
 }
 
 @test "Logistic Regression workflow with bagging, default method" {
@@ -509,12 +525,14 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	output-rankings \
-	--n-models 75
+	--n-models 75 \
+	--plot-similarities
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/rankings" ]
     [ -e "${WORKDIR_PATH}/rankings/rankings_lr_sgd-l2_75.tsv" ]
     [ -e "${WORKDIR_PATH}/figures/lr_weights_sgd-l2_75.png" ]
+    [ -e "${WORKDIR_PATH}/figures/within_model_similarity_lr_sgd-l2_75.png" ]
 }
 
 
@@ -560,10 +578,12 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	output-rankings \
-	--n-models 75
+	--n-models 75 \
+	--plot-similarities
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/rankings" ]
     [ -e "${WORKDIR_PATH}/rankings/rankings_lr_sgd-l2_75.tsv" ]
     [ -e "${WORKDIR_PATH}/figures/lr_weights_sgd-l2_75.png" ]
+    [ -e "${WORKDIR_PATH}/figures/within_model_similarity_lr_sgd-l2_75.png" ]
 }

@@ -29,6 +29,8 @@ import numpy as np
 from asaph.analysis import write_similarity_curves
 from asaph.analysis import plot_similarity_curves
 from asaph.analysis import similarity_curves
+from asaph.analysis import similarity_within_model
+from asaph.analysis import plot_similarity_within_model
 from asaph.models import ProjectSummary
 from asaph.ml import LogisticRegressionEnsemble
 from asaph.newioutils import read_features
@@ -137,26 +139,33 @@ def output_rankings(args):
         raise Exception, "No ensemble with '%s' models has been trained yet." \
             % args.n_models
 
-    model = snp_models[args.n_models][0]
+    model1, model2 = snp_models[args.n_models]
 
     ranks_flname = os.path.join(rankings_dir,
                                 "rankings_lr_%s_%s.tsv" \
                                 % (args.method, args.n_models))
 
     with open(ranks_flname, "w") as fl:
-        for i in xrange(len(model)):
-            chrom, pos = model.labels[i]
-            importance = model.importances[i]
+        for i in xrange(len(model1)):
+            chrom, pos = model1.labels[i]
+            importance = model1.importances[i]
             fl.write("%s\t%s\t%s\n" % (chrom, pos, importance))
 
     fig_flname = os.path.join(figures_dir, "lr_weights_%s_%s.png" % \
                               (args.method, args.n_models))
     plt.clf()
     plt.grid(True)
-    plt.plot(model.importances, "m.-")
+    plt.plot(model1.importances, "m.-")
     plt.xlabel("SNPs (ordered)", fontsize=16)
     plt.ylabel("Weight", fontsize=16)
     plt.savefig(fig_flname, DPI=300)
+
+    if args.plot_similarities:
+        similarities = similarity_within_model([model1, model2])
+        plot_flname = os.path.join(figures_dir,
+                                   "within_model_similarity_lr_%s_%s.png" \
+                                   % (args.method, args.n_models))
+        plot_similarity_within_model(plot_flname, similarities)
 
 
 def parseargs():
@@ -218,6 +227,10 @@ def parseargs():
                               required=True,
                               help="Pick LR ensemble with this many models.")
 
+    output_parser.add_argument("--plot-similarities",
+                               action="store_true",
+                               help="Plot similarities for each level")
+    
     return parser.parse_args()
 
 if __name__ == "__main__":
