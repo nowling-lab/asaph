@@ -46,6 +46,26 @@ def sampled_snps_curves(all_models):
         snp1_feature_counts, \
         snp2_feature_counts
 
+def similarity_within_model(models):
+    similarities = []
+    snps1, snps2 = models
+    min_snps = min(len(snps1), len(snps2))
+    for n in xrange(1, min_snps+1):
+        percentage = 100.0 * float(snps1.take(n).count_intersection(snps2.take(n))) \
+                     / float(n)
+        similarities.append(percentage)
+        
+    return similarities
+
+def plot_similarity_within_model(flname, similarities):
+    plt.clf()
+    plt.plot(np.arange(len(similarities)) + 1, similarities, "k.-")
+    plt.xlabel("Top-Ranked SNPs", fontsize=16)
+    plt.ylabel("Jaccard Similarity (%)", fontsize=16)
+    plt.xlim([1, len(similarities) + 1])
+    plt.ylim([0, 100])
+    plt.savefig(flname, DPI=200)
+
 def similarity_curves(thresholds, all_models, universe_size):
     ordered_models = sorted(all_models.keys())
 

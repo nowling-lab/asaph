@@ -32,6 +32,8 @@ from asaph.analysis import sampled_snps_curves
 from asaph.analysis import similarity_curves
 from asaph.analysis import histogram_sparse_to_dense
 from asaph.analysis import plot_feature_histogram
+from asaph.analysis import similarity_within_model
+from asaph.analysis import plot_similarity_within_model
 from asaph.ml import ConstrainedBaggingRandomForest
 from asaph.newioutils import read_features
 from asaph.newioutils import read_rf_snps
@@ -142,14 +144,17 @@ def analyze_rankings(args):
 def output_rankings(args):
     workdir = args["workdir"]
 
+    figures_dir = os.path.join(workdir, "figures")
+    if not os.path.exists(figures_dir):
+        os.makedirs(figures_dir)
+
+    rankings_dir = os.path.join(workdir, "rankings")
+    if not os.path.exists(rankings_dir):
+        os.makedirs(rankings_dir)
+
     n_trees = args["trees"]
     if n_trees is None:
         print "Number of trees must be specified for outputting ranks"
-        sys.exit(1)
-
-    ranks_flname = args["ranks_file"]
-    if ranks_flname is None:
-        print "Output filename must be specified"
         sys.exit(1)
 
     all_models = read_rf_snps(workdir)
@@ -160,12 +165,19 @@ def output_rankings(args):
 
     snps1, snps2 = all_models[n_trees]
 
+    ranks_flname = os.path.join(rankings_dir,
+                                "rankings_rf_%s.tsv" % n_trees)
     fl = open(ranks_flname, "w")
     for i in xrange(len(snps1)):
         chrom, pos = snps1.labels[i]
         importance = snps1.importances[i]
         fl.write("%s\t%s\t%s\n" % (chrom, pos, importance))
 
+    similarities = similarity_within_model([snps1, snps2])
+    plot_flname = os.path.join(figures_dir,
+                               "within_model_similarity_rf_%s.png" % n_trees)
+    plot_similarity_within_model(plot_flname, similarities)
+        
     fl.close()
 
 def parseargs():
@@ -212,10 +224,6 @@ def parseargs():
     output_parser.add_argument("--trees",
                                type=int,
                                help="Number of trees in Random Forest")
-
-    output_parser.add_argument("--ranks-file",
-                               type=str,
-                               help="Output file for SNP ranks")
 
     return parser.parse_args()
 
