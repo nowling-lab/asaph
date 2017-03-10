@@ -54,8 +54,9 @@ The `analyze-rankings` mode will generate two plots, comparisons of the number o
 
     bin/random_forests output-rankings \
                        --workdir <path/to/workdir> \
-                       --ranks-file <path/for/output> \
                        --trees <select model with this many trees>
+
+The rankings will be output to a text file in the `<workdir>/rankings` directory.
 
 ## Logistic Regression
 Asaph can also be used for training ensembles of Logistic Regression models.  By training an ensemble and averaging over the feature weights, we can ensure that the rankings of the SNPs are consistent.  The LR workflow follows the RF workflow.  Once data is imported, you can train a LR model like so:
