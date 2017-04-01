@@ -64,19 +64,14 @@ def snp_pair_associations(workdir):
     next_output = 1
     snp_vs = []
     pairs = itertools.combinations(features.snp_feature_map.iteritems(), 2)
-    for i, (pair1, pair2) in enumerate(pairs):
-        snp_label1, snp_label2, v = cramers_v_pair(pair1, pair2, features)
-        
-        if i == next_output:
-            print "Pair", i, "has an association of", v
-            next_output *= 2
-        
-        snp_vs.append((v, snp_label1, snp_label2))
-
-    snp_vs.sort(reverse=True)
-
     with open(os.path.join(stats_dir, "snp_pairwise_associations.txt"), "w") as fl:
-        for v, snp_label1, snp_label2 in snp_vs:
+        for i, (pair1, pair2) in enumerate(pairs):
+            snp_label1, snp_label2, v = cramers_v_pair(pair1, pair2, features)
+            
+            if i == next_output:
+                print "Pair", i, "has an association of", v
+                next_output *= 2
+
             chrom1, pos1 = snp_label1
             chrom2, pos2 = snp_label2
             fl.write("\t".join([chrom1, pos1, chrom2, pos2, str(v)]))
