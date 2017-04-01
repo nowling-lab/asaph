@@ -19,10 +19,6 @@ from collections import defaultdict
 import os
 import sys
 
-import matplotlib
-matplotlib.use("PDF")
-import matplotlib.pyplot as plt
-
 import numpy as np
 
 from asaph.analysis import write_similarity_curves
