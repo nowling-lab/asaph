@@ -40,20 +40,21 @@ To improve run times, reduce memory usage, and stabilize rankings, Asaph support
 ## Random Forests
 Asaph's main purpose is to support calculation of variable importances scores and ranking of SNPs using Random Forests.  Once data is imported, Random Forest models can be trained with the command:
 
-    bin/random_forests train \
-                       --workdir <path/to/workdir> \
+    bin/random_forests --workdir <path/to/workdir> \
+                       train \
                        --trees <number of trees>
 
 
 Generally, you will want to sweep over the trees parameter, so you'll run the above command with a range of values for the `trees` parameter.  Asaph actually trains two Random Forests each time, to use in checking convergence.  You can check the convergence of the SNP rankings using the `analyzing-rankings` mode:
 
-    bin/random_forests analyze-rankings \
-                       --workdir <path/to/workdir>
+    bin/random_forests --workdir <path/to/workdir> \
+                       analyze-rankings
+                       
 
 The `analyze-rankings` mode will generate two plots, comparisons of the number of SNPs used and the agreement of the top 0.01%, 0.1%, 1%, and 10% of ranked SNPs between each pair of models.  The plots are written in PDF and PNG formats and stored in `<workdir>/figures`. If the rankings do not demonstrate convergence, run the training command with a larger number of trees.  Once the rankings have converged, you can output the rankings to a text file:
 
-    bin/random_forests output-rankings \
-                       --workdir <path/to/workdir> \
+    bin/random_forests --workdir <path/to/workdir> \
+                       output-rankings \
                        --trees <select model with this many trees>
 
 The rankings will be output to a text file in the `<workdir>/rankings` directory.
@@ -61,19 +62,19 @@ The rankings will be output to a text file in the `<workdir>/rankings` directory
 ## Logistic Regression
 Asaph can also be used for training ensembles of Logistic Regression models.  By training an ensemble and averaging over the feature weights, we can ensure that the rankings of the SNPs are consistent.  The LR workflow follows the RF workflow.  Once data is imported, you can train a LR model like so:
 
-    bin/logistic_regression train \
-                            --workdir <path/to/workdir> \
+    bin/logistic_regression --workdir <path/to/workdir> \
+                            train \
                             --n-models <number of models>
 
 Convergence of the SNP rankings can be evaluated like with the command:
 
-    bin/logistic_regression analyze-rankings \
-                            --workdir <path/to/workdir>
+    bin/logistic_regression --workdir <path/to/workdir> \
+                            analyze-rankings
 
 The `analyze-rankings` mode will generate two plots, comparisons of the number of SNPs used and the agreement of the top 0.01%, 0.1%, 1%, and 10% of ranked SNPs between each pair of models.  The plots are written in PDF and PNG formats and stored in `<workdir>/figures`. If the rankings do not demonstrate convergence, run the training command with a larger number of models.  Once the rankings have converged, you can output the rankings to a text file:
 
-    bin/logistic_gression output-rankings \
-                          --workdir <path/to/workdir> \
+    bin/logistic_gression --workdir <path/to/workdir> \
+                          output-rankings \
                           --n-models <select ensemble with this many models>
 
 The rankings will be output to a text file in the `<workdir>/rankings` directory.
