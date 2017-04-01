@@ -83,6 +83,15 @@ By default, LR models are trained with Stochastic Gradient Descent (SGD) and a L
 
 You can also enable bagging, where the dataset is bootstrapped before each model is trained, with the `--bagging` flag for the `train` function. Bagging is disabled by default since we have found little impact from its usage.
 
+## SNP Pair Associations
+[Cramer's V](https://en.wikipedia.org/wiki/Cram%C3%A9r's_V) is a measure of association between nominal variables.  Asaph can use Cramer's V to calculate pairwise "correlations" (associations) between SNPs:
+
+    bin/snp_pairwise_associations --workdir <path/to/workdir>
+
+The pairwise associations will then be written a text file in the `<workdir>/statistics" directory.
+
+The pairwise associations calculation requires that the data was imported with the "categories" feature encoding.
+
 ## Running Tests
 Asaph has a test suite implemented using the [Bats](https://github.com/sstephenson/bats) framework.  You can run the test suite like so:
 

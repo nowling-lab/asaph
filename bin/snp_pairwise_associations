@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+BINPATH=`dirname $0`
+python "$BINPATH/../asaph/snp_pairwise_associations.py" $@
