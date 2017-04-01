@@ -2,7 +2,8 @@ setup() {
     N_INDIVIDUALS=20
     N_SNPS=1000
 
-    export TEST_TEMP_DIR=`dirname $(mktemp -u)`
+    export TEST_TEMP_DIR=`mktemp -u --tmpdir asaph-tests.XXXX`
+    mkdir -p ${TEST_TEMP_DIR}
 
     export VCF_PATH="${TEST_TEMP_DIR}/test.vcf"
     export POPS_PATH="${TEST_TEMP_DIR}/populations.txt"

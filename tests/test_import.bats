@@ -1,20 +1,13 @@
 #!/usr/bin/env bats
 
-count_snps() {
-    local counts=`python -c "import cPickle; data=cPickle.load(open('${1}/snp_feature_indices')); print len(data)"`
-    echo "$counts"
-}
-
-count_samples() {
-    local counts=`python -c "import cPickle; data=cPickle.load(open('${1}/sample_labels')); print len(data)"`
-    echo "$counts"
-}
+load import_helper
 
 setup() {
     N_INDIVIDUALS=20
     N_SNPS=10000
 
-    export TEST_TEMP_DIR=`dirname $(mktemp -u)`
+    export TEST_TEMP_DIR=`mktemp -u --tmpdir asaph-tests.XXXX`
+    mkdir -p ${TEST_TEMP_DIR}
 
     export VCF_PATH="${TEST_TEMP_DIR}/test.vcf"
     export POPS_PATH="${TEST_TEMP_DIR}/populations.txt"
@@ -23,11 +16,11 @@ setup() {
     export IMPORT_CMD="${BATS_TEST_DIRNAME}/../bin/import"
 
     ${BATS_TEST_DIRNAME}/../bin/generate_data \
-			--seed 1234 \
-			--output-vcf ${VCF_PATH} \
-			--output-populations ${POPS_PATH} \
-			--individuals ${N_INDIVIDUALS} \
-			--snps ${N_SNPS}
+                        --seed 1234 \
+                        --output-vcf ${VCF_PATH} \
+                        --output-populations ${POPS_PATH} \
+                        --individuals ${N_INDIVIDUALS} \
+                        --snps ${N_SNPS}
 }
 
 teardown() {
@@ -53,12 +46,15 @@ teardown() {
 	--populations ${POPS_PATH} \
 	--feature-type counts
 
+    N_FEATURE_INDICES=$((N_SNPS * 2))
+
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
     [ -d "${WORKDIR_PATH}" ]
     [ -e "${WORKDIR_PATH}/project_summary" ]
     [ $(count_snps ${WORKDIR_PATH}) -eq ${N_SNPS} ]
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
+    [ $(count_snp_feature_indices ${WORKDIR_PATH}) -eq ${N_FEATURE_INDICES} ]
 }
 
 @test "Import data: vcf, dna, categories" {
@@ -68,12 +64,15 @@ teardown() {
 	--populations ${POPS_PATH} \
 	--feature-type categories
 
+    N_FEATURE_INDICES=$((N_SNPS * 3))
+
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
     [ -d "${WORKDIR_PATH}" ]
     [ -e "${WORKDIR_PATH}/project_summary" ]
     [ $(count_snps ${WORKDIR_PATH}) -eq ${N_SNPS} ]
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
+    [ $(count_snp_feature_indices ${WORKDIR_PATH}) -eq ${N_FEATURE_INDICES} ]
 }
 
 @test "Import data: vcf, dna, counts, feature_compression" {
@@ -84,12 +83,15 @@ teardown() {
 	--feature-type counts \
 	--compress
 
+    N_FEATURE_INDICES=$((N_SNPS * 2))
+
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
     [ -d "${WORKDIR_PATH}" ]
     [ -e "${WORKDIR_PATH}/project_summary" ]
     [ $(count_snps ${WORKDIR_PATH}) -eq ${N_SNPS} ]
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
+    [ $(count_snp_feature_indices ${WORKDIR_PATH}) -eq ${N_FEATURE_INDICES} ]
 }
 
 @test "Import data: vcf, dna, categories, feature_compression" {
@@ -100,10 +102,13 @@ teardown() {
 	--feature-type categories \
 	--compress
 
+    N_FEATURE_INDICES=$((N_SNPS * 3))
+
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
     [ -d "${WORKDIR_PATH}" ]
     [ -e "${WORKDIR_PATH}/project_summary" ]
     [ $(count_snps ${WORKDIR_PATH}) -eq ${N_SNPS} ]
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
+    [ $(count_snp_feature_indices ${WORKDIR_PATH}) -eq ${N_FEATURE_INDICES} ]
 }

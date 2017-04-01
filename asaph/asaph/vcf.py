@@ -250,7 +250,7 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
                 feature_column_idx = col_dict[column]
                 snp_features[(chrom, pos)].append(feature_column_idx)
         else:
-            snp_features[(chrom, pos)] = [column_idx]
+            snp_features[(chrom, pos)].append(column_idx)
             feature_columns.append(column)
             column_idx += 1
 
