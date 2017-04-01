@@ -62,7 +62,6 @@ def snp_pair_associations(workdir):
     print features.feature_matrix.shape
 
     next_output = 1
-    snp_vs = []
     pairs = itertools.combinations(features.snp_feature_map.iteritems(), 2)
     with open(os.path.join(stats_dir, "snp_pairwise_associations.txt"), "w") as fl:
         for i, (pair1, pair2) in enumerate(pairs):
