@@ -17,6 +17,7 @@ limitations under the License.
 import argparse
 from collections import defaultdict
 import itertools
+import random
 import os
 import sys
 
@@ -31,21 +32,46 @@ from asaph.newioutils import serialize
 
 onehot_to_ints = np.array([1, 2, 3])
 
-def cramers_v_pair(pair1, pair2, features):
+def pair_association(pair1, pair2, features, model_type):
     snp_label1, feature_idx1 = pair1
     snp_label2, feature_idx2 = pair2
-    # convert one-hot encoding back into integer encoding
-    snp_features1 = np.dot(features.feature_matrix[:, feature_idx1],
-                           onehot_to_ints)
-    snp_features2 = np.dot(features.feature_matrix[:, feature_idx2],
-                           onehot_to_ints)
+
+    if model_type == "regular" or model_type == "permutation":
+        # convert one-hot encoding back into integer encoding
+        snp_features1 = np.dot(features.feature_matrix[:, feature_idx1],
+                               onehot_to_ints)
+        snp_features2 = np.dot(features.feature_matrix[:, feature_idx2],
+                               onehot_to_ints)
+        if model_type == "permutation":
+            np.random.shuffle(snp_features1)
+            np.random.shuffle(snp_features2)
+    else:
+        n_samples = features.feature_matrix.shape[0]
+        snp_features1 = np.random.randint(1, 4, n_samples)
+        snp_features2 = np.random.randint(1, 4, n_samples)
     
     v = cramers_v(snp_features1,
                   snp_features2)
 
     return snp_label1, snp_label2, v
 
-def snp_pair_associations(workdir):
+def sample_pairs(n_samples, items):
+    sampled = set()
+    while len(sampled) < n_samples:
+        key1, value1 = random.choice(items)
+        key2, value2 = random.choice(items)
+
+        if key1 == key2:
+            continue
+        
+        pair = frozenset([key1, key2])
+        if pair in sampled:
+            continue
+
+        sampled.add(pair)
+        yield (key1, value1), (key2, value2)
+
+def snp_pair_associations(workdir, n_samples, model_type):
     if not os.path.exists(workdir):
         raise Exception, "workdir '%s' does not exist." % workdir
 
@@ -62,10 +88,23 @@ def snp_pair_associations(workdir):
     print features.feature_matrix.shape
 
     next_output = 1
-    pairs = itertools.combinations(features.snp_feature_map.iteritems(), 2)
-    with open(os.path.join(stats_dir, "snp_pairwise_associations.txt"), "w") as fl:
+    if n_samples is not None:
+        pairs = sample_pairs(n_samples, features.snp_feature_map.items())
+    else:
+        pairs = itertools.combinations(features.snp_feature_map.iteritems(), 2)
+
+    flname = "snp_pairwise_associations.txt"
+    if model_type == "permutation":
+        flname = "snp_pairwise_associations_permutation.txt"
+    elif model_type == "uniform-random":
+        flname = "snp_pairwise_associations_uniform-random.txt"
+        
+    with open(os.path.join(stats_dir, flname), "w") as fl:
         for i, (pair1, pair2) in enumerate(pairs):
-            snp_label1, snp_label2, v = cramers_v_pair(pair1, pair2, features)
+            snp_label1, snp_label2, v = pair_association(pair1,
+                                                         pair2,
+                                                         features,
+                                                         model_type)
             
             if i == next_output:
                 print "Pair", i, "has an association of", v
@@ -81,9 +120,21 @@ def parseargs():
 
     parser.add_argument("--workdir", type=str, help="Work directory", required=True)
 
+    parser.add_argument("--samples",
+                        type=int,
+                        help="Number of samples")
+
+    parser.add_argument("--model-type",
+                        choices = ["regular",
+                                   "uniform-random",
+                                   "permutation"],
+                        default = "regular")
+
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = parseargs()
 
-    snp_pair_associations(args.workdir)
+    snp_pair_associations(args.workdir,
+                          args.samples,
+                          args.model_type)
