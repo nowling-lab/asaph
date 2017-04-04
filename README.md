@@ -83,12 +83,29 @@ By default, LR models are trained with Stochastic Gradient Descent (SGD) and a L
 
 You can also enable bagging, where the dataset is bootstrapped before each model is trained, with the `--bagging` flag for the `train` function. Bagging is disabled by default since we have found little impact from its usage.
 
-## SNP Pair Associations
-[Cramer's V](https://en.wikipedia.org/wiki/Cram%C3%A9r's_V) is a measure of association between nominal variables.  Asaph can use Cramer's V to calculate pairwise "correlations" (associations) between SNPs:
+## Cramer's V
+[Cramer's V](https://en.wikipedia.org/wiki/Cram%C3%A9r's_V) is a measure of association between nominal variables.  Asaph can use Cramer's V to calculate associations between the SNPs and population structure or pairwise among the SNPs themselves.  The command for calculating the associations between the SNPs and population structure is:
 
-    bin/snp_pairwise_associations --workdir <path/to/workdir>
+    bin/cramers_v --workdir <path/to/workdir> \
+                  populations
 
-The pairwise associations will then be written a text file in the `<workdir>/statistics" directory.
+The associations will then be written a text file located at `<workdir>/statistics/snp_population_associations.txt`.
+
+You can also calculate the associations between pairs of SNPs:
+
+    bin/cramers_v --workdir <path/to/workdir> \
+                  pairwise
+
+The associations will then be written a text file located at `<workdir>/statistics/snp_pairwise_associations.txt`.  Since the number of pairs is often very large, you can evaluate the pairwise associations on sampled pairs of SNPs using the `--samples N` flag.
+
+Lastly, you can calculate the associations between all SNPs and a single SNP:
+
+    bin/cramers_v --workdir <path/to/workdir> \
+                  pairwise-single \
+                  --chrom 1 \
+                  --pos 200
+
+The associations will then be written a text file located at `<workdir>/statistics/snp_pairwise_associations_1_200.txt`.
 
 The pairwise associations calculation requires that the data was imported with the "categories" feature encoding.
 
