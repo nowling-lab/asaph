@@ -107,7 +107,7 @@ Lastly, you can calculate the associations between all SNPs and a single SNP:
 
 The associations will then be written a text file located at `<workdir>/statistics/snp_pairwise_associations_1_200.txt`.
 
-The pairwise associations calculation requires that the data was imported with the "categories" feature encoding.
+The pairwise associations calculation requires that the data was imported with the "categories" feature encoding. The population associations calculation supports both the "categories" and "counts" feature encodings.
 
 ## Running Tests
 Asaph has a test suite implemented using the [Bats](https://github.com/sstephenson/bats) framework.  You can run the test suite like so:

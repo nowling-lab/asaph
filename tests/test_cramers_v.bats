@@ -12,13 +12,22 @@ load model_setup_helper
     [ "$status" -eq 0 ]
 }
 
-@test "Calculate Cramer's V vs population structure" {
+@test "Calculate Cramer's V vs population structure (categories)" {
     run ${BATS_TEST_DIRNAME}/../bin/cramers_v \
 	    --workdir ${WORKDIR_PATH} \
         populations
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/statistics/snp_population_associations.txt" ]
+}
+
+@test "Calculate Cramer's V vs population structure (counts)" {
+    run ${BATS_TEST_DIRNAME}/../bin/cramers_v \
+	    --workdir ${COUNTS_WORKDIR_PATH} \
+        populations
+
+    [ "$status" -eq 0 ]
+    [ -e "${COUNTS_WORKDIR_PATH}/statistics/snp_population_associations.txt" ]
 }
 
 @test "Calculate Cramer's V pairwise" {

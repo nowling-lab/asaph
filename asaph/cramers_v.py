@@ -128,7 +128,42 @@ def pairwise_single_associations(features, stats_dir, chrom, pos):
             fl.write("\t".join([chrom, pos, str(v)]))
             fl.write("\n")
 
-def pop_association(pair, features):
+def pop_association_counts(pair, features, labels):
+    snp_label, feature_idx = pair
+
+    matrix = features.feature_matrix[:, feature_idx]
+    n_samples, n_alleles = matrix.shape
+    pop_labels = []
+    allele_labels = []
+    for i in xrange(n_samples):
+        for j in xrange(n_alleles):
+            for c in xrange(matrix[i, j]):
+                pop_labels.append(labels[i])
+                allele_labels.append(j)
+
+    v = cramers_v(pop_labels,
+                  allele_labels)
+
+    return snp_label, v
+
+def population_associations_counts(features, stats_dir):
+    flname = "snp_population_associations.txt"
+    with open(os.path.join(stats_dir, flname), "w") as fl:
+        next_output = 1
+        for i, pair in enumerate(features.snp_feature_map.iteritems()):
+            snp_label, v = pop_association_counts(pair,
+                                                  features,
+                                                  features.class_labels)
+            
+            if i == next_output:
+                print i, "SNP", pair[0], "has an association of", v
+                next_output *= 2
+
+            chrom, pos = snp_label
+            fl.write("\t".join([chrom, pos, str(v)]))
+            fl.write("\n")
+        
+def pop_association_categories(pair, features):
     snp_label, feature_idx = pair
 
     # convert one-hot encoding back into integer encoding
@@ -140,13 +175,13 @@ def pop_association(pair, features):
 
     return snp_label, v
             
-def population_associations(features, stats_dir):
+def population_associations_categories(features, stats_dir):
     flname = "snp_population_associations.txt"
     with open(os.path.join(stats_dir, flname), "w") as fl:
         next_output = 1
         for i, pair in enumerate(features.snp_feature_map.iteritems()):
-            snp_label, v = pop_association(pair,
-                                           features)
+            snp_label, v = pop_association_categories(pair,
+                                                      features)
             
             if i == next_output:
                 print i, "SNP", pair[0], "has an association of", v
@@ -199,21 +234,35 @@ if __name__ == "__main__":
         os.makedirs(stats_dir)
 
     project_summary = deserialize(os.path.join(args.workdir, PROJECT_SUMMARY_FLNAME))
-    if project_summary.feature_encoding != "categories":
-        print "Cramer's V only works with the 'categories' feature encoding."
-        sys.exit(1)
     
     features = read_features(args.workdir)
     print features.feature_matrix.shape
 
     if args.mode == "pairwise":
+        if project_summary.feature_encoding != "categories":
+            print "Pairwise Cramer's V only works with the 'categories' feature encoding."
+            sys.exit(1)
+
         pairwise_associations(features,
                               stats_dir,
                               args.samples)
+        
     if args.mode == "populations":
-        population_associations(features,
-                                stats_dir)
+        if project_summary.feature_encoding == "categories":
+            population_associations_categories(features,
+                                               stats_dir)
+        elif project_summary.feature_encoding == "counts":
+            population_associations_counts(features,
+                                           stats_dir)
+        else:
+            print "Unsupported feature encoding '%s'" % project_summary.feature_encoding
+            sys.exit(1)
+            
     elif args.mode == "pairwise-single":
+        if project_summary.feature_encoding != "categories":
+            print "Pairwise Cramer's V only works with the 'categories' feature encoding."
+            sys.exit(1)
+
         pairwise_single_associations(features,
                                      stats_dir,
                                      args.chrom,
