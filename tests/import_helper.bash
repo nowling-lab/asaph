@@ -35,7 +35,5 @@ setup() {
 }
 
 teardown() {
-    rm ${VCF_GZ_PATH}
-    rm ${POPS_PATH}
-    rm -rf ${WORKDIR_PATH}
+    rm -rf ${TEST_TEMP_DIR}
 }

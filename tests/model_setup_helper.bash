@@ -31,8 +31,5 @@ setup() {
 }
 
 teardown() {
-    rm ${VCF_PATH}
-    rm ${POPS_PATH}
-    rm -rf ${WORKDIR_PATH}
-    rm -rf ${COUNTS_WORKDIR_PATH}
+    rm -rf ${TEST_TEMP_DIR}
 }
