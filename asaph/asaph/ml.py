@@ -20,11 +20,22 @@ import random
 import numpy as np
 import numpy.linalg as la
 
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.decomposition import TruncatedSVD
 from sklearn.ensemble import BaggingClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
+from sklearn.tree import DecisionTreeClassifier
+
+
+class PCA(object):
+    def __init__(self, n_components):
+        self.svd = TruncatedSVD(n_components=n_components)
+
+    def explained_variance(self, features):
+        self.svd.fit(features)
+
+        return self.svd.explained_variance_ratio_
 
 class LogisticRegressionEnsemble(object):
     """
