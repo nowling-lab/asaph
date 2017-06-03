@@ -22,6 +22,7 @@ import matplotlib
 matplotlib.use("PDF")
 import matplotlib.pyplot as plt
 
+from asaph.ml import mcfadden_r2
 from asaph.ml import PCA
 from asaph.newioutils import read_features
 
@@ -50,6 +51,18 @@ def explained_variance_analysis(args):
                 DPI=300)
 
 
+def coefficient_of_determination(args):
+    workdir = args.workdir
+
+    features = read_features(workdir)
+
+    pca = PCA(args.n_components)
+    projected = pca.transform(features.feature_matrix)
+    r2 = mcfadden_r2(projected,
+                     features.class_labels)
+
+    print "McFadden r**2", r2
+
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - PCA")
 
@@ -66,6 +79,14 @@ def parseargs():
                             required=True,
                             help="Number of PCs to compute")
 
+    r2_parser = subparsers.add_parser("mcfadden-r2",
+                                      help="Compute McFadden's R2 of PC-projected features under a LR model")
+    
+    r2_parser.add_argument("--n-components",
+                            type=int,
+                            required=True,
+                            help="Number of PCs to compute")
+
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -73,6 +94,8 @@ if __name__ == "__main__":
 
     if args.mode == "explained-variance-analysis":
         explained_variance_analysis(args)
+    elif args.mode == "mcfadden-r2":
+        coefficient_of_determination(args)
     else:
         print "Unknown mode '%s'" % args.mode
         sys.exit(1)

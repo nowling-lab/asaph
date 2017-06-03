@@ -25,8 +25,40 @@ from sklearn.ensemble import BaggingClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
+from sklearn.metrics import log_loss
 from sklearn.tree import DecisionTreeClassifier
 
+def null_predict_proba(intercept):
+    prob = 1.0 / (1.0 + np.exp(-intercept))
+    return prob
+
+def mcfadden_r2(X, y, n_models=250, n_iter=20):
+    """
+    Computes coefficient of determination using McFadden's method
+    """
+    y = np.array(y)
+
+    sgd = SGDClassifier(loss="log",
+                        penalty="l2",
+                        n_iter=n_iter)
+    ensemble = BaggingClassifier(sgd,
+                                 n_estimators=n_models,
+                                 bootstrap=True)
+    ensemble.fit(X, y)
+
+    model_probs = ensemble.predict_proba(X)
+    model_log_likelihood = -1. * log_loss(y,
+                                          model_probs[:, 1],
+                                          normalize=False)
+
+    # "null model" with only intercept
+    intercept = np.float(np.sum(y)) / y.shape[0]
+    null_probs = np.ones(y.shape) * null_predict_proba(intercept)
+    null_log_likelihood = -1. * log_loss(y,
+                                         null_probs,
+                                         normalize=False)
+    
+    return 1.0 - model_log_likelihood / null_log_likelihood
 
 class PCA(object):
     def __init__(self, n_components):
@@ -36,6 +68,10 @@ class PCA(object):
         self.svd.fit(features)
 
         return self.svd.explained_variance_ratio_
+
+    def transform(self, features):
+        return self.svd.fit_transform(features)
+
 
 class LogisticRegressionEnsemble(object):
     """
