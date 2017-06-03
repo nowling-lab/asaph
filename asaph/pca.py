@@ -60,7 +60,8 @@ def coefficient_of_determination(args):
 
     pca = PCA(args.n_components)
     projected = pca.transform(features.feature_matrix)
-    r2 = mcfadden_r2(projected,
+    selected = projected[:, args.model_components]
+    r2 = mcfadden_r2(selected,
                      features.class_labels)
 
     print "McFadden r**2", r2
@@ -139,6 +140,11 @@ def parseargs():
                             type=int,
                             required=True,
                             help="Number of PCs to compute")
+
+    r2_parser.add_argument("--model-components",
+                           type=int,
+                           nargs="+",
+                           help="Components to use in model")
 
     plot_parser = subparsers.add_parser("plot-projections",
                                         help="Plot samples on principal coordinates")
