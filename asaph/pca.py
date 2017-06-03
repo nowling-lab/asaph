@@ -15,12 +15,14 @@ limitations under the License.
 """
 
 import argparse
+from itertools import tee, izip
 import os
 import sys
 
 import matplotlib
 matplotlib.use("PDF")
 import matplotlib.pyplot as plt
+import numpy as np
 
 from asaph.ml import mcfadden_r2
 from asaph.ml import PCA
@@ -63,6 +65,57 @@ def coefficient_of_determination(args):
 
     print "McFadden r**2", r2
 
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = tee(iterable)
+    next(b, None)
+    return izip(a, b)
+
+def plot_projections(args):
+    if len(args.pairs) != 2:
+        print "Error: PCs must be provided in pairs of 2"
+        sys.exit(1)
+
+    workdir = args.workdir
+
+    figures_dir = os.path.join(workdir, "figures")
+    if not os.path.exists(figures_dir):
+        os.makedirs(figures_dir)
+    
+    features = read_features(workdir)
+
+    pca = PCA(args.n_components)
+    projected = pca.transform(features.feature_matrix)
+
+    labels = np.array(features.class_labels)
+    pop1 = labels == 0.
+    pop2 = labels == 1.
+    pop1_name = "Pop 1"
+    pop2_name = "Pop 2"
+
+    for p1, p2 in pairwise(args.pairs):
+        fig_flname = os.path.join(figures_dir,
+                                  "pca_projection_%s_%s.png" % (str(p1), str(p2)))
+        plt.clf()
+        plt.grid(True)
+        plt.scatter(projected[pop1, p1],
+                    projected[pop1, p2],
+                    color="m",
+                    edgecolor="k",
+                    alpha=0.7,
+                    label=pop1_name)
+        plt.scatter(projected[pop2, p1],
+                    projected[pop2, p2],
+                    color="c",
+                    edgecolor="k",
+                    alpha=0.7,
+                    label=pop2_name)
+        plt.xlabel("Principal Component %s" % p1, fontsize=16)
+        plt.ylabel("Principal Component %s" % p2, fontsize=16)
+        plt.legend()
+        plt.savefig(fig_flname,
+                    DPI=300)
+
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - PCA")
 
@@ -87,6 +140,20 @@ def parseargs():
                             required=True,
                             help="Number of PCs to compute")
 
+    plot_parser = subparsers.add_parser("plot-projections",
+                                        help="Plot samples on principal coordinates")
+
+    plot_parser.add_argument("--n-components",
+                             type=int,
+                             required=True,
+                             help="Number of PCs to compute")
+
+    plot_parser.add_argument("--pairs",
+                             type=int,
+                             nargs="+",
+                             required=True,
+                             help="Pairs of PCs to plot")
+
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -96,6 +163,8 @@ if __name__ == "__main__":
         explained_variance_analysis(args)
     elif args.mode == "mcfadden-r2":
         coefficient_of_determination(args)
+    elif args.mode == "plot-projections":
+        plot_projections(args)
     else:
         print "Unknown mode '%s'" % args.mode
         sys.exit(1)
