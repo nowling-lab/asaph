@@ -117,6 +117,35 @@ def plot_projections(args):
         plt.savefig(fig_flname,
                     DPI=300)
 
+def output_coordinates(args):
+    workdir = args.workdir
+
+    features = read_features(workdir)
+
+    pca = PCA(args.n_components)
+    projected = pca.transform(features.feature_matrix)
+    selected = projected[:, args.selected_components]
+    
+    labels = np.array(features.class_labels)
+    pop1 = labels == 0.
+    pop2 = labels == 1.
+    pop1_name = "Pop 1"
+    pop2_name = "Pop 2"
+
+    with open(args.output_fl, "w") as fl:
+        headers = ["sample", "population"]
+        headers.extend(map(str, args.selected_components))
+        fl.write("\t".join(headers))
+        fl.write("\n")
+
+        for i in xrange(len(features.sample_labels)):
+            sample = features.sample_labels[i]
+            pop = str(features.class_labels[i])
+            line = [sample, pop]
+            line.extend(map(str, selected[i, :]))
+            fl.write("\t".join(line))
+            fl.write("\n")
+    
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - PCA")
 
@@ -146,6 +175,24 @@ def parseargs():
                            nargs="+",
                            help="Components to use in model")
 
+    output_parser = subparsers.add_parser("output-coordinates",
+                                      help="Output PC projected coordinates")
+    
+    output_parser.add_argument("--n-components",
+                               type=int,
+                               required=True,
+                               help="Number of PCs to compute")
+    
+    output_parser.add_argument("--selected-components",
+                               type=int,
+                               nargs="+",
+                               help="Components to output")
+
+    output_parser.add_argument("--output-fl",
+                               type=str,
+                               required=True,
+                               help="Output file")
+    
     plot_parser = subparsers.add_parser("plot-projections",
                                         help="Plot samples on principal coordinates")
 
@@ -171,6 +218,8 @@ if __name__ == "__main__":
         coefficient_of_determination(args)
     elif args.mode == "plot-projections":
         plot_projections(args)
+    elif args.mode == "output-coordinates":
+        output_coordinates(args)
     else:
         print "Unknown mode '%s'" % args.mode
         sys.exit(1)
