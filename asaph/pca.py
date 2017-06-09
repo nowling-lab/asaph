@@ -47,10 +47,9 @@ def explained_variance_analysis(args):
 
     plt.clf()
     plt.grid(True)
-    plt.plot(explained_variance_ratios, "m.-")
+    plt.semilogy(explained_variance_ratios, "m.-")
     plt.xlabel("Principal Component", fontsize=16)
     plt.ylabel("Explained Variance Ratio", fontsize=16)
-    plt.ylim([0., 1.])
     plt.savefig(fig_flname,
                 DPI=300)
 
