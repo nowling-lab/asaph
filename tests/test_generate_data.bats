@@ -23,10 +23,11 @@ setup() {
 
 @test "Test VCF data generation" {
     run ${CMD} \
-	--output-vcf ${VCF_PATH} \
-	--output-populations ${POPS_PATH} \
-	--individuals ${N_INDIVIDUALS} \
-	--snps ${N_SNPS}
+        --n-populations 2 \
+	    --output-vcf ${VCF_PATH} \
+	    --output-populations ${POPS_PATH} \
+	    --individuals ${N_INDIVIDUALS} \
+	    --snps ${N_SNPS}
 
     [ "$status" -eq 0 ]
     [ -e ${VCF_PATH} ]
@@ -38,10 +39,11 @@ setup() {
 
 @test "Test VCF.gz data generation" {
     run ${CMD} \
-	--output-vcf-gz ${VCF_PATH}.gz \
-	--output-populations ${POPS_PATH} \
-	--individuals ${N_INDIVIDUALS} \
-	--snps ${N_SNPS}
+        --n-populations 2 \
+	    --output-vcf-gz ${VCF_PATH}.gz \
+	    --output-populations ${POPS_PATH} \
+	    --individuals ${N_INDIVIDUALS} \
+	    --snps ${N_SNPS}
 
     [ "$status" -eq 0 ]
     [ -e ${VCF_PATH}.gz ]

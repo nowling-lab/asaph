@@ -37,10 +37,12 @@ def vcf_gz_writer(flname, stream):
             fl.write(ln)
             fl.write("\n")
 
-def pops_writer(flname, n_individuals):
-    pops = { "population1" : [],
-             "population2" : [] }
-
+def pops_writer(flname, n_individuals, n_populations):
+    pops = dict()
+    for i in xrange(n_populations):
+        name = "population%s" % (i+1)
+        pops[name ] = []
+        
     for i in xrange(n_individuals):
         pop = random.sample(pops.keys(), 1)[0]
         pops[pop].append(str(i))
@@ -78,6 +80,10 @@ def parseargs():
                         type=int,
                         required=False)
 
+    parser.add_argument("--n-populations",
+                        type=int,
+                        required=True)
+
     return parser.parse_args()
 
 
@@ -88,7 +94,8 @@ if __name__ == "__main__":
         random.seed(args.seed)
 
     pops_writer(args.output_populations,
-                args.individuals)
+                args.individuals,
+                args.n_populations)
 
     if args.output_vcf:
         vcf_writer(args.output_vcf,

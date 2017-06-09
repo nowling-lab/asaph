@@ -2,12 +2,34 @@
 
 load import_helper
 
+setup() {
+    N_INDIVIDUALS=20
+    N_SNPS=10000
+
+    export TEST_TEMP_DIR=`mktemp -u --tmpdir asaph-tests.XXXX`
+    mkdir -p ${TEST_TEMP_DIR}
+
+    export VCF_GZ_PATH="${TEST_TEMP_DIR}/test.vcf.gz"
+    export POPS_PATH="${TEST_TEMP_DIR}/populations.txt"
+    export WORKDIR_PATH="${TEST_TEMP_DIR}/workdir"
+
+    export IMPORT_CMD="${BATS_TEST_DIRNAME}/../bin/import"
+
+    ${BATS_TEST_DIRNAME}/../bin/generate_data \
+                        --seed 1234 \
+                        --n-populations 2 \
+                        --output-vcf-gz ${VCF_GZ_PATH} \
+                        --output-populations ${POPS_PATH} \
+                        --individuals ${N_INDIVIDUALS} \
+                        --snps ${N_SNPS}
+}
+
 @test "Import data: vcf.gz, dna, counts" {
     run ${IMPORT_CMD} \
-	--workdir ${WORKDIR_PATH} \
-	--vcf-gz ${VCF_GZ_PATH} \
-	--populations ${POPS_PATH} \
-	--feature-type counts
+	    --workdir ${WORKDIR_PATH} \
+	    --vcf-gz ${VCF_GZ_PATH} \
+	    --populations ${POPS_PATH} \
+	    --feature-type counts
 
     N_FEATURE_INDICES=$((N_SNPS * 2))
 
@@ -21,10 +43,10 @@ load import_helper
 
 @test "Import data: vcf.gz, dna, categories" {
     run ${IMPORT_CMD} \
-	--workdir ${WORKDIR_PATH} \
-	--vcf-gz ${VCF_GZ_PATH} \
-	--populations ${POPS_PATH} \
-	--feature-type categories
+	    --workdir ${WORKDIR_PATH} \
+	    --vcf-gz ${VCF_GZ_PATH} \
+	    --populations ${POPS_PATH} \
+	    --feature-type categories
 
     N_FEATURE_INDICES=$((N_SNPS * 3))
 
@@ -39,11 +61,11 @@ load import_helper
 
 @test "Import data: vcf.gz, dna, counts, feature_compression" {
     run ${IMPORT_CMD} \
-	--workdir ${WORKDIR_PATH} \
-	--vcf-gz ${VCF_GZ_PATH} \
-	--populations ${POPS_PATH} \
-	--feature-type counts \
-	--compress
+	    --workdir ${WORKDIR_PATH} \
+	    --vcf-gz ${VCF_GZ_PATH} \
+	    --populations ${POPS_PATH} \
+	    --feature-type counts \
+	    --compress
 
     N_FEATURE_INDICES=$((N_SNPS * 2))
 
@@ -58,11 +80,11 @@ load import_helper
 
 @test "Import data: vcf.gz, dna, categories, feature_compression" {
     run ${IMPORT_CMD} \
-	--workdir ${WORKDIR_PATH} \
-	--vcf-gz ${VCF_GZ_PATH} \
-	--populations ${POPS_PATH} \
-	--feature-type categories \
-	--compress
+	    --workdir ${WORKDIR_PATH} \
+	    --vcf-gz ${VCF_GZ_PATH} \
+	    --populations ${POPS_PATH} \
+	    --feature-type categories \
+	    --compress
 
     N_FEATURE_INDICES=$((N_SNPS * 3))
 

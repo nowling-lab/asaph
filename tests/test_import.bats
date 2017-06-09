@@ -17,16 +17,11 @@ setup() {
 
     ${BATS_TEST_DIRNAME}/../bin/generate_data \
                         --seed 1234 \
+                        --n-populations 2 \
                         --output-vcf ${VCF_PATH} \
                         --output-populations ${POPS_PATH} \
                         --individuals ${N_INDIVIDUALS} \
                         --snps ${N_SNPS}
-}
-
-teardown() {
-    rm ${VCF_PATH}
-    rm ${POPS_PATH}
-    rm -rf ${WORKDIR_PATH}
 }
 
 @test "Run import with no arguments" {
@@ -41,10 +36,10 @@ teardown() {
 
 @test "Import data: vcf, dna, counts" {
     run ${IMPORT_CMD} \
-	--workdir ${WORKDIR_PATH} \
-	--vcf ${VCF_PATH} \
-	--populations ${POPS_PATH} \
-	--feature-type counts
+	    --workdir ${WORKDIR_PATH} \
+	    --vcf ${VCF_PATH} \
+	    --populations ${POPS_PATH} \
+	    --feature-type counts
 
     N_FEATURE_INDICES=$((N_SNPS * 2))
 
@@ -59,10 +54,10 @@ teardown() {
 
 @test "Import data: vcf, dna, categories" {
     run ${IMPORT_CMD} \
-	--workdir ${WORKDIR_PATH} \
-	--vcf ${VCF_PATH} \
-	--populations ${POPS_PATH} \
-	--feature-type categories
+	    --workdir ${WORKDIR_PATH} \
+	    --vcf ${VCF_PATH} \
+	    --populations ${POPS_PATH} \
+	    --feature-type categories
 
     N_FEATURE_INDICES=$((N_SNPS * 3))
 
@@ -77,11 +72,11 @@ teardown() {
 
 @test "Import data: vcf, dna, counts, feature_compression" {
     run ${IMPORT_CMD} \
-	--workdir ${WORKDIR_PATH} \
-	--vcf ${VCF_PATH} \
-	--populations ${POPS_PATH} \
-	--feature-type counts \
-	--compress
+	    --workdir ${WORKDIR_PATH} \
+	    --vcf ${VCF_PATH} \
+	    --populations ${POPS_PATH} \
+	    --feature-type counts \
+	    --compress
 
     N_FEATURE_INDICES=$((N_SNPS * 2))
 
@@ -96,11 +91,11 @@ teardown() {
 
 @test "Import data: vcf, dna, categories, feature_compression" {
     run ${IMPORT_CMD} \
-	--workdir ${WORKDIR_PATH} \
-	--vcf ${VCF_PATH} \
-	--populations ${POPS_PATH} \
-	--feature-type categories \
-	--compress
+	    --workdir ${WORKDIR_PATH} \
+	    --vcf ${VCF_PATH} \
+	    --populations ${POPS_PATH} \
+	    --feature-type categories \
+	    --compress
 
     N_FEATURE_INDICES=$((N_SNPS * 3))
 
