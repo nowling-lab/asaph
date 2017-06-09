@@ -31,12 +31,14 @@ UNKNOWN_GENOTYPE = (0, 0)
 def read_groups(flname):
     fl = open(flname)
     groups = dict()
+    group_names = dict()
     for group_id, ln in enumerate(fl):
         cols = ln.strip().split(",")
         for ident in cols[1:]:
             groups[ident] = group_id
+            group_names[group_id] = cols[0]
 
-    return groups
+    return groups, group_names
 
 ## Parsing
 def parse_vcf_line(ln, individual_names):
@@ -214,7 +216,7 @@ class StreamCounter(object):
 
 def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compressed_vcf):
     # dictionary of individual ids to population ids
-    populations = read_groups(groups_flname)
+    populations, population_names = read_groups(groups_flname)
 
     # returns triplets of (variant_label, variant_alleles, genotype_counts)
     stream = VCFStreamer(vcf_flname, compressed_vcf)
@@ -271,7 +273,8 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
                                      n_features = feature_matrix.shape[1],
                                      feature_encoding = feature_type,
                                      compressed = compress,
-                                     n_samples = len(class_labels))
+                                     n_samples = len(class_labels),
+                                     population_names = population_names)
 
     np.save(os.path.join(outbase, FEATURE_MATRIX_FLNAME), feature_matrix)
     serialize(os.path.join(outbase, SAMPLE_LABELS_FLNAME), extractor.rows_to_names)
