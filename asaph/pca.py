@@ -105,11 +105,15 @@ def plot_projections(args):
                                   "pca_projection_%s_%s.png" % (str(p1), str(p2)))
         plt.clf()
         plt.grid(True)
-        colors = ["m", "c", "k"]
+        colors = ["m", "c", "k", "r", "g", "b"]
+        markers = ["o"] * len(colors) + \
+                  ["s"] * len(colors) + \
+                  ["+"] * len(colors)
         for idx, (pop_idx, pop_name) in enumerate(populations):
             plt.scatter(projected[pop_idx, p1],
                         projected[pop_idx, p2],
-                        color=colors[idx],
+                        color=colors[idx % len(colors)],
+                        marker=markers[idx % len(markers)],
                         edgecolor="k",
                         alpha=0.7,
                         label=pop_name)
