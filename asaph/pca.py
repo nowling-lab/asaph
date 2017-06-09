@@ -27,6 +27,8 @@ import numpy as np
 from asaph.ml import mcfadden_r2
 from asaph.ml import PCA
 from asaph.newioutils import read_features
+from asaph.newioutils import deserialize
+from asaph.newioutils import PROJECT_SUMMARY_FLNAME
 
 def explained_variance_analysis(args):
     workdir = args.workdir
@@ -84,33 +86,33 @@ def plot_projections(args):
         os.makedirs(figures_dir)
     
     features = read_features(workdir)
-
+    project_summary = deserialize(os.path.join(workdir,
+                                               PROJECT_SUMMARY_FLNAME))
+    
     pca = PCA(args.n_components)
     projected = pca.transform(features.feature_matrix)
 
-    labels = np.array(features.class_labels)
-    pop1 = labels == 0.
-    pop2 = labels == 1.
-    pop1_name = "Pop 1"
-    pop2_name = "Pop 2"
+    all_labels = set(features.class_labels)
+    labels = np.array(features.class_labels, dtype=np.int32)
+    populations = []
+    for l in all_labels:
+        pop = labels == l
+        pop_name = project_summary.population_names[l]
+        populations.append((pop, pop_name))
 
     for p1, p2 in pairwise(args.pairs):
         fig_flname = os.path.join(figures_dir,
                                   "pca_projection_%s_%s.png" % (str(p1), str(p2)))
         plt.clf()
         plt.grid(True)
-        plt.scatter(projected[pop1, p1],
-                    projected[pop1, p2],
-                    color="m",
-                    edgecolor="k",
-                    alpha=0.7,
-                    label=pop1_name)
-        plt.scatter(projected[pop2, p1],
-                    projected[pop2, p2],
-                    color="c",
-                    edgecolor="k",
-                    alpha=0.7,
-                    label=pop2_name)
+        colors = ["m", "c", "k"]
+        for idx, (pop_idx, pop_name) in enumerate(populations):
+            plt.scatter(projected[pop_idx, p1],
+                        projected[pop_idx, p2],
+                        color=colors[idx],
+                        edgecolor="k",
+                        alpha=0.7,
+                        label=pop_name)
         plt.xlabel("Principal Component %s" % p1, fontsize=16)
         plt.ylabel("Principal Component %s" % p2, fontsize=16)
         plt.legend()
@@ -121,27 +123,25 @@ def output_coordinates(args):
     workdir = args.workdir
 
     features = read_features(workdir)
+    project_summary = deserialize(os.path.join(workdir,
+                                               PROJECT_SUMMARY_FLNAME))
+
 
     pca = PCA(args.n_components)
     projected = pca.transform(features.feature_matrix)
     selected = projected[:, args.selected_components]
-    
-    labels = np.array(features.class_labels)
-    pop1 = labels == 0.
-    pop2 = labels == 1.
-    pop1_name = "Pop 1"
-    pop2_name = "Pop 2"
 
     with open(args.output_fl, "w") as fl:
-        headers = ["sample", "population"]
+        headers = ["sample", "population_index", "population_name"]
         headers.extend(map(str, args.selected_components))
         fl.write("\t".join(headers))
         fl.write("\n")
 
         for i in xrange(len(features.sample_labels)):
             sample = features.sample_labels[i]
-            pop = str(features.class_labels[i])
-            line = [sample, pop]
+            pop_idx = features.class_labels[i]
+            pop_name = project_summary.population_names[pop_idx]
+            line = [sample, str(pop_idx), pop_name]
             line.extend(map(str, selected[i, :]))
             fl.write("\t".join(line))
             fl.write("\n")
