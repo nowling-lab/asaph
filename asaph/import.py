@@ -49,14 +49,16 @@ def import_vcf(args):
                     workdir,
                     args["compress"],
                     args["feature_type"],
-                    False)
+                    False,
+                    args["allele_min_freq_threshold"])
     elif args["vcf_gz"] is not None:
         convert_vcf(args["populations"],
                     args["vcf_gz"],
                     workdir,
                     args["compress"],
                     args["feature_type"],
-                    True)
+                    True,
+                    args["allele_min_freq_threshold"])
 
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph")
@@ -86,6 +88,11 @@ def parseargs():
                         type=str,
                         help="Work directory",
                         required=True)
+
+    parser.add_argument("--allele-min-freq-threshold",
+                        type=float,
+                        help="Minimum allele frequency allowed",
+                        default=0.0)
 
     return vars(parser.parse_args())
 

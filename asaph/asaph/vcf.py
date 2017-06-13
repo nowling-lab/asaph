@@ -127,15 +127,27 @@ def select_individuals(stream, individual_ids):
         selected = { name : genotypes[name] for name in kept_individuals }
         yield (label, alleles, selected)
 
-def filter_invariants(stream):
+def filter_invariants(min_percentage, stream):
     """
-    Filter out variants that have < 2 genotypes present
+    Filter out variants where the least-frequently occurring allele occurs less than some threshold.
+
+    0 <= min_percentage < 1
     """
     for label, alleles, genotypes in stream:
-        observed_genotypes = set(genotypes.itervalues())
-        if len(observed_genotypes) >= 2:
-            yield (label, alleles, genotypes)
+        total_ref_count = 0.0
+        total_alt_count = 0.0
+        for sample_ref_count, sample_alt_count in genotypes.itervalues():
+            total_ref_count += sample_ref_count
+            total_alt_count += sample_alt_count
 
+        min_count = min(total_ref_count,
+                        total_alt_count)
+
+        fraction = min_count / (total_ref_count + total_alt_count)
+        
+        if fraction > min_percentage:
+            yield (label, alleles, genotypes)
+            
 def filter_unknown(class_labels, stream):
     """
     Filter out variants where 1 or more classes contains all unknown genotypes.
@@ -214,7 +226,7 @@ class StreamCounter(object):
             yield item
 
 
-def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compressed_vcf):
+def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compressed_vcf, allele_min_freq_threshold):
     # dictionary of individual ids to population ids
     populations, population_names = read_groups(groups_flname)
 
@@ -222,8 +234,10 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
     stream = VCFStreamer(vcf_flname, compressed_vcf)
     selected_individuals = select_individuals(stream,
                                               populations.keys())
-    # remove SNPs with < 2 known genotypes
-    variants = filter_invariants(selected_individuals)
+    
+    # remove SNPs with least-frequently occurring alleles less than a threshold
+    variants = filter_invariants(allele_min_freq_threshold,
+                                 selected_individuals)
 
     filtered_positions_counter = StreamCounter(variants)
 
