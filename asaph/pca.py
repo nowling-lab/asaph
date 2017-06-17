@@ -75,7 +75,7 @@ def pairwise(iterable):
     return izip(a, b)
 
 def plot_projections(args):
-    if len(args.pairs) != 2:
+    if len(args.pairs) % 2 != 0:
         print "Error: PCs must be provided in pairs of 2"
         sys.exit(1)
 
