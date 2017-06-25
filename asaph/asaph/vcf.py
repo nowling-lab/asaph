@@ -134,16 +134,20 @@ def filter_invariants(min_percentage, stream):
     0 <= min_percentage < 1
     """
     for label, alleles, genotypes in stream:
-        total_ref_count = 0.0
-        total_alt_count = 0.0
+        total_ref_count = 0
+        total_alt_count = 0
         for sample_ref_count, sample_alt_count in genotypes.itervalues():
             total_ref_count += sample_ref_count
             total_alt_count += sample_alt_count
 
+        # all SNPs have unknown genotypes
+        if total_ref_count == 0 and total_alt_count == 0:
+            continue
+            
         min_count = min(total_ref_count,
                         total_alt_count)
 
-        fraction = min_count / (total_ref_count + total_alt_count)
+        fraction = min_count / float(total_ref_count + total_alt_count)
         
         if fraction > min_percentage:
             yield (label, alleles, genotypes)
@@ -234,7 +238,7 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
     stream = VCFStreamer(vcf_flname, compressed_vcf)
     selected_individuals = select_individuals(stream,
                                               populations.keys())
-    
+
     # remove SNPs with least-frequently occurring alleles less than a threshold
     variants = filter_invariants(allele_min_freq_threshold,
                                  selected_individuals)
