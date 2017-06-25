@@ -69,11 +69,15 @@ def coefficient_of_determination(args):
     print "McFadden r**2", r2
 
 def pairwise(iterable):
-    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
-    a, b = tee(iterable)
-    next(b, None)
-    return izip(a, b)
-
+    iterable = iter(iterable)
+    try:
+        while True:
+            a = next(iterable)
+            b = next(iterable)
+            yield a, b
+    except StopIteration:
+        pass
+    
 def plot_projections(args):
     if len(args.pairs) % 2 != 0:
         print "Error: PCs must be provided in pairs of 2"
