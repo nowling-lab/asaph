@@ -29,15 +29,15 @@ FEATURE_LABELS_FLNAME = "feature_labels"
 CLASS_LABELS_FLNAME = "class_labels"
 SAMPLE_LABELS_FLNAME = "sample_labels"
 FEATURE_MATRIX_FLNAME = "feature_matrix.npy"
-FIXED_DIFFERENCES_FLNAME = "fixed_differences"
-MISSING_DATA_FLNAME = "missing_data"
+SNP_FEATURE_INDICES_FLNAME = "snp_feature_indices"
+PROJECT_SUMMARY_FLNAME = "project_summary"
 
-def to_json(flname, obj):
+def serialize(flname, obj):
     fl = open(flname, "w")
     cPickle.dump(obj, fl)
     fl.close()
 
-def from_json(flname):
+def deserialize(flname):
     fl = open(flname)
     obj = cPickle.load(fl)
     fl.close()
@@ -45,9 +45,9 @@ def from_json(flname):
     return obj
 
 def read_features(basename):
-    feature_labels = from_json(os.path.join(basename, FEATURE_LABELS_FLNAME))
-    class_labels = from_json(os.path.join(basename, CLASS_LABELS_FLNAME))
-    sample_labels = from_json(os.path.join(basename, SAMPLE_LABELS_FLNAME))
+    snp_features_map = deserialize(os.path.join(basename, SNP_FEATURE_INDICES_FLNAME))
+    class_labels = deserialize(os.path.join(basename, CLASS_LABELS_FLNAME))
+    sample_labels = deserialize(os.path.join(basename, SAMPLE_LABELS_FLNAME))
     if os.path.exists(os.path.join(basename, FEATURE_MATRIX_FLNAME + ".npz")):
         loader = np.load(os.path.join(basename, FEATURE_MATRIX_FLNAME + ".npz"))
         feature_matrix = sparse.csr_matrix((loader["data"],
@@ -56,23 +56,23 @@ def read_features(basename):
                                            shape = loader["shape"])
     else:
         feature_matrix = np.load(os.path.join(basename, FEATURE_MATRIX_FLNAME))
-    fixed_differences = from_json(os.path.join(basename, FIXED_DIFFERENCES_FLNAME))
-    missing_data = from_json(os.path.join(basename, MISSING_DATA_FLNAME))
 
-    return Features(feature_matrix, feature_labels, class_labels, sample_labels,
-                    fixed_differences, missing_data)
+    return Features(feature_matrix,
+                    snp_features_map,
+                    class_labels,
+                    sample_labels)
 
-def write_snps(basedir, snps, model_id):
-    model_dir = os.path.join(basedir, "models", str(snps.n_trees))
+def write_rf_snps(basedir, snps, n_trees, model_id):
+    model_dir = os.path.join(basedir, "models", "rf", str(n_trees))
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
 
     flname = os.path.join(model_dir, model_id)
-    to_json(flname, vars(snps))
+    serialize(flname, snps)
 
-    
-def read_snps(basedir):
-    model_base_dir = os.path.join(basedir, "models")
+
+def read_rf_snps(basedir):
+    model_base_dir = os.path.join(basedir, "models", "rf")
     if not os.path.exists(model_base_dir):
         return dict()
 
@@ -83,12 +83,10 @@ def read_snps(basedir):
         model_flnames = glob.glob(os.path.join(model_dir, "*"))
 
         for flname in model_flnames:
-            model_data = from_json(flname)
-
-            snps = SNPs(model_data["n_trees"], model_data["labels"],
-                        model_data["importances"], model_data["ranked"],
-                        model_data["fixed_differences"], model_data["missing_data"])
-
-            models[snps.n_trees].append(snps)
+            if not os.path.basename(flname).startswith("model"):
+                continue
+            snps = deserialize(flname)
+            n_trees = int(os.path.basename(os.path.dirname(flname)))
+            models[n_trees].append(snps)
 
     return models

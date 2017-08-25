@@ -59,14 +59,14 @@ def stream_fasta_fl(flname, kept_individuals):
             if ln.startswith(">"):
                 if identifier != None and identifier in kept_individuals:
                     yield identifier, sequence
-                
+
                 identifier = ln[1:].strip()
                 sequence = ""
             else:
                 sequence += ln.strip()
 
         yield identifier, sequence
-        
+
 def extract_feature_vector(sequence, char_map, row):
     n = len(sequence) * len(char_map)
     features = []
@@ -79,7 +79,7 @@ def extract_feature_vector(sequence, char_map, row):
         for idx, char in seq_labels:
             feature_labels.append([(offset + idx, char)])
     return features, feature_labels
-                
+
 def convert(groups_flname, fasta_flname, seq_type, outbase):
     char_map = None
     if seq_type == "DNA":
@@ -88,9 +88,9 @@ def convert(groups_flname, fasta_flname, seq_type, outbase):
         char_map = AA_MAP
     else:
         raise NotImplementedError, "Unknown sequence type (%s)" % seq_type
-    
+
     groups = read_groups(groups_flname)
-    
+
     class_labels = [groups[ident] for ident in groups.keys()]
     sample_labels = []
     rows = []
@@ -104,7 +104,7 @@ def convert(groups_flname, fasta_flname, seq_type, outbase):
             cols.append(c)
             values.append(v)
         sample_labels.append(sample_label)
-        
+
 
     feature_matrix = sparse.coo_matrix((values, (rows, cols))).tocsr()
 
@@ -117,8 +117,8 @@ def convert(groups_flname, fasta_flname, seq_type, outbase):
              shape = feature_matrix.shape)
 
 
-    to_json(os.path.join(outbase, FEATURE_LABELS_FLNAME), feature_labels)
-    to_json(os.path.join(outbase, SAMPLE_LABELS_FLNAME), sample_labels)
-    to_json(os.path.join(outbase, CLASS_LABELS_FLNAME), class_labels)
-    to_json(os.path.join(outbase, FIXED_DIFFERENCES_FLNAME), dict())
-    to_json(os.path.join(outbase, MISSING_DATA_FLNAME), dict())
+    serialize(os.path.join(outbase, FEATURE_LABELS_FLNAME), feature_labels)
+    serialize(os.path.join(outbase, SAMPLE_LABELS_FLNAME), sample_labels)
+    serialize(os.path.join(outbase, CLASS_LABELS_FLNAME), class_labels)
+    serialize(os.path.join(outbase, FIXED_DIFFERENCES_FLNAME), dict())
+    serialize(os.path.join(outbase, MISSING_DATA_FLNAME), dict())
