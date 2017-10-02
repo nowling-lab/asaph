@@ -30,26 +30,33 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import log_loss
 from sklearn.tree import DecisionTreeClassifier
 
-def likelihood_ratio_test(features, labels):
-    pop_prob = sum(labels) / float(labels.shape[0]) * \
-               np.ones(labels.shape)            
+def estimate_lr_iter(n_samples):
+    return max(20,
+               int(np.ceil(10**6 / n_samples)))
 
+def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=None):
+    if features_null:
+        if features_null.shape[1] >= features_alternate.shape[1]:
+            raise ValueError, "Alternate features must have more features than null features"
+        lr_model.fit(features_null, labels)
+        null_prob = lr_model.predict_prob(features_null)[:, 1]
+        df = features_alternate.shape[1] - features_null.shape[1]
+    else:
+        null_prob = sum(labels) / float(labels.shape[0]) * \
+                    np.ones(labels.shape)
+        df = features_alternate.shape[1]
     
-    lr = SGDClassifier(penalty="l2",
-                       loss="log",
-                       n_iter = np.ceil(10**6 / labels.shape[0]))
-    lr.fit(features, labels)
-    pred_prob = lr.predict_proba(features)
+    lr_model.fit(features_alternate, labels)
+    alt_prob = lr_model.predict_proba(features_alternate)
     
-    fitted_log_likelihood = -log_loss(labels,
-                                      pred_prob,
-                                      normalize=False)
+    alt_log_likelihood = -log_loss(labels,
+                                   alt_prob,
+                                   normalize=False)
     null_log_likelihood = -log_loss(labels,
-                                    pop_prob,
+                                    null_prob,
                                     normalize=False)
 
-    G = 2 * (fitted_log_likelihood - null_log_likelihood)
-    df = features.shape[1]
+    G = 2 * (alt_log_likelihood - null_log_likelihood)
     p_value = chi2.sf(G, df)
 
     return p_value

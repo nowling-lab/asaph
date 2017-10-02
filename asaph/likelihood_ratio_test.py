@@ -22,7 +22,9 @@ import os
 import sys
 
 import numpy as np
+from sklearn.linear_model import SGDClassifier
 
+from asaph.ml import estimate_lr_iter
 from asaph.ml import likelihood_ratio_test
 from asaph.newioutils import read_features
 from asaph.newioutils import deserialize
@@ -31,6 +33,11 @@ from asaph.newioutils import serialize
 
         
 def run_likelihood_ratio_tests(features, stats_dir):
+    n_iter = estimate_lr_iter(len(features.class_labels))
+    lr = SGDClassifier(penalty="l2",
+                       loss="log",
+                       n_iter = n_iter)
+    
     flname = "snp_likelihood_ratio_tests.txt"
     with open(os.path.join(stats_dir, flname), "w") as fl:
         next_output = 1
@@ -40,7 +47,9 @@ def run_likelihood_ratio_tests(features, stats_dir):
 
             labels = np.array(features.class_labels)
             snp_features = features.feature_matrix[:, feature_idx]
-            p_value = likelihood_ratio_test(snp_features, labels)
+            p_value = likelihood_ratio_test(snp_features,
+                                            labels,
+                                            lr)
                         
             if i == next_output:
                 print i, "SNP", snp_label, "has p-value", p_value
