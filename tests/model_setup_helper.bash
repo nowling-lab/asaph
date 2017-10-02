@@ -1,6 +1,6 @@
 setup() {
     N_INDIVIDUALS=20
-    N_SNPS=1000
+    N_SNPS=250
 
     export TEST_TEMP_DIR=`mktemp -u --tmpdir asaph-tests.XXXX`
     mkdir -p ${TEST_TEMP_DIR}
