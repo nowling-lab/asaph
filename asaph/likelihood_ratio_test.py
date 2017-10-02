@@ -1,0 +1,76 @@
+"""
+Copyright 2017 Ronald J. Nowling
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
+import argparse
+from collections import defaultdict
+import itertools
+import random
+import os
+import sys
+
+import numpy as np
+
+from asaph.ml import likelihood_ratio_test
+from asaph.newioutils import read_features
+from asaph.newioutils import deserialize
+from asaph.newioutils import PROJECT_SUMMARY_FLNAME
+from asaph.newioutils import serialize
+
+        
+def run_likelihood_ratio_tests(features, stats_dir):
+    flname = "snp_likelihood_ratio_tests.txt"
+    with open(os.path.join(stats_dir, flname), "w") as fl:
+        next_output = 1
+        for i, pair in enumerate(features.snp_feature_map.iteritems()):
+            snp_label, feature_idx = pair
+            chrom, pos = snp_label
+
+            labels = np.array(features.class_labels)
+            snp_features = features.feature_matrix[:, feature_idx]
+            p_value = likelihood_ratio_test(snp_features, labels)
+                        
+            if i == next_output:
+                print i, "SNP", snp_label, "has p-value", p_value
+                next_output *= 2
+
+            fl.write("\t".join([chrom, pos, str(p_value)]))
+            fl.write("\n")
+            
+def parseargs():
+    parser = argparse.ArgumentParser(description="Asaph - Likelihood Ratio Test")
+
+    parser.add_argument("--workdir", type=str, help="Work directory", required=True)
+    
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    args = parseargs()
+
+    if not os.path.exists(args.workdir):
+        print "Work directory '%s' does not exist." % args.workdir
+        sys.exit(1)
+
+    stats_dir = os.path.join(args.workdir, "statistics")
+    if not os.path.exists(stats_dir):
+        os.makedirs(stats_dir)
+
+    project_summary = deserialize(os.path.join(args.workdir, PROJECT_SUMMARY_FLNAME))
+    
+    features = read_features(args.workdir)
+    print features.feature_matrix.shape
+
+    run_likelihood_ratio_tests(features,
+                               stats_dir)

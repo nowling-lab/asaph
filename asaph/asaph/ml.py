@@ -20,6 +20,8 @@ import random
 import numpy as np
 import numpy.linalg as la
 
+from scipy.stats import chi2
+
 from sklearn.decomposition import TruncatedSVD
 from sklearn.ensemble import BaggingClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -27,6 +29,31 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import log_loss
 from sklearn.tree import DecisionTreeClassifier
+
+def likelihood_ratio_test(features, labels):
+    pop_prob = sum(labels) / float(labels.shape[0]) * \
+               np.ones(labels.shape)            
+
+    
+    lr = SGDClassifier(penalty="l2",
+                       loss="log",
+                       n_iter = np.ceil(10**6 / labels.shape[0]))
+    lr.fit(features, labels)
+    pred_prob = lr.predict_proba(features)
+    
+    fitted_log_likelihood = -log_loss(labels,
+                                      pred_prob,
+                                      normalize=False)
+    null_log_likelihood = -log_loss(labels,
+                                    pop_prob,
+                                    normalize=False)
+
+    G = 2 * (fitted_log_likelihood - null_log_likelihood)
+    df = features.shape[1]
+    p_value = chi2.sf(G, df)
+
+    return p_value
+
 
 def null_predict_proba(intercept):
     prob = 1.0 / (1.0 + np.exp(-intercept))
