@@ -79,22 +79,23 @@ class LogisticRegressionEnsemble(object):
     Regression classifiers that supports bagging.
     """
 
-    def __init__(self, n_models, method, batch_size, bagging=True):
+    def __init__(self, n_models, method, batch_size, bagging=True, n_iter=20):
         self.n_models = n_models
         self.bagging = bagging
         self.batch_size = batch_size
         self.method = method
+        self.n_iter = n_iter
 
     def get_base(self, n_samples):
         if self.method == "sag-l2":
             # copied from http://scikit-learn.org/stable/auto_examples/linear_model/plot_sgd_comparison.html#sphx-glr-auto-examples-linear-model-plot-sgd-comparison-py
             return LogisticRegression(solver="sag", tol=1e-1, C=1.e4 / n_samples)
         elif self.method == "sgd-l2":
-            return SGDClassifier(loss="log", penalty="l2")
+            return SGDClassifier(loss="log", penalty="l2", n_iter = self.n_iter)
         elif self.method == "sgd-en":
-            return SGDClassifier(loss="log", penalty="elasticnet")
+            return SGDClassifier(loss="log", penalty="elasticnet", n_iter = self.n_iter)
         elif self.method == "asgd-l2":
-            return SGDClassifier(loss="log", penalty="l2", average=True)
+            return SGDClassifier(loss="log", penalty="l2", average=True, n_iter = self.n_iter)
         else:
             raise Exception, "Unknown logistic regression method '%s'" % self.method
 
