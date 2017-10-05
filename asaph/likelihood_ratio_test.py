@@ -22,6 +22,7 @@ import os
 import sys
 
 import numpy as np
+import numpy.linalg as LA
 from sklearn.linear_model import SGDClassifier
 
 from asaph.ml import estimate_lr_iter
@@ -31,12 +32,61 @@ from asaph.newioutils import deserialize
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
 from asaph.newioutils import serialize
 
+gts = [(2., 0.), (0., 2.), (1., 1.), (1., 0.), (0., 1.), (0., 0.)]
+
+subsets = { (0., 0.) : [(0., 0.), (0., 1.), (1., 0.), (1., 1.), (2., 0.), (2., 0.)],
+            (1., 0.) : [(1., 0.), (2., 0.), (1., 1.)],
+            (0., 1.) : [(0., 1.), (0., 2.), (1., 1.)],
+            (1., 1.) : [(1., 1.)],
+            (2., 0.) : [(0., 2.)],
+            (0., 2.) : [(2., 0.)]
+}
+
+class ProbabilitySolver(object):
+    def __init__(self):
+        self.expected_prob = None
         
-def run_likelihood_ratio_tests(features, stats_dir):
+    def fit(self, X, y):
+        assert X.shape[1] == 2, "X must have only two columns"
+
+        gt_counts = defaultdict(lambda: {"total": 0, "class_1": 0})
+        for r in xrange(X.shape[0]):
+            gt_counts[tuple(X[r, :])]["total"] += 1
+            if y[r] == 1.:
+                gt_counts[tuple(X[r, :])]["class_1"] += 1.
+
+        self.expected_prob = dict()
+        for i, gt in enumerate(gts):
+            total = 0.
+            class_1 = 0.
+            prob = 0.
+            for subset in subsets[gt]:
+                total += gt_counts[subset]["total"]
+                class_1 += gt_counts[subset]["class_1"]
+            if total != 0.:
+                prob = class_1 / total
+            self.expected_prob[gt] = prob
+
+    def predict_proba(self, X):
+        pred_prob = np.zeros((X.shape[0], 2))
+        for r in xrange(X.shape[0]):
+            prob = self.expected_prob[tuple(X[r, :])] 
+            pred_prob[r, 0] = 1. - prob
+            pred_prob[r, 1] = prob
+
+        return pred_prob
+
+        
+def run_likelihood_ratio_tests(features, model_type, stats_dir):
     n_iter = estimate_lr_iter(len(features.class_labels))
-    lr = SGDClassifier(penalty="l2",
-                       loss="log",
-                       n_iter = n_iter)
+    if model_type == "prob-solver":
+        lr = ProbabilitySolver()
+    elif model_type == "lr":
+        lr = SGDClassifier(penalty="l2",
+                           loss="log",
+                           n_iter = n_iter)
+    else:
+        raise Exception, "Invalid model type %s" % model_type
     
     flname = "snp_likelihood_ratio_tests.txt"
     with open(os.path.join(stats_dir, flname), "w") as fl:
@@ -62,6 +112,12 @@ def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - Likelihood Ratio Test")
 
     parser.add_argument("--workdir", type=str, help="Work directory", required=True)
+
+    parser.add_argument("--model-type",
+                        type=str,
+                        choices=["lr",
+                                 "prob-solver"],
+                        required=True)
     
     return parser.parse_args()
 
@@ -82,4 +138,5 @@ if __name__ == "__main__":
     print features.feature_matrix.shape
 
     run_likelihood_ratio_tests(features,
+                               args.model_type,
                                stats_dir)

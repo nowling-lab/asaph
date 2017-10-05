@@ -39,7 +39,7 @@ def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=No
         if features_null.shape[1] >= features_alternate.shape[1]:
             raise ValueError, "Alternate features must have more features than null features"
         lr_model.fit(features_null, labels)
-        null_prob = lr_model.predict_prob(features_null)[:, 1]
+        null_prob = lr_model.predict_proba(features_null)[:, 1]
         df = features_alternate.shape[1] - features_null.shape[1]
     else:
         null_prob = sum(labels) / float(labels.shape[0]) * \
@@ -48,7 +48,7 @@ def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=No
     
     lr_model.fit(features_alternate, labels)
     alt_prob = lr_model.predict_proba(features_alternate)
-    
+
     alt_log_likelihood = -log_loss(labels,
                                    alt_prob,
                                    normalize=False)

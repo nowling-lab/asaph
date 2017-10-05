@@ -14,15 +14,26 @@ load model_setup_helper
 
 @test "Calculate likelihood_ratio_test (categories)" {
     run ${BATS_TEST_DIRNAME}/../bin/likelihood_ratio_test \
-	    --workdir ${WORKDIR_PATH}
+	    --workdir ${WORKDIR_PATH} \
+        --model-type lr
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.txt" ]
 }
 
-@test "Calculate likelihood_ratio_test (counts)" {
+@test "Calculate likelihood_ratio_test (counts, lr)" {
     run ${BATS_TEST_DIRNAME}/../bin/likelihood_ratio_test \
-	    --workdir ${COUNTS_WORKDIR_PATH}
+	    --workdir ${COUNTS_WORKDIR_PATH} \
+        --model-type lr
+
+    [ "$status" -eq 0 ]
+    [ -e "${COUNTS_WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.txt" ]
+}
+
+@test "Calculate likelihood_ratio_test (counts, prob-solver)" {
+    run ${BATS_TEST_DIRNAME}/../bin/likelihood_ratio_test \
+	    --workdir ${COUNTS_WORKDIR_PATH} \
+        --model-type prob-solver
 
     [ "$status" -eq 0 ]
     [ -e "${COUNTS_WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.txt" ]
