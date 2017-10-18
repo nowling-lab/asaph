@@ -32,50 +32,6 @@ from asaph.newioutils import deserialize
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
 from asaph.newioutils import serialize
 
-gts = [(2., 0.), (0., 2.), (1., 1.), (1., 0.), (0., 1.), (0., 0.)]
-
-subsets = { (0., 0.) : [(0., 0.), (0., 1.), (1., 0.), (1., 1.), (2., 0.), (0., 2.)],
-            (1., 0.) : [(1., 0.), (2., 0.), (1., 1.)],
-            (0., 1.) : [(0., 1.), (0., 2.), (1., 1.)],
-            (1., 1.) : [(1., 1.)],
-            (2., 0.) : [(2., 0.)],
-            (0., 2.) : [(0., 2.)]
-}
-
-class ProbabilitySolver(object):
-    def __init__(self):
-        self.expected_prob = None
-        
-    def fit(self, X, y):
-        assert X.shape[1] == 2, "X must have only two columns"
-
-        gt_counts = defaultdict(lambda: {"total": 0, "class_1": 0})
-        for r in xrange(X.shape[0]):
-            gt_counts[tuple(X[r, :])]["total"] += 1
-            if y[r] == 1.:
-                gt_counts[tuple(X[r, :])]["class_1"] += 1.
-
-        self.expected_prob = dict()
-        for i, gt in enumerate(gts):
-            total = 0.
-            class_1 = 0.
-            prob = 0.
-            for subset in subsets[gt]:
-                total += gt_counts[subset]["total"]
-                class_1 += gt_counts[subset]["class_1"]
-            if total != 0.:
-                prob = class_1 / total
-            self.expected_prob[gt] = prob
-
-    def predict_proba(self, X):
-        pred_prob = np.zeros((X.shape[0], 2))
-        for r in xrange(X.shape[0]):
-            prob = self.expected_prob[tuple(X[r, :])] 
-            pred_prob[r, 0] = 1. - prob
-            pred_prob[r, 1] = prob
-
-        return pred_prob
-
 def generate_training_set(labels, features):
     # we make 3 copies so we can impute each unknown genotype
     # with each of the 3 known genotypes
