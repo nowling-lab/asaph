@@ -117,8 +117,8 @@ def run_likelihood_ratio_tests(features, stats_dir):
             training_labels, training_features = generate_training_set(labels,
                                                                        snp_features)
             
-            p_value = likelihood_ratio_test(training_features,
-                                            training_labels,
+            p_value = likelihood_ratio_test((training_features, snp_features),
+                                            (training_labels, labels),
                                             lr,
                                             set_intercept=True)
             

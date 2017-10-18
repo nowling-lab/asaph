@@ -77,8 +77,8 @@ def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=No
         null_prob = lr_model.predict_proba(testing_features_null)[:, 1]
         df = testing_features_alternate.shape[1] - testing_features_null.shape[1]
     else:
-        null_prob = sum(labels) / float(labels.shape[0]) * \
-                    np.ones(labels.shape)
+        null_prob = sum(testing_labels) / float(testing_labels.shape[0]) * \
+                    np.ones(testing_labels.shape)
         df = testing_features_alternate.shape[1] - 1
 
     if set_intercept:
