@@ -76,17 +76,33 @@ class ProbabilitySolver(object):
 
         return pred_prob
 
+def generate_training_set(labels, features):
+    # we make 3 copies so we can impute each unknown genotype
+    # with each of the 3 known genotypes
+    N_COPIES = 3
+    training_labels = np.zeros(N_COPIES * labels.shape[0])
+    training_features = np.zeros((N_COPIES * features.shape[0],
+                                  features.shape[1]))
+
+    for i in xrange(features.shape[0]):
+        for j in xrange(N_COPIES):
+            idx = N_COPIES * i + j
+            training_labels[idx] = labels[i]
+            
+            if features[i, :].sum() == 1.:
+                training_features[idx, :] = features[i, :]
+            else:
+                training_features[idx, j] = 1.
+
+    return training_labels, training_features
+
         
-def run_likelihood_ratio_tests(features, model_type, stats_dir):
+def run_likelihood_ratio_tests(features, stats_dir):
     n_iter = estimate_lr_iter(len(features.class_labels))
-    if model_type == "prob-solver":
-        lr = ProbabilitySolver()
-    elif model_type == "lr":
-        lr = SGDClassifier(penalty="l2",
-                           loss="log",
-                           n_iter = n_iter)
-    else:
-        raise Exception, "Invalid model type %s" % model_type
+    lr = SGDClassifier(penalty="l2",
+                       loss="log",
+                       n_iter = n_iter,
+                       fit_intercept = False)
     
     flname = "snp_likelihood_ratio_tests.txt"
     with open(os.path.join(stats_dir, flname), "w") as fl:
@@ -97,10 +113,15 @@ def run_likelihood_ratio_tests(features, model_type, stats_dir):
 
             labels = np.array(features.class_labels)
             snp_features = features.feature_matrix[:, feature_idx]
-            p_value = likelihood_ratio_test(snp_features,
-                                            labels,
-                                            lr)
-                        
+
+            training_labels, training_features = generate_training_set(labels,
+                                                                       snp_features)
+            
+            p_value = likelihood_ratio_test(training_features,
+                                            training_labels,
+                                            lr,
+                                            set_intercept=True)
+            
             if i == next_output:
                 print i, "SNP", snp_label, "has p-value", p_value
                 next_output *= 2
@@ -112,12 +133,6 @@ def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - Likelihood Ratio Test")
 
     parser.add_argument("--workdir", type=str, help="Work directory", required=True)
-
-    parser.add_argument("--model-type",
-                        type=str,
-                        choices=["lr",
-                                 "prob-solver"],
-                        required=True)
     
     return parser.parse_args()
 
@@ -135,8 +150,6 @@ if __name__ == "__main__":
     project_summary = deserialize(os.path.join(args.workdir, PROJECT_SUMMARY_FLNAME))
     
     features = read_features(args.workdir)
-    print features.feature_matrix.shape
 
     run_likelihood_ratio_tests(features,
-                               args.model_type,
                                stats_dir)

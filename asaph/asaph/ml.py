@@ -32,27 +32,68 @@ from sklearn.tree import DecisionTreeClassifier
 
 def estimate_lr_iter(n_samples):
     return max(20,
-               int(np.ceil(10**6 / n_samples)))
+               int(np.ceil(10**4 / n_samples)))
 
-def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=None):
+def calculate_intercept(labels):
+    n_class_1 = float(sum(labels))
+    n = float(len(labels))
+    prob = n_class_1 / n
+
+    # p = 1 / (1 + e^{-b})
+    # (1 + e^{-b})p = 1
+    # 1 + e^{-b} = 1/p
+    # e^{-b} = 1/p - 1
+    # -b = log(1/p - 1)
+    # b = -log(1/p - 1)
+
+    return - np.log(1. / prob - 1.)
+
+def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=None, set_intercept=False):
+    if isinstance(features_alternate, tuple) and len(features_alternate) == 2:
+        training_features_alternate, testing_features_alternate = features_alternate
+        training_labels, testing_labels = labels
+    else:
+        training_features_alternate = features_alternate
+        testing_features_alternate = features_alternate
+        training_labels = labels
+        testing_labels = labels
+
+    intercept = calculate_intercept(training_labels)
+    
     if features_null:
-        if features_null.shape[1] >= features_alternate.shape[1]:
-            raise ValueError, "Alternate features must have more features than null features"
-        lr_model.fit(features_null, labels)
-        null_prob = lr_model.predict_proba(features_null)[:, 1]
-        df = features_alternate.shape[1] - features_null.shape[1]
+        if isinstance(features_null, tuple) and len(features_null) == 2:
+            training_features_null, testing_features_null = features_null
+        else:
+            training_features_null = features_null
+            testing_features_null = features_null
+
+        if set_intercept:
+            lr_model.fit(training_features_null,
+                         training_labels,
+                         intercept_init = intercept)
+        else:
+            lr_model.fit(training_features_null, training_labels)
+        
+        null_prob = lr_model.predict_proba(testing_features_null)[:, 1]
+        df = testing_features_alternate.shape[1] - testing_features_null.shape[1]
     else:
         null_prob = sum(labels) / float(labels.shape[0]) * \
                     np.ones(labels.shape)
-        df = features_alternate.shape[1]
-    
-    lr_model.fit(features_alternate, labels)
-    alt_prob = lr_model.predict_proba(features_alternate)
+        df = testing_features_alternate.shape[1] - 1
 
-    alt_log_likelihood = -log_loss(labels,
+    if set_intercept:
+        lr_model.fit(training_features_alternate,
+                     training_labels,
+                     intercept_init = intercept)
+    else:
+        lr_model.fit(training_features_alternate, training_labels)
+        
+    alt_prob = lr_model.predict_proba(testing_features_alternate)
+
+    alt_log_likelihood = -log_loss(testing_labels,
                                    alt_prob,
                                    normalize=False)
-    null_log_likelihood = -log_loss(labels,
+    null_log_likelihood = -log_loss(testing_labels,
                                     null_prob,
                                     normalize=False)
 
