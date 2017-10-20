@@ -53,19 +53,35 @@ def explained_variance_analysis(args):
     plt.savefig(fig_flname,
                 DPI=300)
 
-
-def coefficient_of_determination(args):
+def min_components_explained_variance(args):
     workdir = args.workdir
 
     features = read_features(workdir)
 
-    pca = PCA(args.n_components)
-    projected = pca.transform(features.feature_matrix)
-    selected = projected[:, args.model_components]
-    r2 = mcfadden_r2(selected,
-                     features.class_labels)
+    n_components = args.init_n_components
+    while True:
+        print "Computing PCA with %s components" % n_components
+        pca = PCA(n_components)
+        explained_variance_ratios = pca.explained_variance(features.feature_matrix)
+        sorted_ratios = np.sort(explained_variance_ratios)[::-1]
+        cum_ratios = np.cumsum(sorted_ratios)
+        total_explained_variance = cum_ratios[-1]
+        if total_explained_variance >= args.explained_variance_threshold:
+            break
+        n_components *= 2
 
-    print "McFadden r**2", r2
+    needed_components = 0
+    achieved_ev_ratio = 0.0
+    for i, ev_ratio in enumerate(cum_ratios):
+        if ev_ratio >= args.explained_variance_threshold:
+            needed_components = i + 1
+            achieved_ev_ratio = ev_ratio
+            break
+
+    print "Explained-variance threshold of %s surpassed at %s with %s components" % \
+        (args.explained_variance_threshold,
+         achieved_ev_ratio,
+         needed_components)
 
 def pairwise(iterable):
     iterable = iter(iterable)
@@ -201,6 +217,20 @@ def parseargs():
                              required=True,
                              help="Pairs of PCs to plot")
 
+    count_parser = subparsers.add_parser("min-components-explained-variance",
+                                         help="Find number of components to explain specified percentage of variance")
+
+    count_parser.add_argument("--init-n-components",
+                              type=int,
+                              required=True,
+                              help="Initial number of components to compute")
+
+    count_parser.add_argument("--explained-variance-threshold",
+                              type=float,
+                              required=True,
+                              help="Minimum explained variance")
+
+
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -212,6 +242,8 @@ if __name__ == "__main__":
         plot_projections(args)
     elif args.mode == "output-coordinates":
         output_coordinates(args)
+    elif args.mode == "min-components-explained-variance":
+        min_components_explained_variance(args)
     else:
         print "Unknown mode '%s'" % args.mode
         sys.exit(1)

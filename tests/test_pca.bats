@@ -79,3 +79,23 @@ load model_setup_helper
     [ "$status" -eq 0 ]
     [ -e "${COUNTS_WORKDIR_PATH}/pca_coordinates.txt" ]
 }
+
+@test "Find min components to achieve explained variance threshold (categories)" {
+    run ${BATS_TEST_DIRNAME}/../bin/pca \
+	    --workdir ${WORKDIR_PATH} \
+        min-components-explained-variance \
+        --init-n-components 10 \
+        --explained-variance-threshold 0.05
+
+    [ "$status" -eq 0 ]
+}
+
+@test "Find min components to achieve explained variance threshold (counts)" {
+    run ${BATS_TEST_DIRNAME}/../bin/pca \
+	    --workdir ${COUNTS_WORKDIR_PATH} \
+        min-components-explained-variance \
+        --init-n-components 10 \
+        --explained-variance-threshold 0.05
+
+    [ "$status" -eq 0 ]
+}
