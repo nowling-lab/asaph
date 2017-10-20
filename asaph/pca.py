@@ -24,7 +24,6 @@ matplotlib.use("PDF")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from asaph.ml import mcfadden_r2
 from asaph.ml import PCA
 from asaph.newioutils import read_features
 from asaph.newioutils import deserialize
@@ -170,19 +169,6 @@ def parseargs():
                             required=True,
                             help="Number of PCs to compute")
 
-    r2_parser = subparsers.add_parser("mcfadden-r2",
-                                      help="Compute McFadden's R2 of PC-projected features under a LR model")
-    
-    r2_parser.add_argument("--n-components",
-                            type=int,
-                            required=True,
-                            help="Number of PCs to compute")
-
-    r2_parser.add_argument("--model-components",
-                           type=int,
-                           nargs="+",
-                           help="Components to use in model")
-
     output_parser = subparsers.add_parser("output-coordinates",
                                       help="Output PC projected coordinates")
     
@@ -222,8 +208,6 @@ if __name__ == "__main__":
 
     if args.mode == "explained-variance-analysis":
         explained_variance_analysis(args)
-    elif args.mode == "mcfadden-r2":
-        coefficient_of_determination(args)
     elif args.mode == "plot-projections":
         plot_projections(args)
     elif args.mode == "output-coordinates":
