@@ -42,7 +42,9 @@ Asaph can perform single SNP association tests using Likelihood-Ratio Tests on L
 
     bin/likelihood_ratio_test --workdir <path/to/workdir>
     
-The p-value for each SNP is written to a tab-separated value file under `<workdir>/statistics/snp_likelihood_ratio_tests.tsv`.
+The p-value for each SNP is written to a tab-separated value file under 
+
+    <workdir>/statistics/snp_likelihood_ratio_tests.tsv
 
 A Bonferroni correction is often used for multiple hypothesis testing.  This can be conservative, however, since the SNPs are often correlated.  [Gao, et al.](http://onlinelibrary.wiley.com/doi/10.1002/gepi.20310/full) propose using PCA to identify the number of variables, after correlation is accounted for.  A search function is available in the PCA module:
 
