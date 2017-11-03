@@ -17,5 +17,5 @@ load model_setup_helper
 	    --workdir ${WORKDIR_PATH}
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.txt" ]
+    [ -e "${WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.tsv" ]
 }

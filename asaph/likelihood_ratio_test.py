@@ -60,7 +60,7 @@ def run_likelihood_ratio_tests(features, stats_dir):
                        n_iter = n_iter,
                        fit_intercept = False)
     
-    flname = "snp_likelihood_ratio_tests.txt"
+    flname = "snp_likelihood_ratio_tests.tsv"
     with open(os.path.join(stats_dir, flname), "w") as fl:
         next_output = 1
         for i, pair in enumerate(features.snp_feature_map.iteritems()):
