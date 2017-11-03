@@ -23,11 +23,14 @@ import matplotlib
 matplotlib.use("PDF")
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn
 
 from asaph.ml import PCA
 from asaph.newioutils import read_features
 from asaph.newioutils import deserialize
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
+
+from sklearn.preprocessing import binarize
 
 def explained_variance_analysis(args):
     workdir = args.workdir
@@ -168,6 +171,90 @@ def output_coordinates(args):
             line.extend(map(str, selected[i, :]))
             fl.write("\t".join(line))
             fl.write("\n")
+
+
+def analyze_weights(args):
+    workdir = args.workdir
+
+    figures_dir = os.path.join(workdir, "figures")
+    if not os.path.exists(figures_dir):
+        os.makedirs(figures_dir)
+    
+    features = read_features(workdir)
+    project_summary = deserialize(os.path.join(workdir,
+                                               PROJECT_SUMMARY_FLNAME))
+    
+    pca = PCA(args.n_components)
+    projected = pca.transform(features.feature_matrix)
+
+    for i, w in enumerate(args.weights):
+        plt.clf()
+        seaborn.distplot(w * pca.components_[i, :],
+                         kde=False)
+        plt.xlabel("Feature Weights", fontsize=16)
+        plt.ylabel("Count(Features)", fontsize=16)
+        plot_fl = os.path.join(figures_dir,
+                               "pca_feature_weights_pc%s.png" % i)
+        plt.savefig(plot_fl,
+                    DPI=300)
+
+def extract_genotypes(args):
+    workdir = args.workdir
+
+    analysis_dir = os.path.join(workdir, "analysis")
+    if not os.path.exists(analysis_dir):
+        os.makedirs(analysis_dir)
+
+    features = read_features(workdir)
+    project_summary = deserialize(os.path.join(workdir,
+                                               PROJECT_SUMMARY_FLNAME))
+    
+    pca = PCA(args.n_components)
+    projected = pca.transform(features.feature_matrix)
+
+    binary_vectors = []
+    for i, (w, t) in enumerate(zip(args.weights, args.thresholds)):
+        scaled = w * pca.components_[i, :].reshape(1, -1)
+        binary = binarize(scaled, threshold=t)[0, :]
+        for j, other in enumerate(binary_vectors):
+            dp = binary.dot(other)
+            print "Dot product of vectors %s and %s: %s" % (i, j, dp)
+        binary_vectors.append(binary)
+
+    binary_features = np.array(binary_vectors)
+
+    feature_genotypes = features.snp_feature_genotypes
+    n_components = binary_features.shape[0]
+    snp_component_gts = dict()
+    for snp_label, feature_idx in features.snp_feature_map.iteritems():
+            component_gts = []
+            total_gts = 0
+            for i in xrange(n_components):
+                gts = []
+                for idx in feature_idx:
+                    if binary_features[i, idx] == 1.0:
+                        gts.append(feature_genotypes[snp_label][idx])
+                total_gts += len(gts)
+                component_gts.append(gts)
+                
+            if total_gts > 0:
+                snp_component_gts[snp_label] = component_gts
+
+    output_fl = os.path.join(analysis_dir, "component_genotypes.tsv")
+    with open(output_fl, "w") as fl:
+        header = ["chrom", "pos"]
+        for i in xrange(n_components):
+            header.append("component_%s" % i)
+        fl.write("\t".join(header))
+        fl.write("\n")
+        for (chrom, pos), component_gts in snp_component_gts.iteritems():
+            fl.write(chrom)
+            fl.write("\t")
+            fl.write(pos)
+            for gts in component_gts:
+                fl.write("\t")
+                fl.write(",".join(gts))
+            fl.write("\n")
     
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - PCA")
@@ -230,6 +317,38 @@ def parseargs():
                               required=True,
                               help="Minimum explained variance")
 
+    weight_analysis_parser = subparsers.add_parser("analyze-weights",
+                                                   help="Plot component weight distributions")
+
+    weight_analysis_parser.add_argument("--n-components",
+                                        type=int,
+                                        required=True,
+                                        help="Number of PCs to compute")
+
+    weight_analysis_parser.add_argument("--weights",
+                                        type=float,
+                                        nargs="+",
+                                        required=True,
+                                        help="Component weights")
+
+    extract_genotypes_parser = subparsers.add_parser("extract-genotypes",
+                                                     help="Extract genotypes from PCs")
+    extract_genotypes_parser.add_argument("--n-components",
+                                          type=int,
+                                          required=True,
+                                          help="Number of PCs to compute")
+    
+    extract_genotypes_parser.add_argument("--weights",
+                                          type=float,
+                                          nargs="+",
+                                          required=True,
+                                          help="Component scaling factors")
+
+    extract_genotypes_parser.add_argument("--thresholds",
+                                          type=float,
+                                          nargs="+",
+                                          required=True,
+                                          help="Thresholds for binarizing")
 
     return parser.parse_args()
 
@@ -244,6 +363,10 @@ if __name__ == "__main__":
         output_coordinates(args)
     elif args.mode == "min-components-explained-variance":
         min_components_explained_variance(args)
+    elif args.mode == "analyze-weights":
+        analyze_weights(args)
+    elif args.mode == "extract-genotypes":
+        extract_genotypes(args)
     else:
         print "Unknown mode '%s'" % args.mode
         sys.exit(1)

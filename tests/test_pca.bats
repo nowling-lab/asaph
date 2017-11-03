@@ -99,3 +99,51 @@ load model_setup_helper
 
     [ "$status" -eq 0 ]
 }
+
+@test "Analyze weights (categories)" {
+    run ${BATS_TEST_DIRNAME}/../bin/pca \
+	    --workdir ${WORKDIR_PATH} \
+        analyze-weights \
+        --n-components 10 \
+        --weights 1.0 1.0
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/figures/pca_feature_weights_pc0.png" ]
+    [ -e "${WORKDIR_PATH}/figures/pca_feature_weights_pc1.png" ]
+}
+
+@test "Analyze weights (counts)" {
+    run ${BATS_TEST_DIRNAME}/../bin/pca \
+	    --workdir ${COUNTS_WORKDIR_PATH} \
+        analyze-weights \
+        --n-components 10 \
+        --weights 1.0 1.0
+
+    [ "$status" -eq 0 ]
+    [ -e "${COUNTS_WORKDIR_PATH}/figures/pca_feature_weights_pc0.png" ]
+    [ -e "${COUNTS_WORKDIR_PATH}/figures/pca_feature_weights_pc1.png" ]
+}
+
+@test "Extract genotypes (categories)" {
+    run ${BATS_TEST_DIRNAME}/../bin/pca \
+	    --workdir ${WORKDIR_PATH} \
+        extract-genotypes \
+        --n-components 10 \
+        --weights 1.0 1.0 \
+        --thresholds 0.5 0.5
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/analysis/component_genotypes.tsv" ]
+}
+
+@test "Extract genotypes (counts)" {
+    run ${BATS_TEST_DIRNAME}/../bin/pca \
+	    --workdir ${COUNTS_WORKDIR_PATH} \
+        extract-genotypes \
+        --n-components 10 \
+        --weights 1.0 1.0 \
+        --thresholds 0.5 0.5
+
+    [ "$status" -eq 0 ]
+    [ -e "${COUNTS_WORKDIR_PATH}/analysis/component_genotypes.tsv" ]
+}

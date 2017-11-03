@@ -8,7 +8,7 @@ To download Asaph, all you need to do is clone the git repository:
 
     $ git clone https://github.com/rnowling/asaph.git
 
-Asaph requires that [numpy and scipy](http://www.numpy.org/), [matplotlib](http://matplotlib.org/), and [scikit-learn](http://scikit-learn.org/stable/) are installed.
+Asaph requires that [numpy and scipy](http://www.numpy.org/), [matplotlib](http://matplotlib.org/), [scikit-learn](http://scikit-learn.org/stable/), and [seaborn](https://seaborn.pydata.org/index.html) are installed.
 
 ## Importing data
 To create an Asaph project, we first need to import the data.  A minimal command for importing biallelic SNPs from a VCF file would look like so:

@@ -145,7 +145,9 @@ class PCA(object):
         return self.svd.explained_variance_ratio_
 
     def transform(self, features):
-        return self.svd.fit_transform(features)
+        coordinates = self.svd.fit_transform(features)
+        self.components_ = self.svd.components_
+        return coordinates
 
 
 class LogisticRegressionEnsemble(object):
