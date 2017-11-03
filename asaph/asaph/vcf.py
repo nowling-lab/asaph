@@ -215,9 +215,9 @@ class CategoricalFeaturesExtractor(object):
                 elif allele_counts == (1, 1):
                     het_column[row_idx] = 1
                 # ignore partially unknown e.g., A/X
-            yield (chrom, pos, (alleles[0], alleles[0])), tuple(homo1_column)
-            yield (chrom, pos, (alleles[1], alleles[1])), tuple(homo2_column)
-            yield (chrom, pos, (alleles[0], alleles[1])), tuple(het_column)
+            yield (chrom, pos, (alleles[0] + "/" + alleles[0])), tuple(homo1_column)
+            yield (chrom, pos, (alleles[1] + "/" + alleles[1])), tuple(homo2_column)
+            yield (chrom, pos, (alleles[0] + "/" + alleles[1])), tuple(het_column)
 
 class StreamCounter(object):
     def __init__(self, stream):
@@ -256,20 +256,24 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
         raise Exception, "Unknown feature type: %s" % feature_type
 
     snp_features = defaultdict(list)
+    snp_genotypes = defaultdict(dict)
     column_idx = 0
     col_dict = dict()
     feature_columns = []
-    for feature_idx, ((chrom, pos, _), column) in enumerate(extractor):
+    for feature_idx, ((chrom, pos, gt), column) in enumerate(extractor):
         if compress:
             if column not in col_dict:
                 col_dict[column] = column_idx
                 snp_features[(chrom, pos)].append(column_idx)
+                snp_genotypes[(chrom, pos)][column_idx] = gt
                 feature_columns.append(column)
                 column_idx += 1
             else:
                 feature_column_idx = col_dict[column]
+                snp_genotypes[(chrom, pos)][feature_column_idx] = gt
                 snp_features[(chrom, pos)].append(feature_column_idx)
         else:
+            snp_genotypes[(chrom, pos)][column_idx] = gt
             snp_features[(chrom, pos)].append(column_idx)
             feature_columns.append(column)
             column_idx += 1
@@ -298,4 +302,5 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
     serialize(os.path.join(outbase, SAMPLE_LABELS_FLNAME), extractor.rows_to_names)
     serialize(os.path.join(outbase, CLASS_LABELS_FLNAME), class_labels)
     serialize(os.path.join(outbase, SNP_FEATURE_INDICES_FLNAME), snp_features)
+    serialize(os.path.join(outbase, SNP_FEATURE_GENOTYPES_FLNAME), snp_genotypes)
     serialize(os.path.join(outbase, PROJECT_SUMMARY_FLNAME), project_summary)

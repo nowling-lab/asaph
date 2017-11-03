@@ -79,11 +79,12 @@ class SNPs(object):
             % (len(self), self.ranked)
 
 class Features(object):
-    def __init__(self, feature_matrix, snp_feature_map, class_labels, sample_labels):
+    def __init__(self, feature_matrix, snp_feature_map, class_labels, sample_labels, genotypes):
         self.feature_matrix = feature_matrix
         self.snp_feature_map = snp_feature_map
         self.class_labels = class_labels
         self.sample_labels = sample_labels
+        self.snp_feature_genotypes = genotypes
 
     def rank_snps(self, feature_importances):
         feature_importances = np.abs(feature_importances)
