@@ -92,7 +92,7 @@ def parseargs():
     parser.add_argument("--allele-min-freq-threshold",
                         type=float,
                         help="Minimum allele frequency allowed",
-                        default=0.0)
+                        default=0.000001)
 
     return vars(parser.parse_args())
 
