@@ -53,12 +53,18 @@ def generate_training_set(labels, features):
     return training_labels, training_features
 
         
-def run_likelihood_ratio_tests(features, stats_dir):
+def run_likelihood_ratio_tests(features, args, stats_dir):
     n_iter = estimate_lr_iter(len(features.class_labels))
+
+    
+    fit_intercept = False
+    if args.intercept == "free-parameter":
+        fit_intercept = True
+    
     lr = SGDClassifier(penalty="l2",
                        loss="log",
                        n_iter = n_iter,
-                       fit_intercept = False)
+                       fit_intercept = fit_intercept)
     
     flname = "snp_likelihood_ratio_tests.tsv"
     with open(os.path.join(stats_dir, flname), "w") as fl:
@@ -72,11 +78,15 @@ def run_likelihood_ratio_tests(features, stats_dir):
 
             training_labels, training_features = generate_training_set(labels,
                                                                        snp_features)
+
+            set_intercept_to_class_prob = False
+            if args.intercept == "class-probabilities":
+                set_intercept_to_class_prob = True
             
             p_value = likelihood_ratio_test((training_features, snp_features),
                                             (training_labels, labels),
                                             lr,
-                                            set_intercept=True)
+                                            set_intercept=set_intercept_to_class_prob)
             
             if i == next_output:
                 print i, "SNP", snp_label, "has p-value", p_value
@@ -89,7 +99,20 @@ def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - Likelihood Ratio Test")
 
     parser.add_argument("--workdir", type=str, help="Work directory", required=True)
-    
+
+    parser.add_argument("--intercept",
+                        type=str,
+                        default="class-probabilities",
+                        choices=["class-probabilities",
+                                 "none",
+                                 "free-parameter"])
+
+    parser.add_argument("--training-set",
+                        type=str,
+                        default="adjusted-for-unknown",
+                        choices=["adjusted-for-unknown",
+                                 "unadjusted"])
+
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -108,4 +131,5 @@ if __name__ == "__main__":
     features = read_features(args.workdir)
 
     run_likelihood_ratio_tests(features,
+                               args,
                                stats_dir)
