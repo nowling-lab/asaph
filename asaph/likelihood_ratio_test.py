@@ -27,36 +27,52 @@ from sklearn.linear_model import SGDClassifier
 
 from asaph.ml import estimate_lr_iter
 from asaph.ml import likelihood_ratio_test
+from asaph.models import COUNTS_FEATURE_TYPE
+from asaph.models import CATEGORIES_FEATURE_TYPE
 from asaph.newioutils import read_features
 from asaph.newioutils import deserialize
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
 from asaph.newioutils import serialize
 
-def generate_training_set(labels, features):
+def generate_training_set(feature_type, labels, features, sample_unknown_genotype):
+    n_samples, n_features = features.shape
+
+    if feature_type == COUNTS_FEATURE_TYPE:
+        if n_features != 1:
+            raise ValueError, "Feature matrix for counts feature type must have 1 column"
+    elif feature_type == CATEGORIES_FEATURE_TYPE:
+        if n_features != 3:
+            raise ValueError, "Feature matrix for categories feature type must have 3 columns"
+    else:
+        raise Exception, "LR Test does not support feature type %s" % feature_type
+
     # we make 3 copies so we can impute each unknown genotype
     # with each of the 3 known genotypes
     N_COPIES = 3
-    training_labels = np.zeros(N_COPIES * labels.shape[0])
-    training_features = np.zeros((N_COPIES * features.shape[0],
-                                  features.shape[1]))
+    training_labels = np.zeros(N_COPIES * n_samples)
+    training_features = np.zeros((N_COPIES * n_samples, n_features))
 
-    for i in xrange(features.shape[0]):
+    for i in xrange(n_samples):
         for j in xrange(N_COPIES):
             idx = N_COPIES * i + j
             training_labels[idx] = labels[i]
-            
-            if features[i, :].sum() == 1.:
+
+            if not sample_unknown_genotype[i]:
                 training_features[idx, :] = features[i, :]
-            else:
+            elif feature_type == CATEGORIES_FEATURE_TYPE:
                 training_features[idx, j] = 1.
+            elif feature_type == COUNTS_FEATURE_TYPE:
+                training_features[idx, 0] = j
 
     return training_labels, training_features
 
         
-def run_likelihood_ratio_tests(features, args, stats_dir):
+def run_likelihood_ratio_tests(features, project_summary, args, stats_dir):
+    if len(set(features.class_labels)) != 2:
+        raise ValueError, "LR Test currently only supports 2 populations."
+
     n_iter = estimate_lr_iter(len(features.class_labels))
 
-    
     fit_intercept = False
     if args.intercept == "free-parameter":
         fit_intercept = True
@@ -76,8 +92,10 @@ def run_likelihood_ratio_tests(features, args, stats_dir):
             labels = np.array(features.class_labels)
             snp_features = features.feature_matrix[:, feature_idx]
 
-            training_labels, training_features = generate_training_set(labels,
-                                                                       snp_features)
+            training_labels, training_features = generate_training_set(project_summary.feature_encoding,
+                                                                       labels,
+                                                                       snp_features,
+                                                                       features.unknown_genotypes[snp_label])
 
             set_intercept_to_class_prob = False
             if args.intercept == "class-probabilities":
@@ -131,5 +149,6 @@ if __name__ == "__main__":
     features = read_features(args.workdir)
 
     run_likelihood_ratio_tests(features,
+                               project_summary,
                                args,
                                stats_dir)

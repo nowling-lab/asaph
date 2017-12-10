@@ -60,7 +60,6 @@ load model_setup_helper
     [ -e "${WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.tsv" ]
 }
 
-
 @test "Calculate likelihood_ratio_test (categories, no intercept, unadjusted)" {
     run ${BATS_TEST_DIRNAME}/../bin/likelihood_ratio_test \
 	    --workdir ${WORKDIR_PATH} \
@@ -79,4 +78,72 @@ load model_setup_helper
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.tsv" ]
+}
+
+@test "Calculate likelihood_ratio_test (counts, default arguments)" {
+    run ${BATS_TEST_DIRNAME}/../bin/likelihood_ratio_test \
+	    --workdir ${COUNTS_WORKDIR_PATH}
+
+    [ "$status" -eq 0 ]
+    [ -e "${COUNTS_WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.tsv" ]
+}
+
+@test "Calculate likelihood_ratio_test (counts, class probabilities intercept, adjusted)" {
+    run ${BATS_TEST_DIRNAME}/../bin/likelihood_ratio_test \
+	    --workdir ${COUNTS_WORKDIR_PATH} \
+        --intercept none \
+        --training-set adjusted-for-unknown
+
+    [ "$status" -eq 0 ]
+    [ -e "${COUNTS_WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.tsv" ]
+}
+
+@test "Calculate likelihood_ratio_test (counts, no intercept, adjusted)" {
+    run ${BATS_TEST_DIRNAME}/../bin/likelihood_ratio_test \
+	    --workdir ${COUNTS_WORKDIR_PATH} \
+        --intercept none \
+        --training-set adjusted-for-unknown
+
+    [ "$status" -eq 0 ]
+    [ -e "${COUNTS_WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.tsv" ]
+}
+
+@test "Calculate likelihood_ratio_test (counts, free-parameter intercept, adjusted)" {
+    run ${BATS_TEST_DIRNAME}/../bin/likelihood_ratio_test \
+	    --workdir ${COUNTS_WORKDIR_PATH} \
+        --intercept free-parameter \
+        --training-set adjusted-for-unknown
+
+    [ "$status" -eq 0 ]
+    [ -e "${COUNTS_WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.tsv" ]
+}
+
+@test "Calculate likelihood_ratio_test (counts, class probabilities intercept, unadjusted)" {
+    run ${BATS_TEST_DIRNAME}/../bin/likelihood_ratio_test \
+	    --workdir ${COUNTS_WORKDIR_PATH} \
+        --intercept class-probabilities \
+        --training-set unadjusted
+
+    [ "$status" -eq 0 ]
+    [ -e "${COUNTS_WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.tsv" ]
+}
+
+@test "Calculate likelihood_ratio_test (counts, no intercept, unadjusted)" {
+    run ${BATS_TEST_DIRNAME}/../bin/likelihood_ratio_test \
+	    --workdir ${COUNTS_WORKDIR_PATH} \
+        --intercept none \
+        --training-set unadjusted
+
+    [ "$status" -eq 0 ]
+    [ -e "${COUNTS_WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.tsv" ]
+}
+
+@test "Calculate likelihood_ratio_test (counts, free-parameter intercept, unadjusted)" {
+    run ${BATS_TEST_DIRNAME}/../bin/likelihood_ratio_test \
+	    --workdir ${COUNTS_WORKDIR_PATH} \
+        --intercept free-parameter \
+        --training-set unadjusted
+
+    [ "$status" -eq 0 ]
+    [ -e "${COUNTS_WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.tsv" ]
 }
