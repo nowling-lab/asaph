@@ -23,6 +23,8 @@ import numpy as np
 from newioutils import *
 
 from models import ProjectSummary
+from models import COUNTS_FEATURE_TYPE
+from models import CATEGORIES_FEATURE_TYPE
 
 DEFAULT_COLUMNS = {'CHROM' : 0, 'POS' : 1, 'ID' : 2, 'REF' : 3, 'ALT' : 4, 'QUAL' : 5, 'FILTER' : 6, 'INFO' : 7, 'FORMAT' : 8}
 
@@ -245,10 +247,10 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
     filtered_positions_counter = StreamCounter(variants)
 
     # extract features
-    if feature_type == "counts":
+    if feature_type == COUNTS_FEATURE_TYPE:
         extractor = CountFeaturesExtractor(filtered_positions_counter,
                                            populations.keys())
-    elif feature_type == "categories":
+    elif feature_type == CATEGORIES_FEATURE_TYPE:
         extractor = CategoricalFeaturesExtractor(filtered_positions_counter,
                                                  populations.keys())
     else:

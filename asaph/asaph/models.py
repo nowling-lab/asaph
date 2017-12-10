@@ -30,6 +30,9 @@ ProjectSummary = namedtuple("ProjectSummary",
                              "n_samples",
                              "population_names"])
 
+COUNTS_FEATURE_TYPE = "counts"
+CATEGORIES_FEATURE_TYPE = "categories"
+
 class SNPs(object):
     def __init__(self, labels, importances, ranked):
         # convert to tuple for hashing
