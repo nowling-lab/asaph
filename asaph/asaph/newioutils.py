@@ -31,6 +31,7 @@ SAMPLE_LABELS_FLNAME = "sample_labels"
 FEATURE_MATRIX_FLNAME = "feature_matrix.npy"
 SNP_FEATURE_INDICES_FLNAME = "snp_feature_indices"
 SNP_FEATURE_GENOTYPES_FLNAME = "snp_feature_genotypes"
+UNKNOWN_GENOTYPES_FLNAME = "unknown_genotypes"
 PROJECT_SUMMARY_FLNAME = "project_summary"
 
 def serialize(flname, obj):
@@ -63,12 +64,17 @@ def read_features(basename):
     genotypes = None
     if os.path.exists(genotypes_flname):
         genotypes = deserialize(genotypes_flname)
+    unknown_genotypes_flname = os.path.join(basename, UNKNOWN_GENOTYPES_FLNAME)
+    unknown_genotypes = None
+    if os.path.exists(unknown_genotypes_flname):
+        unknown_genotypes = deserialize(unknown_genotypes_flname)
 
     return Features(feature_matrix,
                     snp_features_map,
                     class_labels,
                     sample_labels,
-                    genotypes)
+                    genotypes,
+                    unknown_genotypes)
 
 def write_rf_snps(basedir, snps, n_trees, model_id):
     model_dir = os.path.join(basedir, "models", "rf", str(n_trees))

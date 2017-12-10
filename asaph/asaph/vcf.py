@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from collections import OrderedDict
 import gzip
 import os
 import sys
@@ -32,8 +33,8 @@ UNKNOWN_GENOTYPE = (0, 0)
 
 def read_groups(flname):
     fl = open(flname)
-    groups = dict()
-    group_names = dict()
+    groups = OrderedDict()
+    group_names = OrderedDict()
     for group_id, ln in enumerate(fl):
         cols = ln.strip().split(",")
         for ident in cols[1:]:
@@ -61,7 +62,7 @@ def parse_vcf_line(ln, individual_names):
     alleles = (cols[DEFAULT_COLUMNS["REF"]],
                cols[DEFAULT_COLUMNS["ALT"]])
 
-    individual_genotypes = {}
+    individual_genotypes = OrderedDict()
     for i, col in enumerate(cols[len(DEFAULT_COLUMNS):]):
         genotype_pair = col.split(":")[0]
 
@@ -125,8 +126,8 @@ def select_individuals(stream, individual_ids):
     """
     kept_individuals = set(individual_ids)
 
-    for label, alleles, genotypes in stream:
-        selected = { name : genotypes[name] for name in kept_individuals }
+    for label, alleles, allele_counts in stream:
+        selected = OrderedDict([(name, allele_counts[name]) for name in kept_individuals])
         yield (label, alleles, selected)
 
 def filter_invariants(min_percentage, stream):
@@ -153,23 +154,36 @@ def filter_invariants(min_percentage, stream):
         
         if fraction >= min_percentage:
             yield (label, alleles, genotypes)
-            
-def filter_unknown(class_labels, stream):
-    """
-    Filter out variants where 1 or more classes contains all unknown genotypes.
-    """
-    for label, variant_alleles, genotypes in stream:
-        class_entries = defaultdict(set)
-        for idx, allele_counts in genotypes.iteritems():
-            class_entries[class_labels[idx]].add(allele_counts)
 
-        entire_class_unknown = False
-        for class_label, genotypes in class_entries.items():
-            if genotypes == set([UNKNOWN_GENOTYPE]):
-                entire_class_unknown = True
+class UnknownGenotypeAnnotator(object):
+    """
+    Record which samples have unknown genotypes for each site.
+    """
+    def __init__(self, stream, individual_names):
+        self.stream = stream
+        self.name_to_row = dict()
+        self.rows_to_names = []
+        for idx, name in enumerate(individual_names):
+            self.name_to_row[name] = idx
+            self.rows_to_names.append(name)
 
-        if not entire_class_unknown:
-            yield (label, variant_alleles, genotypes)
+        self.unknown_genotypes = dict()
+
+    def __iter__(self):
+        for variant_label, alleles, genotypes in self.stream:
+            chrom, pos = variant_label
+            ref_column = [0.] * len(self.name_to_row)
+            gt_unknown = [0] * len(self.name_to_row)
+
+            for name, allele_counts in genotypes.items():
+                row_idx = self.name_to_row[name]
+                is_unknown = (allele_counts[0] + allele_counts[1]) == 0
+                if is_unknown:
+                    gt_unknown[row_idx] == 1
+
+            self.unknown_genotypes[variant_label] = tuple(gt_unknown)
+
+            yield variant_label, alleles, genotypes
 
 ## Feature extraction
 class CountFeaturesExtractor(object):
@@ -185,11 +199,11 @@ class CountFeaturesExtractor(object):
         for variant_label, alleles, genotypes in self.stream:
             chrom, pos = variant_label
             ref_column = [0.] * len(self.name_to_row)
-            alt_column = [0.] * len(self.name_to_row)
+
             for name, allele_counts in genotypes.items():
                 row_idx = self.name_to_row[name]
                 ref_column[row_idx] = allele_counts[0]
-                alt_column[row_idx] = allele_counts[1]
+
             yield (chrom, pos, alleles[0]), tuple(ref_column)
 
 class CategoricalFeaturesExtractor(object):
@@ -207,6 +221,7 @@ class CategoricalFeaturesExtractor(object):
             homo1_column = [0.] * len(self.name_to_row)
             homo2_column = [0.] * len(self.name_to_row)
             het_column = [0.] * len(self.name_to_row)
+
             for name, allele_counts in genotypes.items():
                 row_idx = self.name_to_row[name]
                 if allele_counts == (2, 0):
@@ -215,7 +230,7 @@ class CategoricalFeaturesExtractor(object):
                     homo2_column[row_idx] = 1
                 elif allele_counts == (1, 1):
                     het_column[row_idx] = 1
-                # ignore partially unknown e.g., A/X
+
             yield (chrom, pos, (alleles[0] + "/" + alleles[0])), tuple(homo1_column)
             yield (chrom, pos, (alleles[1] + "/" + alleles[1])), tuple(homo2_column)
             yield (chrom, pos, (alleles[0] + "/" + alleles[1])), tuple(het_column)
@@ -229,7 +244,6 @@ class StreamCounter(object):
         for item in self.stream:
             self.count += 1
             yield item
-
 
 def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compressed_vcf, allele_min_freq_threshold):
     # dictionary of individual ids to population ids
@@ -246,12 +260,15 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
 
     filtered_positions_counter = StreamCounter(variants)
 
+    unknown_annotator = UnknownGenotypeAnnotator(filtered_positions_counter,
+                                                 populations.keys())
+
     # extract features
     if feature_type == COUNTS_FEATURE_TYPE:
-        extractor = CountFeaturesExtractor(filtered_positions_counter,
+        extractor = CountFeaturesExtractor(unknown_annotator,
                                            populations.keys())
     elif feature_type == CATEGORIES_FEATURE_TYPE:
-        extractor = CategoricalFeaturesExtractor(filtered_positions_counter,
+        extractor = CategoricalFeaturesExtractor(unknown_annotator,
                                                  populations.keys())
     else:
         raise Exception, "Unknown feature type: %s" % feature_type
@@ -305,3 +322,4 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
     serialize(os.path.join(outbase, SNP_FEATURE_INDICES_FLNAME), snp_features)
     serialize(os.path.join(outbase, SNP_FEATURE_GENOTYPES_FLNAME), snp_genotypes)
     serialize(os.path.join(outbase, PROJECT_SUMMARY_FLNAME), project_summary)
+    serialize(os.path.join(outbase, UNKNOWN_GENOTYPES_FLNAME), unknown_annotator.unknown_genotypes)
