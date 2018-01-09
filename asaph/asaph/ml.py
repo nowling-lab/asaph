@@ -59,7 +59,7 @@ def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=No
         testing_labels = labels
 
     intercept = calculate_intercept(training_labels)
-
+    
     if features_null:
         if isinstance(features_null, tuple) and len(features_null) == 2:
             training_features_null, testing_features_null = features_null
@@ -79,7 +79,7 @@ def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=No
     else:
         null_prob = sum(testing_labels) / float(testing_labels.shape[0]) * \
                     np.ones(testing_labels.shape)
-        df = testing_features_alternate.shape[1]
+        df = testing_features_alternate.shape[1] - 1
 
     if set_intercept:
         lr_model.fit(training_features_alternate,
