@@ -198,6 +198,7 @@ class CountFeaturesExtractor(object):
         for variant_label, alleles, genotypes in self.stream:
             chrom, pos = variant_label
             ref_column = [0.] * len(self.name_to_row)
+            alt_column = [0.] * len(self.name_to_row)
 
             for name, allele_counts in genotypes.items():
                 row_idx = self.name_to_row[name]

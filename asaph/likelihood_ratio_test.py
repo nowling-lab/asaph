@@ -38,8 +38,8 @@ def generate_training_set(feature_type, labels, features, sample_unknown_genotyp
     n_samples, n_features = features.shape
 
     if feature_type == COUNTS_FEATURE_TYPE:
-        if n_features != 1:
-            raise ValueError, "Feature matrix for counts feature type must have 1 column"
+        if n_features != 2:
+            raise ValueError, "Feature matrix for counts feature type must have 2 columns"
     elif feature_type == CATEGORIES_FEATURE_TYPE:
         if n_features != 3:
             raise ValueError, "Feature matrix for categories feature type must have 3 columns"
@@ -62,11 +62,11 @@ def generate_training_set(feature_type, labels, features, sample_unknown_genotyp
             elif feature_type == CATEGORIES_FEATURE_TYPE:
                 training_features[idx, j] = 1.
             elif feature_type == COUNTS_FEATURE_TYPE:
-                training_features[idx, 0] = j
+                training_features[idx, 0] = 2 - j
+                training_features[idx, 1] = j
 
     return training_labels, training_features
 
-        
 def run_likelihood_ratio_tests(features, project_summary, args, stats_dir):
     if len(set(features.class_labels)) != 2:
         raise ValueError, "LR Test currently only supports 2 populations."
