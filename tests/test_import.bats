@@ -41,7 +41,7 @@ setup() {
 	    --populations ${POPS_PATH} \
 	    --feature-type counts
 
-    N_FEATURE_INDICES=$((N_SNPS))
+    N_FEATURE_INDICES=$((N_SNPS * 2))
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
@@ -82,7 +82,7 @@ setup() {
 	    --feature-type counts \
 	    --compress
 
-    N_FEATURE_INDICES=$((N_SNPS))
+    N_FEATURE_INDICES=$((N_SNPS * 2))
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]

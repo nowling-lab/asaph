@@ -204,6 +204,7 @@ class CountFeaturesExtractor(object):
                 ref_column[row_idx] = allele_counts[0]
 
             yield (chrom, pos, alleles[0]), tuple(ref_column)
+            yield (chrom, pos, alleles[1]), tuple(alt_column)
 
 class CategoricalFeaturesExtractor(object):
     def __init__(self, stream, individual_names):
