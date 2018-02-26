@@ -25,12 +25,38 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn
 
-from asaph.ml import PCA
+from sklearn.decomposition import TruncatedSVD
+from sklearn.externals import joblib
+
 from asaph.newioutils import read_features
 from asaph.newioutils import deserialize
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
 
 from sklearn.preprocessing import binarize
+
+MODEL_KEY = "model"
+PROJECTION_KEY = "projected-coordinates"
+
+def train(args):
+    workdir = args.workdir
+
+    models_dir = os.path.join(workdir,
+                              "models")
+    if not os.path.exists(models_dir):
+        os.makedirs(models_dir)
+
+    features = read_features(workdir)
+        
+    svd = TruncatedSVD(n_components=args.n_components)
+    projections = svd.fit_transform(features.feature_matrix)
+
+    model = { MODEL_KEY : svd,
+              PROJECTION_KEY : projections}
+
+    model_fl = os.path.join(models_dir,
+                            "pca.pkl")
+    joblib.dump(model,
+                model_fl)
 
 def explained_variance_analysis(args):
     workdir = args.workdir
@@ -39,10 +65,13 @@ def explained_variance_analysis(args):
     if not os.path.exists(figures_dir):
         os.makedirs(figures_dir)
 
-    features = read_features(workdir)
+    model_fl = os.path.join(workdir,
+                            "models",
+                            "pca.pkl")
 
-    pca = PCA(args.n_components)
-    explained_variance_ratios = pca.explained_variance(features.feature_matrix)
+    model = joblib.load(model_fl)
+
+    explained_variance_ratios = model[MODEL_KEY].explained_variance_ratio_
 
     fig_flname = os.path.join(figures_dir,
                               "pca_explained_variance_ratios.png")
@@ -64,8 +93,9 @@ def min_components_explained_variance(args):
     n_components = args.init_n_components
     while True:
         print "Computing PCA with %s components" % n_components
-        pca = PCA(n_components)
-        explained_variance_ratios = pca.explained_variance(features.feature_matrix)
+        pca = TruncatedSVD(n_components)
+        pca.fit(features.feature_matrix)
+        explained_variance_ratios = pca.explained_variance_ratio_
         sorted_ratios = np.sort(explained_variance_ratios)[::-1]
         cum_ratios = np.cumsum(sorted_ratios)
         total_explained_variance = cum_ratios[-1]
@@ -106,13 +136,17 @@ def plot_projections(args):
     figures_dir = os.path.join(workdir, "figures")
     if not os.path.exists(figures_dir):
         os.makedirs(figures_dir)
+
+    model_fl = os.path.join(workdir,
+                            "models",
+                            "pca.pkl")
+    model = joblib.load(model_fl)
+    projected = model[PROJECTION_KEY]
     
     features = read_features(workdir)
+    
     project_summary = deserialize(os.path.join(workdir,
                                                PROJECT_SUMMARY_FLNAME))
-    
-    pca = PCA(args.n_components)
-    projected = pca.transform(features.feature_matrix)
 
     all_labels = set(features.class_labels)
     labels = np.array(features.class_labels, dtype=np.int32)
@@ -148,14 +182,17 @@ def plot_projections(args):
 def output_coordinates(args):
     workdir = args.workdir
 
-    features = read_features(workdir)
     project_summary = deserialize(os.path.join(workdir,
                                                PROJECT_SUMMARY_FLNAME))
 
-
-    pca = PCA(args.n_components)
-    projected = pca.transform(features.feature_matrix)
+    model_fl = os.path.join(workdir,
+                            "models",
+                            "pca.pkl")
+    model = joblib.load(model_fl)    
+    projected = model[PROJECTION_KEY]
     selected = projected[:, args.selected_components]
+
+    features = read_features(workdir)
 
     with open(args.output_fl, "w") as fl:
         headers = ["sample", "population_index", "population_name"]
@@ -180,13 +217,15 @@ def analyze_weights(args):
     if not os.path.exists(figures_dir):
         os.makedirs(figures_dir)
     
-    features = read_features(workdir)
     project_summary = deserialize(os.path.join(workdir,
                                                PROJECT_SUMMARY_FLNAME))
-    
-    pca = PCA(args.n_components)
-    projected = pca.transform(features.feature_matrix)
 
+    model_fl = os.path.join(workdir,
+                            "models",
+                            "pca.pkl")
+    model = joblib.load(model_fl)    
+    pca = model[MODEL_KEY]
+    
     for i, w in enumerate(args.weights):
         plt.clf()
         seaborn.distplot(w * pca.components_[i, :],
@@ -205,13 +244,17 @@ def extract_genotypes(args):
     if not os.path.exists(analysis_dir):
         os.makedirs(analysis_dir)
 
-    features = read_features(workdir)
     project_summary = deserialize(os.path.join(workdir,
                                                PROJECT_SUMMARY_FLNAME))
     
-    pca = PCA(args.n_components)
-    projected = pca.transform(features.feature_matrix)
+    model_fl = os.path.join(workdir,
+                            "models",
+                            "pca.pkl")
+    model = joblib.load(model_fl)    
+    pca = model[MODEL_KEY]
 
+    features = read_features(workdir)
+    
     binary_vectors = []
     for i, (w, t) in enumerate(zip(args.weights, args.thresholds)):
         scaled = w * pca.components_[i, :].reshape(1, -1)
@@ -265,21 +308,21 @@ def parseargs():
                         help="Work directory")
 
     subparsers = parser.add_subparsers(dest="mode")
+    
+    train_parser = subparsers.add_parser("train",
+                                         help="Train PCA model")
+    
+    train_parser.add_argument("--n-components",
+                              type=int,
+                              required=True,
+                              help="Number of PCs to compute")
+    
     eva_parser = subparsers.add_parser("explained-variance-analysis",
                                        help="Compute explained variances of PCs")
-    eva_parser.add_argument("--n-components",
-                            type=int,
-                            required=True,
-                            help="Number of PCs to compute")
 
     output_parser = subparsers.add_parser("output-coordinates",
                                       help="Output PC projected coordinates")
-    
-    output_parser.add_argument("--n-components",
-                               type=int,
-                               required=True,
-                               help="Number of PCs to compute")
-    
+        
     output_parser.add_argument("--selected-components",
                                type=int,
                                nargs="+",
@@ -292,11 +335,6 @@ def parseargs():
     
     plot_parser = subparsers.add_parser("plot-projections",
                                         help="Plot samples on principal coordinates")
-
-    plot_parser.add_argument("--n-components",
-                             type=int,
-                             required=True,
-                             help="Number of PCs to compute")
 
     plot_parser.add_argument("--pairs",
                              type=int,
@@ -320,11 +358,6 @@ def parseargs():
     weight_analysis_parser = subparsers.add_parser("analyze-weights",
                                                    help="Plot component weight distributions")
 
-    weight_analysis_parser.add_argument("--n-components",
-                                        type=int,
-                                        required=True,
-                                        help="Number of PCs to compute")
-
     weight_analysis_parser.add_argument("--weights",
                                         type=float,
                                         nargs="+",
@@ -333,11 +366,6 @@ def parseargs():
 
     extract_genotypes_parser = subparsers.add_parser("extract-genotypes",
                                                      help="Extract genotypes from PCs")
-    extract_genotypes_parser.add_argument("--n-components",
-                                          type=int,
-                                          required=True,
-                                          help="Number of PCs to compute")
-    
     extract_genotypes_parser.add_argument("--weights",
                                           type=float,
                                           nargs="+",
@@ -355,7 +383,9 @@ def parseargs():
 if __name__ == "__main__":
     args = parseargs()
 
-    if args.mode == "explained-variance-analysis":
+    if args.mode == "train":
+       train(args) 
+    elif args.mode == "explained-variance-analysis":
         explained_variance_analysis(args)
     elif args.mode == "plot-projections":
         plot_projections(args)
