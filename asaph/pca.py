@@ -30,6 +30,7 @@ from sklearn.decomposition import PCA
 from sklearn.externals import joblib
 from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import binarize
+from sklearn.preprocessing import OneHotEncoder
 
 from asaph.ml import estimate_lr_iter
 from asaph.ml import likelihood_ratio_test
@@ -264,6 +265,7 @@ def association_tests(args):
     label_indices = dict()
     sample_labels = []
     sample_indices = []
+    sample_populations = []
     with open(args.labels_fl) as fl:
         for ln in fl:
             cols = ln.strip().split()
@@ -279,8 +281,16 @@ def association_tests(args):
 
             sample_labels.append(label_idx)
             sample_indices.append(samples[sample_name])
+            sample_populations.append(data_model.class_labels[samples[sample_name]])
 
     sample_labels = np.array(sample_labels)
+
+    if args.correct_populations:
+        sample_populations = np.array(sample_populations).reshape(-1, 1)
+        encoder = OneHotEncoder(sparse=False)
+        null_features = encoder.fit_transform(sample_populations)
+    else:
+        null_features = None
 
     n_iter = estimate_lr_iter(len(sample_labels))
     # we set the intercept to the class ratios in the lr test function
@@ -293,9 +303,14 @@ def association_tests(args):
         for i in xrange(projections.shape[1]):
             features = projections[sample_indices, i].reshape(-1, 1)
 
+            if args.correct_populations:
+                features = np.hstack([features,
+                                      null_features])
+
             p_value = likelihood_ratio_test(features,
                                             sample_labels,
-                                            lr)
+                                            lr,
+                                            features_null = null_features)
             fl.write("%s\t%s\n" % (i, p_value))
 
 def extract_genotypes(args):
@@ -451,6 +466,10 @@ def parseargs():
                                     type=str,
                                     required=True,
                                     help="PC p-values")
+
+    association_parser.add_argument("--correct-populations",
+                                    action="store_true",
+                                    help="Correct for population structure")
     
     return parser.parse_args()
 
