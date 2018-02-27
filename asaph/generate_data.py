@@ -54,6 +54,12 @@ def pops_writer(flname, n_individuals, n_populations):
             fl.write(",".join(value))
             fl.write("\n")
 
+def phenotype_labels_writer(flname, n_individuals, n_phenotypes):
+    with open(flname, "w") as fl:
+        for i in xrange(n_individuals):
+            l = i % n_phenotypes
+            fl.write("%s\t%s\n" % (i, l))
+
 def parseargs():
     parser = argparse.ArgumentParser()
 
@@ -84,6 +90,14 @@ def parseargs():
                         type=int,
                         required=True)
 
+    parser.add_argument("--n-phenotypes",
+                        type=int,
+                        required=True)
+
+    parser.add_argument("--output-phenotypes",
+                        type=str,
+                        required=True)
+
     return parser.parse_args()
 
 
@@ -96,6 +110,10 @@ if __name__ == "__main__":
     pops_writer(args.output_populations,
                 args.individuals,
                 args.n_populations)
+
+    phenotype_labels_writer(args.output_phenotypes,
+                            args.individuals,
+                            args.n_phenotypes)
 
     if args.output_vcf:
         vcf_writer(args.output_vcf,

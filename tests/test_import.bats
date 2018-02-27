@@ -11,6 +11,7 @@ setup() {
 
     export VCF_PATH="${TEST_TEMP_DIR}/test.vcf"
     export POPS_PATH="${TEST_TEMP_DIR}/populations.txt"
+    export PHENO_PATH="${TEST_TEMP_DIR}/phenotypes.txt"
     export WORKDIR_PATH="${TEST_TEMP_DIR}/workdir"
 
     export IMPORT_CMD="${BATS_TEST_DIRNAME}/../bin/import"
@@ -21,7 +22,9 @@ setup() {
                         --output-vcf ${VCF_PATH} \
                         --output-populations ${POPS_PATH} \
                         --individuals ${N_INDIVIDUALS} \
-                        --snps ${N_SNPS}
+                        --snps ${N_SNPS} \
+                        --n-phenotypes 3 \
+                        --output-phenotypes ${PHENO_PATH}
 }
 
 @test "Run import with no arguments" {

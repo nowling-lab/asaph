@@ -8,6 +8,7 @@ setup() {
     
     export VCF_PATH="${TEST_TEMP_DIR}/test.vcf"
     export POPS_PATH="${TEST_TEMP_DIR}/populations.txt"
+    export PHENO_PATH="${TEST_TEMP_DIR}/phenotypes.txt"
     
     export CMD="${BATS_TEST_DIRNAME}/../bin/generate_data"
 }
@@ -27,14 +28,18 @@ setup() {
 	    --output-vcf ${VCF_PATH} \
 	    --output-populations ${POPS_PATH} \
 	    --individuals ${N_INDIVIDUALS} \
-	    --snps ${N_SNPS}
+	    --snps ${N_SNPS} \
+        --n-phenotypes 3 \
+        --output-phenotypes ${PHENO_PATH}
 
     [ "$status" -eq 0 ]
     [ -e ${VCF_PATH} ]
     [ -e ${POPS_PATH} ]
+    [ -e ${PHENO_PATH} ]
 
     rm ${VCF_PATH}
     rm ${POPS_PATH}
+    rm ${PHENO_PATH}
 }
 
 @test "Test VCF.gz data generation" {
@@ -43,12 +48,16 @@ setup() {
 	    --output-vcf-gz ${VCF_PATH}.gz \
 	    --output-populations ${POPS_PATH} \
 	    --individuals ${N_INDIVIDUALS} \
-	    --snps ${N_SNPS}
+	    --snps ${N_SNPS} \
+        --n-phenotypes 3 \
+        --output-phenotypes ${PHENO_PATH}
 
     [ "$status" -eq 0 ]
     [ -e ${VCF_PATH}.gz ]
     [ -e ${POPS_PATH} ]
+    [ -e ${PHENO_PATH} ]
 
     rm ${VCF_PATH}.gz
     rm ${POPS_PATH}
+    rm ${PHENO_PATH}
 }
