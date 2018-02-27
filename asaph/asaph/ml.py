@@ -58,35 +58,32 @@ def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=No
         training_labels = labels
         testing_labels = labels
 
-    intercept = calculate_intercept(training_labels)
-    
-    if features_null:
+    if set_intercept:
+        intercept_init = calculate_intercept(training_labels)
+    else:
+        intercept_init = None
+
+    if features_null is not None:
         if isinstance(features_null, tuple) and len(features_null) == 2:
             training_features_null, testing_features_null = features_null
         else:
             training_features_null = features_null
             testing_features_null = features_null
 
-        if set_intercept:
-            lr_model.fit(training_features_null,
-                         training_labels,
-                         intercept_init = intercept)
-        else:
-            lr_model.fit(training_features_null, training_labels)
+        lr_model.fit(training_features_null,
+                     training_labels,
+                     intercept_init = intercept_init)
         
-        null_prob = lr_model.predict_proba(testing_features_null)[:, 1]
+        null_prob = lr_model.predict_proba(testing_features_null)
         df = testing_features_alternate.shape[1] - testing_features_null.shape[1]
     else:
         null_prob = sum(testing_labels) / float(testing_labels.shape[0]) * \
                     np.ones(testing_labels.shape)
         df = testing_features_alternate.shape[1] - 1
 
-    if set_intercept:
-        lr_model.fit(training_features_alternate,
-                     training_labels,
-                     intercept_init = intercept)
-    else:
-        lr_model.fit(training_features_alternate, training_labels)
+    lr_model.fit(training_features_alternate,
+                 training_labels,
+                 intercept_init = intercept_init)
         
     alt_prob = lr_model.predict_proba(testing_features_alternate)
 
