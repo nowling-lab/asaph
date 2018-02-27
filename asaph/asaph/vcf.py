@@ -203,6 +203,7 @@ class CountFeaturesExtractor(object):
             for name, allele_counts in genotypes.items():
                 row_idx = self.name_to_row[name]
                 ref_column[row_idx] = allele_counts[0]
+                alt_column[row_idx] = allele_counts[1]
 
             yield (chrom, pos, alleles[0]), tuple(ref_column)
             yield (chrom, pos, alleles[1]), tuple(alt_column)
