@@ -131,7 +131,7 @@ def pairwise_single_associations(features, stats_dir, chrom, pos):
 def pop_association_counts(pair, features, labels):
     snp_label, feature_idx = pair
 
-    matrix = features.feature_matrix[:, feature_idx]
+    matrix = features.feature_matrix[:, feature_idx].astype(np.int32)
     n_samples, n_alleles = matrix.shape
     pop_labels = []
     allele_labels = []
