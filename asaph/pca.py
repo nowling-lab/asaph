@@ -283,9 +283,11 @@ def association_tests(args):
     sample_labels = np.array(sample_labels)
 
     n_iter = estimate_lr_iter(len(sample_labels))
+    # we set the intercept to the class ratios in the lr test function
     lr = SGDClassifier(penalty="l2",
                        loss="log",
-                       n_iter = n_iter)
+                       n_iter = n_iter,
+                       fit_intercept=False)
 
     with open(args.pvalues_fl, "w") as fl:
         for i in xrange(projections.shape[1]):
