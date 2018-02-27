@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn
 
-from sklearn.decomposition import TruncatedSVD
+from sklearn.decomposition import PCA
 from sklearn.externals import joblib
 from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import binarize
@@ -51,10 +51,11 @@ def train(args):
 
     features = read_features(workdir)
         
-    svd = TruncatedSVD(n_components=args.n_components)
-    projections = svd.fit_transform(features.feature_matrix)
+    pca = PCA(n_components = args.n_components,
+              whiten = True)
+    projections = pca.fit_transform(features.feature_matrix)
 
-    model = { MODEL_KEY : svd,
+    model = { MODEL_KEY : pca,
               PROJECTION_KEY : projections}
 
     model_fl = os.path.join(models_dir,
@@ -97,7 +98,8 @@ def min_components_explained_variance(args):
     n_components = args.init_n_components
     while True:
         print "Computing PCA with %s components" % n_components
-        pca = TruncatedSVD(n_components)
+        pca = PCA(n_components = n_components,
+                  whiten = True)
         pca.fit(features.feature_matrix)
         explained_variance_ratios = pca.explained_variance_ratio_
         sorted_ratios = np.sort(explained_variance_ratios)[::-1]
