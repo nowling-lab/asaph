@@ -63,6 +63,15 @@ load model_setup_helper
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/analysis/component_genotypes.tsv" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/pca \
+	    --workdir ${WORKDIR_PATH} \
+        association-tests \
+        --labels-fl ${PHENO_PATH} \
+        --pvalues-fl ${WORKDIR_PATH}/analysis/pca_phenotype_pvalues.tsv
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/analysis/pca_phenotype_pvalues.tsv" ]
 }
 
 @test "pca (counts)" {
@@ -116,6 +125,15 @@ load model_setup_helper
 
     [ "$status" -eq 0 ]
     [ -e "${COUNTS_WORKDIR_PATH}/analysis/component_genotypes.tsv" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/pca \
+	    --workdir ${COUNTS_WORKDIR_PATH} \
+        association-tests \
+        --labels-fl ${PHENO_PATH} \
+        --pvalues-fl ${COUNTS_WORKDIR_PATH}/analysis/pca_phenotype_pvalues.tsv
+
+    [ "$status" -eq 0 ]
+    [ -e "${COUNTS_WORKDIR_PATH}/analysis/pca_phenotype_pvalues.tsv" ]
 }
 
 @test "Find min components to achieve explained variance threshold (categories)" {

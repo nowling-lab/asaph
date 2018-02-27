@@ -15,6 +15,7 @@ limitations under the License.
 """
 
 import argparse
+from collections import OrderedDict
 from itertools import tee, izip
 import os
 import sys
@@ -27,12 +28,15 @@ import seaborn
 
 from sklearn.decomposition import TruncatedSVD
 from sklearn.externals import joblib
+from sklearn.linear_model import SGDClassifier
+from sklearn.preprocessing import binarize
 
+from asaph.ml import estimate_lr_iter
+from asaph.ml import likelihood_ratio_test
 from asaph.newioutils import read_features
 from asaph.newioutils import deserialize
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
 
-from sklearn.preprocessing import binarize
 
 MODEL_KEY = "model"
 PROJECTION_KEY = "projected-coordinates"
@@ -209,7 +213,6 @@ def output_coordinates(args):
             fl.write("\t".join(line))
             fl.write("\n")
 
-
 def analyze_weights(args):
     workdir = args.workdir
 
@@ -236,6 +239,60 @@ def analyze_weights(args):
                                "pca_feature_weights_pc%s.png" % i)
         plt.savefig(plot_fl,
                     DPI=300)
+
+def association_tests(args):
+    workdir = args.workdir
+
+    analysis_dir = os.path.join(workdir, "analysis")
+    if not os.path.exists(analysis_dir):
+        os.makedirs(analysis_dir)
+
+    project_summary = deserialize(os.path.join(workdir,
+                                               PROJECT_SUMMARY_FLNAME))
+    
+    model_fl = os.path.join(workdir,
+                            "models",
+                            "pca.pkl")
+    model = joblib.load(model_fl)    
+    projections = model[PROJECTION_KEY]
+
+    data_model = read_features(workdir)
+
+    samples = OrderedDict([(name, i) for i, name in enumerate(data_model.sample_labels)])
+    label_indices = dict()
+    sample_labels = []
+    sample_indices = []
+    with open(args.labels_fl) as fl:
+        for ln in fl:
+            cols = ln.strip().split()
+            sample_name, label_name = cols
+
+            if sample_name not in samples:
+                continue
+
+            if label_name not in label_indices:
+                label_indices[label_name] = len(label_indices)
+                
+            label_idx = label_indices[label_name]
+
+            sample_labels.append(label_idx)
+            sample_indices.append(samples[sample_name])
+
+    sample_labels = np.array(sample_labels)
+
+    n_iter = estimate_lr_iter(len(sample_labels))
+    lr = SGDClassifier(penalty="l2",
+                       loss="log",
+                       n_iter = n_iter)
+
+    with open(args.pvalues_fl, "w") as fl:
+        for i in xrange(projections.shape[1]):
+            features = projections[sample_indices, i].reshape(-1, 1)
+
+            p_value = likelihood_ratio_test(features,
+                                            sample_labels,
+                                            lr)
+            fl.write("%s\t%s\n" % (i, p_value))
 
 def extract_genotypes(args):
     workdir = args.workdir
@@ -378,6 +435,19 @@ def parseargs():
                                           required=True,
                                           help="Thresholds for binarizing")
 
+    association_parser = subparsers.add_parser("association-tests",
+                                               help="Run association tests on PCs using Logistic Regression-based LR Tests")
+
+    association_parser.add_argument("--labels-fl",
+                                    type=str,
+                                    required=True,
+                                    help="Labels for association tests")
+
+    association_parser.add_argument("--pvalues-fl",
+                                    type=str,
+                                    required=True,
+                                    help="PC p-values")
+    
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -397,6 +467,8 @@ if __name__ == "__main__":
         analyze_weights(args)
     elif args.mode == "extract-genotypes":
         extract_genotypes(args)
+    elif args.mode == "association-tests":
+        association_tests(args)
     else:
         print "Unknown mode '%s'" % args.mode
         sys.exit(1)
