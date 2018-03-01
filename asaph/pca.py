@@ -243,7 +243,7 @@ def analyze_weights(args):
         plt.savefig(plot_fl,
                     DPI=300)
 
-def association_tests(args):
+def pop_association_tests(args):
     workdir = args.workdir
 
     analysis_dir = os.path.join(workdir, "analysis")
@@ -279,7 +279,41 @@ def association_tests(args):
                                             lr)
             fl.write("%s\t%s\n" % (i, p_value))
 
-def extract_genotypes(args):
+def generate_training_set(features, projections):
+    """
+    Converts genotype categories to class labels and imputed unknown genotypes.
+    Imputation involves duplicating samples, so we create copies of projection
+    coordinates to align.
+    """
+
+    n_samples = features.shape[0]
+    n_features = features.shape[1]
+    N_GENOTYPES = 3
+    if n_features != N_GENOTYPES:
+        raise Exception("Must be using genotype categories!")
+
+    N_COPIES = 3
+    class_labels = np.zeros(N_COPIES * n_samples)
+    imputed_projections = np.zeros(N_COPIES * n_samples)
+    for i in xrange(n_samples):
+        gt = None
+        for j in xrange(N_GENOTYPES):
+            if features[i, j] == 1.0:
+                gt = j
+        
+        for j in xrange(N_COPIES):
+            idx = N_COPIES * i + j
+            imputed_projections[idx] = projections[i]
+
+            if gt is None:
+                class_labels[idx] = j
+            else:
+                class_labels[idx] = gt
+
+    return N_COPIES, class_labels, imputed_projections
+    
+
+def snp_association_tests(args):
     workdir = args.workdir
 
     analysis_dir = os.path.join(workdir, "analysis")
@@ -293,53 +327,50 @@ def extract_genotypes(args):
                             "models",
                             "pca.pkl")
     model = joblib.load(model_fl)    
-    pca = model[MODEL_KEY]
+    projections = model[PROJECTION_KEY]
 
-    features = read_features(workdir)
+    data_model = read_features(workdir)
+
+    n_iter = estimate_lr_iter(len(data_model.class_labels))
+    # we set the intercept to the class ratios in the lr test function
+    lr = SGDClassifier(penalty="l2",
+                       loss="log",
+                       n_iter = n_iter,
+                       fit_intercept=False)
     
-    binary_vectors = []
-    for i, (w, t) in enumerate(zip(args.weights, args.thresholds)):
-        scaled = w * pca.components_[i, :].reshape(1, -1)
-        binary = binarize(scaled, threshold=t)[0, :]
-        for j, other in enumerate(binary_vectors):
-            dp = binary.dot(other)
-            print "Dot product of vectors %s and %s: %s" % (i, j, dp)
-        binary_vectors.append(binary)
+    n_pcs = projections.shape[0]
+    for pc in args.components:
+        flname = os.path.join(analysis_dir, "snp_pc_%s_association_tests.tsv" % pc)
+        with open(flname, "w") as fl:
+            next_output = 1
+            for i, pair in enumerate(data_model.snp_feature_map.iteritems()):
+                snp_label, feature_idx = pair
+                chrom, pos = snp_label
 
-    binary_features = np.array(binary_vectors)
+                snp_features = data_model.feature_matrix[:, feature_idx]
+                n_copies, class_labels, imputed_projections = generate_training_set(snp_features,
+                                                                                    projections[:, pc])
 
-    feature_genotypes = features.snp_feature_genotypes
-    n_components = binary_features.shape[0]
-    snp_component_gts = dict()
-    for snp_label, feature_idx in features.snp_feature_map.iteritems():
-            component_gts = []
-            total_gts = 0
-            for i in xrange(n_components):
-                gts = []
-                for idx in feature_idx:
-                    if binary_features[i, idx] == 1.0:
-                        gts.append(feature_genotypes[snp_label][idx])
-                total_gts += len(gts)
-                component_gts.append(gts)
+                imputed_projections = imputed_projections.reshape(-1, 1)
+
+                # since we make multiple copies of the original samples,
+                # we need to scale the log loss so that it is correct for
+                # the original sample size
+                try:
+                    p_value = likelihood_ratio_test(imputed_projections,
+                                                    class_labels,
+                                                    lr,
+                                                    g_scaling_factor = 1.0 / n_copies)
+                # in case of underflow or overflow in a badly-behaving model
+                except ValueError:
+                    p_value = 1.0
                 
-            if total_gts > 0:
-                snp_component_gts[snp_label] = component_gts
+                if i == next_output:
+                    print i, "SNP", snp_label, "and PC", pc, "has p-value", p_value
+                    next_output *= 2
 
-    output_fl = os.path.join(analysis_dir, "component_genotypes.tsv")
-    with open(output_fl, "w") as fl:
-        header = ["chrom", "pos"]
-        for i in xrange(n_components):
-            header.append("component_%s" % i)
-        fl.write("\t".join(header))
-        fl.write("\n")
-        for (chrom, pos), component_gts in snp_component_gts.iteritems():
-            fl.write(chrom)
-            fl.write("\t")
-            fl.write(pos)
-            for gts in component_gts:
-                fl.write("\t")
-                fl.write(",".join(gts))
-            fl.write("\n")
+                fl.write("\t".join([chrom, pos, str(p_value)]))
+                fl.write("\n")
     
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - PCA")
@@ -406,22 +437,16 @@ def parseargs():
                                         required=True,
                                         help="Component weights")
 
-    extract_genotypes_parser = subparsers.add_parser("extract-genotypes",
-                                                     help="Extract genotypes from PCs")
-    extract_genotypes_parser.add_argument("--weights",
-                                          type=float,
-                                          nargs="+",
-                                          required=True,
-                                          help="Component scaling factors")
+    snp_association_parser = subparsers.add_parser("snp-association-tests",
+                                                   help="Run association tests on PCs vs SNPs")
+    snp_association_parser.add_argument("--components",
+                                        type=int,
+                                        nargs="+",
+                                        required=True,
+                                        help="Components to perform testing on")
 
-    extract_genotypes_parser.add_argument("--thresholds",
-                                          type=float,
-                                          nargs="+",
-                                          required=True,
-                                          help="Thresholds for binarizing")
-
-    association_parser = subparsers.add_parser("association-tests",
-                                               help="Run association tests on PCs using Logistic Regression-based LR Tests")
+    pop_association_parser = subparsers.add_parser("pop-association-tests",
+                                                   help="Run association tests on PCs vs population labels")
     
     return parser.parse_args()
 
@@ -442,8 +467,10 @@ if __name__ == "__main__":
         analyze_weights(args)
     elif args.mode == "extract-genotypes":
         extract_genotypes(args)
-    elif args.mode == "association-tests":
-        association_tests(args)
+    elif args.mode == "pop-association-tests":
+        pop_association_tests(args)
+    elif args.mode == "snp-association-tests":
+        snp_association_tests(args)
     else:
         print "Unknown mode '%s'" % args.mode
         sys.exit(1)
