@@ -57,19 +57,19 @@ load model_setup_helper
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
-        extract-genotypes \
-        --weights 1.0 1.0 \
-        --thresholds 0.5 0.5
-
-    [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/analysis/component_genotypes.tsv" ]
-
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${WORKDIR_PATH} \
-        association-tests
+        pop-association-tests
     
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/analysis/population_pca_association_tests.tsv" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/pca \
+	    --workdir ${WORKDIR_PATH} \
+        snp-association-tests \
+        --components 0 1
+    
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/analysis/snp_pc_0_association_tests.tsv" ]
+    [ -e "${WORKDIR_PATH}/analysis/snp_pc_1_association_tests.tsv" ]
 }
 
 @test "pca (counts)" {
@@ -117,16 +117,7 @@ load model_setup_helper
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${COUNTS_WORKDIR_PATH} \
-        extract-genotypes \
-        --weights 1.0 1.0 \
-        --thresholds 0.5 0.5
-
-    [ "$status" -eq 0 ]
-    [ -e "${COUNTS_WORKDIR_PATH}/analysis/component_genotypes.tsv" ]
-
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${COUNTS_WORKDIR_PATH} \
-        association-tests
+        pop-association-tests
 
     [ "$status" -eq 0 ]
     [ -e "${COUNTS_WORKDIR_PATH}/analysis/population_pca_association_tests.tsv" ]

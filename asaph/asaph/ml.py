@@ -49,20 +49,20 @@ def calculate_intercept_(labels):
     return - np.log(1. / prob - 1.)
 
 def calculate_intercept(labels):
-    label_ids = set(labels)
-
-    if len(label_ids) == 2:
-        return calculate_intercept_(labels)
+    label_ids = sorted(set(labels))
 
     intercepts = np.zeros(len(label_ids))
-    for i in xrange(len(label_ids)):
-        binary_labels = [1 if l == i else 0 for l in labels]
+    for i, pos_label in enumerate(label_ids):
+        binary_labels = [1 if l == pos_label else 0 for l in labels]
         binary_labels = np.array(binary_labels)
         intercepts[i] = calculate_intercept_(binary_labels)
 
+    if len(label_ids) == 2:
+        return intercepts[-1]
+    
     return intercepts
 
-def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=None, set_intercept=True):
+def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=None, set_intercept=True, g_scaling_factor=1.0):
     if isinstance(features_alternate, tuple) and len(features_alternate) == 2:
         training_features_alternate, testing_features_alternate = features_alternate
         training_labels, testing_labels = labels
@@ -112,7 +112,7 @@ def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=No
                                     null_prob,
                                     normalize=False)
 
-    G = 2 * (alt_log_likelihood - null_log_likelihood)
+    G = g_scaling_factor * 2.0 * (alt_log_likelihood - null_log_likelihood)
     p_value = chi2.sf(G, df)
 
     return p_value
