@@ -261,56 +261,22 @@ def association_tests(args):
 
     data_model = read_features(workdir)
 
-    samples = OrderedDict([(name, i) for i, name in enumerate(data_model.sample_labels)])
-    label_indices = dict()
-    sample_labels = []
-    sample_indices = []
-    sample_populations = []
-    with open(args.labels_fl) as fl:
-        for ln in fl:
-            cols = ln.strip().split()
-            sample_name, label_name = cols
-
-            if sample_name not in samples:
-                continue
-
-            if label_name not in label_indices:
-                label_indices[label_name] = len(label_indices)
-                
-            label_idx = label_indices[label_name]
-
-            sample_labels.append(label_idx)
-            sample_indices.append(samples[sample_name])
-            sample_populations.append(data_model.class_labels[samples[sample_name]])
-
-    sample_labels = np.array(sample_labels)
-
-    if args.correct_populations:
-        sample_populations = np.array(sample_populations).reshape(-1, 1)
-        encoder = OneHotEncoder(sparse=False)
-        null_features = encoder.fit_transform(sample_populations)
-    else:
-        null_features = None
-
-    n_iter = estimate_lr_iter(len(sample_labels))
+    n_iter = estimate_lr_iter(len(data_model.sample_labels))
     # we set the intercept to the class ratios in the lr test function
     lr = SGDClassifier(penalty="l2",
                        loss="log",
                        n_iter = n_iter,
                        fit_intercept=False)
 
-    with open(args.pvalues_fl, "w") as fl:
+    pvalues_fl = os.path.join(analysis_dir, "population_pca_association_tests.tsv")
+    class_labels = np.array(data_model.class_labels)
+    with open(pvalues_fl, "w") as fl:
         for i in xrange(projections.shape[1]):
-            features = projections[sample_indices, i].reshape(-1, 1)
-
-            if args.correct_populations:
-                features = np.hstack([features,
-                                      null_features])
+            features = projections[:, i].reshape(-1, 1)
 
             p_value = likelihood_ratio_test(features,
-                                            sample_labels,
-                                            lr,
-                                            features_null = null_features)
+                                            class_labels,
+                                            lr)
             fl.write("%s\t%s\n" % (i, p_value))
 
 def extract_genotypes(args):
@@ -456,20 +422,6 @@ def parseargs():
 
     association_parser = subparsers.add_parser("association-tests",
                                                help="Run association tests on PCs using Logistic Regression-based LR Tests")
-
-    association_parser.add_argument("--labels-fl",
-                                    type=str,
-                                    required=True,
-                                    help="Labels for association tests")
-
-    association_parser.add_argument("--pvalues-fl",
-                                    type=str,
-                                    required=True,
-                                    help="PC p-values")
-
-    association_parser.add_argument("--correct-populations",
-                                    action="store_true",
-                                    help="Correct for population structure")
     
     return parser.parse_args()
 
