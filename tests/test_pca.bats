@@ -72,17 +72,6 @@ load model_setup_helper
     [ -e "${WORKDIR_PATH}/analysis/snp_pc_1_association_tests.tsv" ]
 }
 
-@test "pca (categories, imputed)" {
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-        --workdir ${WORKDIR_PATH} \
-        train \
-        --n-components 6 \
-        --impute
-
-    [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/models/pca.pkl" ]
-}
-
 @test "pca (counts)" {
     run ${BATS_TEST_DIRNAME}/../bin/pca \
         --workdir ${COUNTS_WORKDIR_PATH} \
