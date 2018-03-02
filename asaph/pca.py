@@ -42,6 +42,35 @@ from asaph.newioutils import PROJECT_SUMMARY_FLNAME
 MODEL_KEY = "model"
 PROJECTION_KEY = "projected-coordinates"
 
+def impute_genotypes(features):
+    """
+    Imputed unknown genotypes
+    """
+
+    n_samples = features.shape[0]
+    n_features = features.shape[1]
+
+    N_GENOTYPES = 3
+    N_COPIES = 3
+    imputed = np.zeros((N_COPIES * n_samples,
+                        n_features))
+    for snp_idx in xrange(n_features / N_GENOTYPES):
+        for sample_idx in xrange(n_samples):
+            gt = None
+            for j in xrange(N_GENOTYPES):
+                if features[sample_idx, N_GENOTYPES * snp_idx + j] == 1.0:
+                    gt = j
+        
+        for offset in xrange(N_COPIES):
+            idx = N_COPIES * sample_idx + offset
+
+            if gt is None:
+                imputed[idx, N_GENOTYPES * snp_idx + gt] = 1.0
+            else:
+                imputed[idx, N_GENOTYPES * snp_idx + offset] = 1.0
+
+    return imputed
+
 def train(args):
     workdir = args.workdir
 
@@ -51,10 +80,14 @@ def train(args):
         os.makedirs(models_dir)
 
     features = read_features(workdir)
-        
+    feature_matrix = features.feature_matrix
+
+    if args.impute:
+        feature_matrix = impute_genotypes(feature_matrix)
+
     pca = PCA(n_components = args.n_components,
               whiten = True)
-    projections = pca.fit_transform(features.feature_matrix)
+    projections = pca.fit_transform(feature_matrix)
 
     model = { MODEL_KEY : pca,
               PROJECTION_KEY : projections}
@@ -389,6 +422,9 @@ def parseargs():
                               type=int,
                               required=True,
                               help="Number of PCs to compute")
+
+    train_parser.add_argument("--impute",
+                              action="store_true")
     
     eva_parser = subparsers.add_parser("explained-variance-analysis",
                                        help="Compute explained variances of PCs")
