@@ -30,7 +30,7 @@ from sklearn.decomposition import PCA
 from sklearn.externals import joblib
 from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import binarize
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import LabelEncoder
 
 from asaph.ml import estimate_lr_iter
 from asaph.ml import likelihood_ratio_test
@@ -339,6 +339,7 @@ def snp_association_tests(args):
                        fit_intercept=False)
     
     n_pcs = projections.shape[0]
+    label_encoder = LabelEncoder()
     for pc in args.components:
         flname = os.path.join(analysis_dir, "snp_pc_%s_association_tests.tsv" % pc)
         with open(flname, "w") as fl:
@@ -352,6 +353,7 @@ def snp_association_tests(args):
                                                                                     projections[:, pc])
 
                 imputed_projections = imputed_projections.reshape(-1, 1)
+                class_labels = label_encoder.fit_transform(class_labels)
 
                 # since we make multiple copies of the original samples,
                 # we need to scale the log loss so that it is correct for

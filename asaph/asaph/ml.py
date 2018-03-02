@@ -28,6 +28,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import log_loss
+from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier
 
 def estimate_lr_iter(n_samples):
@@ -71,6 +72,12 @@ def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=No
         testing_features_alternate = features_alternate
         training_labels = labels
         testing_labels = labels
+
+    # re-orders labels from smallest to biggest
+    # so that intercepts match
+    label_encoder = LabelEncoder()
+    training_labels = label_encoder.fit_transform(training_labels)
+    testing_labels = label_encoder.transform(testing_labels)
 
     n_classes = len(set(training_labels))
 
