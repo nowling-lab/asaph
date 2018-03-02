@@ -103,7 +103,7 @@ def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=No
         intercepts = calculate_intercept(training_labels)
         null_prob = np.zeros((testing_labels.shape[0], n_classes))
         for i in xrange(testing_labels.shape[0]):
-            null_prob[i, :] = 1.0 / (1.0 + np.exp(intercepts))
+            null_prob[i, :] = 1.0 / (1.0 + np.exp(-intercepts))
         df = testing_features_alternate.shape[1]
 
     lr_model.fit(training_features_alternate,
