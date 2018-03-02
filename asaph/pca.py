@@ -65,9 +65,9 @@ def impute_genotypes(features):
             idx = N_COPIES * sample_idx + offset
 
             if gt is None:
-                imputed[idx, N_GENOTYPES * snp_idx + offset] = 1.0
-            else:
                 imputed[idx, N_GENOTYPES * snp_idx + gt] = 1.0
+            else:
+                imputed[idx, N_GENOTYPES * snp_idx + offset] = 1.0
 
     return imputed
 
