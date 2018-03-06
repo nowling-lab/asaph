@@ -24,6 +24,7 @@ import sys
 import numpy as np
 import numpy.linalg as LA
 from sklearn.linear_model import SGDClassifier
+from sklearn.preprocessing import OneHotEncoder
 
 from asaph.ml import estimate_lr_iter
 from asaph.ml import likelihood_ratio_test
@@ -36,6 +37,53 @@ from asaph.newioutils import serialize
 
 OUTPUT_DIR = "statistics"
 OUTPUT_FLNAME = "snp_association_tests.tsv"
+
+NUMERICAL_TYPE = "n"
+CATEGORICAL_TYPE = "c"
+SAMPLE_IDENTIFIER = "id"
+ALLOWED_TYPES = set([NUMERICAL_TYPE,
+                     CATEGORICAL_TYPE,
+                     SAMPLE_IDENTIFIER])
+
+def parse_variables_file(flname):
+    with open(flname) as fl:
+        field_types = []
+        for field_type in next(fl).split():
+            if field_type not in ALLOWED_TYPES:
+                raise Exception("Unknown field type '%s'" % field_type)
+            field_types.append(field_type)
+
+        # ignore sample identifier
+        data = [[] for _ in field_types[1:]]
+        sample_identifiers = []
+        for ln in fl:
+            fields = ln.split()
+            if len(fields) != len(field_types):
+                raise Exception("Found %s fields but have I have headers for %s fields" % (len(fields), len(field_types)))
+
+            # first column is the sample identifier
+            sample_identifiers.append(fields[0])
+            
+            row = [float(v) if t == NUMERICAL_TYPE else v
+                   for t, v in zip(field_types[1:], fields[1:])]
+
+            for i, v in enumerate(row):
+                data[i].append(v)
+
+    matrices = []
+    for field_type, column in zip(field_types, data):
+        column = np.array(column).reshape(-1, 1)
+        if field_type == NUMERICAL_TYPE:
+            matrices.append(column)
+        else:
+            encoder = OneHotEncoder(sparse=False)
+            matrix = encoder.fit_transform(column)
+            matrices.append(matrix)
+
+    features = np.hstack(matrices)
+
+    return sample_identifiers, features
+            
 
 def prepare_model_variables(genotypes, features):
     """
@@ -95,7 +143,22 @@ def run_likelihood_ratio_tests(args):
                        n_iter = n_iter,
                        fit_intercept = False)
 
-    populations = np.array(data_model.class_labels).reshape(-1, 1)
+    if not args.variables_fl:
+        variables = np.array(data_model.class_labels).reshape(-1, 1)
+    else:
+        selected_samples, variables = parse_variables_file(args.variables_fl)
+        sample_indices = dict([(sample_name, idx) for idx, sample_name in
+                               enumerate(data_model.sample_labels)])
+        
+        selected_indices = []
+        for sample_id in selected_samples:
+            if sample_id not in sample_indices:
+                raise Exception("Unknown sample id '%s', known ids are: %s" %
+                                (sample_id, ",".join(data_model.sample_labels)))
+            selected_indices.append(sample_indices[sample_id])
+
+        # select subset and re-order
+        genotypes = genotypes[selected_indices, :]
     
     with open(os.path.join(stats_dir, OUTPUT_FLNAME), "w") as fl:
         next_output = 1
@@ -106,7 +169,7 @@ def run_likelihood_ratio_tests(args):
             pos_genotypes = genotypes[:, feature_idx]
 
             n_copies, class_labels, features = prepare_model_variables(pos_genotypes,
-                                                                       populations)
+                                                                       variables)
 
             # since we make multiple copies of the original samples,
             # we need to scale the log loss so that it is correct for
@@ -128,6 +191,10 @@ def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - Single SNP Association Tests")
 
     parser.add_argument("--workdir", type=str, help="Work directory", required=True)
+
+    parser.add_argument("--variables-fl",
+                        type=str,
+                        help="Specify labels and variables for the null model")
 
     return parser.parse_args()
 

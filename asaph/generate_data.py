@@ -56,6 +56,9 @@ def pops_writer(flname, n_individuals, n_populations):
 
 def phenotype_labels_writer(flname, n_individuals, n_phenotypes):
     with open(flname, "w") as fl:
+        # specify first column is sample id,
+        # second is categorical
+        fl.write("id\tc\n")
         for i in xrange(n_individuals):
             l = i % n_phenotypes
             fl.write("%s\t%s\n" % (i, l))
