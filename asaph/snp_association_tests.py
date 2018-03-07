@@ -83,13 +83,35 @@ def parse_variables_file(flname):
     features = np.hstack(matrices)
 
     return sample_identifiers, features
-            
 
-def prepare_model_variables(genotypes, testing_variables, null_variables):
+
+def prepare_model_variables(n_copies, testing_variables, null_variables):
+    N_GENOTYPES = 3
+    n_samples = testing_variables.shape[0]
+    testing_features = np.zeros((n_copies * n_samples,
+                                 testing_variables.shape[1]))
+    if null_variables is not None:
+        null_features = np.zeros((n_copies * n_samples,
+                                  null_variables.shape[1]))
+    for i in xrange(n_samples):
+        for j in xrange(n_copies):
+            idx = n_copies * i + j
+            testing_features[idx, :] = testing_variables[i, :]
+            if null_variables is not None:
+                null_features[idx, :] = null_variables[i, :]
+
+    if null_variables is not None:
+        testing_features = np.hstack([testing_features,
+                                      null_features])
+    else:
+        null_features = None
+
+    return testing_features, null_features
+
+def prepare_class_labels(n_copies, genotypes, class_labels=None):
     """
-    Converts genotype categories to class labels and imputed unknown genotypes.
-    Imputation involves duplicating samples, so we create copies of the rows of
-    the feature matrix to align.
+    Converts genotype categories to class labels and imputes unknown genotypes.
+    If class_labels is None, 
     """
 
     n_samples = genotypes.shape[0]
@@ -101,37 +123,37 @@ def prepare_model_variables(genotypes, testing_variables, null_variables):
     if n_samples != genotypes.shape[0]:
         raise Exception("Genotype and feature matrices do not have same number of samples!")
 
-    N_COPIES = 3
-    class_labels = np.zeros(N_COPIES * n_samples)
-    testing_features = np.zeros((N_COPIES * n_samples,
-                                 testing_variables.shape[1]))
-    if null_variables is not None:
-        null_features = np.zeros((N_COPIES * n_samples,
-                                  null_variables.shape[1]))
+    if class_labels is None:
+        class_labels = np.zeros(n_copies * n_samples)
+
     for i in xrange(n_samples):
         gt = None
         for j in xrange(N_GENOTYPES):
             if genotypes[i, j] == 1.0:
                 gt = j
         
-        for j in xrange(N_COPIES):
-            idx = N_COPIES * i + j
-            testing_features[idx, :] = testing_variables[i, :]
-            if null_variables is not None:
-                null_features[idx, :] = null_variables[i, :]
+        for j in xrange(n_copies):
+            idx = n_copies * i + j
 
             if gt is None:
                 class_labels[idx] = j
             else:
                 class_labels[idx] = gt
 
-    if null_variables is not None:
-        testing_features = np.hstack([testing_features,
-                                      null_features])
-    else:
-        null_features = None
+    return class_labels
 
-    return N_COPIES, class_labels, testing_features, null_features
+def select_samples(data_model, selected_sample_ids):
+    sample_indices = dict([(sample_name, idx) for idx, sample_name in
+                               enumerate(data_model.sample_labels)])
+        
+    selected_indices = []
+    for sample_id in selected_sample_ids:
+        if sample_id not in sample_indices:
+            raise Exception("Unknown sample id '%s', known ids are: %s" %
+                                (sample_id, ",".join(data_model.sample_labels)))
+        selected_indices.append(sample_indices[sample_id])
+
+    return selected_indices
 
 def run_likelihood_ratio_tests(args):
     if not os.path.exists(args.workdir):
@@ -157,19 +179,20 @@ def run_likelihood_ratio_tests(args):
     testing_variables = np.array(data_model.class_labels).reshape(-1, 1)
     null_variables = None
     if args.variables_fl:
-        selected_samples, null_variables = parse_variables_file(args.variables_fl)
-        sample_indices = dict([(sample_name, idx) for idx, sample_name in
-                               enumerate(data_model.sample_labels)])
-        
-        selected_indices = []
-        for sample_id in selected_samples:
-            if sample_id not in sample_indices:
-                raise Exception("Unknown sample id '%s', known ids are: %s" %
-                                (sample_id, ",".join(data_model.sample_labels)))
-            selected_indices.append(sample_indices[sample_id])
+        selected_sample_ids, null_variables = parse_variables_file(args.variables_fl)
+
+        selected_indices = select_samples(data_model,
+                                          selected_sample_ids)
 
         # select subset and re-order
         genotypes = genotypes[selected_indices, :]
+        testing_variables = testing_variables[selected_indices, :]
+
+    N_COPIES = 3
+    class_labels = None
+    testing_features, null_features = prepare_model_variables(N_COPIES,
+                                                              testing_variables,
+                                                              null_variables)
     
     with open(os.path.join(stats_dir, OUTPUT_FLNAME), "w") as fl:
         next_output = 1
@@ -179,10 +202,9 @@ def run_likelihood_ratio_tests(args):
 
             pos_genotypes = genotypes[:, feature_idx]
 
-            n_copies, class_labels, testing_features, null_features = prepare_model_variables(
-                pos_genotypes,
-                testing_variables,
-                null_variables)
+            class_labels = prepare_class_labels(N_COPIES,
+                                                pos_genotypes,
+                                                class_labels)
 
             # since we make multiple copies of the original samples,
             # we need to scale the log loss so that it is correct for
@@ -192,7 +214,7 @@ def run_likelihood_ratio_tests(args):
                                             class_labels,
                                             lr,
                                             features_null = null_features,
-                                            g_scaling_factor = 1.0 / n_copies)
+                                            g_scaling_factor = 1.0 / N_COPIES)
             
             if i == next_output:
                 print i, "Position", pos_label, "has p-value", p_value
