@@ -85,7 +85,7 @@ def parse_variables_file(flname):
     return sample_identifiers, features
             
 
-def prepare_model_variables(genotypes, features):
+def prepare_model_variables(genotypes, testing_variables, null_variables):
     """
     Converts genotype categories to class labels and imputed unknown genotypes.
     Imputation involves duplicating samples, so we create copies of the rows of
@@ -103,8 +103,11 @@ def prepare_model_variables(genotypes, features):
 
     N_COPIES = 3
     class_labels = np.zeros(N_COPIES * n_samples)
-    imputed_features = np.zeros((N_COPIES * n_samples,
-                                 features.shape[1]))
+    testing_features = np.zeros((N_COPIES * n_samples,
+                                 testing_variables.shape[1]))
+    if null_variables is not None:
+        null_features = np.zeros((N_COPIES * n_samples,
+                                  null_variables.shape[1]))
     for i in xrange(n_samples):
         gt = None
         for j in xrange(N_GENOTYPES):
@@ -113,14 +116,22 @@ def prepare_model_variables(genotypes, features):
         
         for j in xrange(N_COPIES):
             idx = N_COPIES * i + j
-            imputed_features[idx, :] = features[i, :]
+            testing_features[idx, :] = testing_variables[i, :]
+            if null_variables is not None:
+                null_features[idx, :] = null_variables[i, :]
 
             if gt is None:
                 class_labels[idx] = j
             else:
                 class_labels[idx] = gt
 
-    return N_COPIES, class_labels, imputed_features
+    if null_variables is not None:
+        testing_features = np.hstack([testing_features,
+                                      null_features])
+    else:
+        null_features = None
+
+    return N_COPIES, class_labels, testing_features, null_features
 
 def run_likelihood_ratio_tests(args):
     if not os.path.exists(args.workdir):
@@ -143,10 +154,10 @@ def run_likelihood_ratio_tests(args):
                        n_iter = n_iter,
                        fit_intercept = False)
 
-    if not args.variables_fl:
-        variables = np.array(data_model.class_labels).reshape(-1, 1)
-    else:
-        selected_samples, variables = parse_variables_file(args.variables_fl)
+    testing_variables = np.array(data_model.class_labels).reshape(-1, 1)
+    null_variables = None
+    if args.variables_fl:
+        selected_samples, null_variables = parse_variables_file(args.variables_fl)
         sample_indices = dict([(sample_name, idx) for idx, sample_name in
                                enumerate(data_model.sample_labels)])
         
@@ -168,16 +179,19 @@ def run_likelihood_ratio_tests(args):
 
             pos_genotypes = genotypes[:, feature_idx]
 
-            n_copies, class_labels, features = prepare_model_variables(pos_genotypes,
-                                                                       variables)
+            n_copies, class_labels, testing_features, null_features = prepare_model_variables(
+                pos_genotypes,
+                testing_variables,
+                null_variables)
 
             # since we make multiple copies of the original samples,
             # we need to scale the log loss so that it is correct for
             # the original sample size
 
-            p_value = likelihood_ratio_test(features,
+            p_value = likelihood_ratio_test(testing_features,
                                             class_labels,
                                             lr,
+                                            features_null = null_features,
                                             g_scaling_factor = 1.0 / n_copies)
             
             if i == next_output:
