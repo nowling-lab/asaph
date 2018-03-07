@@ -1,4 +1,4 @@
-FROM debian:jessie
+FROM debian:stretch
 
 RUN apt-get update && \
     apt-get -y install \
@@ -14,6 +14,7 @@ RUN apt-get update && \
     	    python-pip \
 	        python-scipy \
             python-seaborn \
+            python-sklearn \
 	    && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -25,7 +26,6 @@ RUN ./install.sh /usr/local
 
 COPY . /opt/asaph
 WORKDIR /opt/asaph
-RUN pip install --requirement /opt/asaph/requirements.txt
 ENV PATH="/opt/asaph/bin:${PATH}"
 
 CMD /bin/bash
