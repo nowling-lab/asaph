@@ -39,6 +39,15 @@ load model_setup_helper
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
+        plot-densities \
+        --components 0 1
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/figures/pca_density_0.png" ]
+    [ -e "${WORKDIR_PATH}/figures/pca_density_1.png" ]
+    
+    run ${BATS_TEST_DIRNAME}/../bin/pca \
+	    --workdir ${WORKDIR_PATH} \
         output-coordinates \
         --selected-components 0 1 2 3 \
         --output-fl ${WORKDIR_PATH}/pca_coordinates.txt
