@@ -185,6 +185,30 @@ def plot_projections(args):
         plt.savefig(fig_flname,
                     DPI=300)
 
+def plot_densities(args):
+    workdir = args.workdir
+
+    figures_dir = os.path.join(workdir, "figures")
+    if not os.path.exists(figures_dir):
+        os.makedirs(figures_dir)
+
+    model_fl = os.path.join(workdir,
+                            "models",
+                            "pca.pkl")
+    model = joblib.load(model_fl)
+    projected = model[PROJECTION_KEY]
+    
+    for i in args.components:
+        fig_flname = os.path.join(figures_dir,
+                                  "pca_density_%s.png" % i)
+        plt.clf()
+        seaborn.distplot(projected[:, i])
+        plt.xlabel("PC %s Coordinate" % i, fontsize=16)
+        plt.ylabel("Density", fontsize=16)
+        plt.ylim([0.0, 1.0])
+        plt.savefig(fig_flname,
+                    DPI=300)
+        
 def output_coordinates(args):
     workdir = args.workdir
 
@@ -414,6 +438,15 @@ def parseargs():
                              required=True,
                              help="Pairs of PCs to plot")
 
+    density_parser = subparsers.add_parser("plot-densities",
+                                           help="Plot densities along PC coordinates")
+    density_parser.add_argument("--components",
+                                type=int,
+                                nargs="+",
+                                required=True,
+                                help="Components to perform testing on")
+
+
     count_parser = subparsers.add_parser("min-components-explained-variance",
                                          help="Find number of components to explain specified percentage of variance")
 
@@ -458,6 +491,8 @@ if __name__ == "__main__":
         explained_variance_analysis(args)
     elif args.mode == "plot-projections":
         plot_projections(args)
+    elif args.mode == "plot-densities":
+        plot_densities(args)
     elif args.mode == "output-coordinates":
         output_coordinates(args)
     elif args.mode == "min-components-explained-variance":
