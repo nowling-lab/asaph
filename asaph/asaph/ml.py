@@ -33,7 +33,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 def estimate_lr_iter(n_samples):
     return max(20,
-               int(np.ceil(10**4 / n_samples)))
+               int(np.ceil(25000. / n_samples)))
 
 def calculate_intercept_(labels):
     n_class_1 = float(sum(labels))
