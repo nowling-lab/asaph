@@ -57,7 +57,8 @@ def train(args):
                   whiten = True)
     elif args.method == "ICA":
         pca = FastICA(n_components = args.n_components,
-                      whiten = True)
+                      whiten = True,
+                      max_iter = 1000)
     else:
         raise Exception("Uknown method %s" % args.method)
     
