@@ -15,6 +15,7 @@ limitations under the License.
 """
 
 import argparse
+from collections import defaultdict
 from collections import OrderedDict
 from itertools import tee, izip
 import os
@@ -465,9 +466,16 @@ def cluster_samples(args):
     fig_flname = os.path.join(analysis_dir,
                               "clusters_%s.tsv" % args.n_clusters)
 
+    clusters = defaultdict(list)
+    for name, cluster in zip(features.sample_labels, labels):
+        clusters[cluster].append(name)
+        
     with open(fig_flname, "w") as fl:
-        for name, cluster in zip(features.sample_labels, labels):
-            fl.write("%s\t%s\n" % (name, cluster))
+        for cluster, samples in clusters.iteritems():
+            fl.write(str(cluster))
+            fl.write(",")
+            fl.write(",".join(samples))
+            fl.write("\n")
     
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - PCA")
