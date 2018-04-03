@@ -27,7 +27,6 @@ import numpy as np
 import seaborn
 
 from sklearn.cluster import k_means
-from sklearn.decomposition import FastICA
 from sklearn.decomposition import PCA
 from sklearn.externals import joblib
 from sklearn.linear_model import SGDClassifier
@@ -52,16 +51,9 @@ def train(args):
         os.makedirs(models_dir)
 
     features = read_features(workdir)
-
-    if args.method == "PCA":
-        pca = PCA(n_components = args.n_components,
-                  whiten = True)
-    elif args.method == "ICA":
-        pca = FastICA(n_components = args.n_components,
-                      whiten = True)
-    else:
-        raise Exception("Uknown method %s" % args.method)
-    
+        
+    pca = PCA(n_components = args.n_components,
+              whiten = True)
     projections = pca.fit_transform(features.feature_matrix)
 
     model = { MODEL_KEY : pca,
@@ -188,8 +180,8 @@ def plot_projections(args):
                         edgecolor="k",
                         alpha=0.7,
                         label=pop_name)
-        plt.xlabel("Component %s" % p1, fontsize=16)
-        plt.ylabel("Component %s" % p2, fontsize=16)
+        plt.xlabel("Principal Component %s" % p1, fontsize=16)
+        plt.ylabel("Principal Component %s" % p2, fontsize=16)
         plt.legend()
         plt.savefig(fig_flname,
                     DPI=300)
@@ -211,7 +203,7 @@ def plot_densities(args):
         fig_flname = os.path.join(figures_dir,
                                   "pca_density_%s.png" % i)
         plt.clf()
-        seaborn.kdeplot(projected[:, i], shade=True)
+        seaborn.distplot(projected[:, i])
         plt.xlabel("PC %s Coordinate" % i, fontsize=16)
         plt.ylabel("Density", fontsize=16)
         plt.ylim([0.0, 1.0])
@@ -465,10 +457,6 @@ def parseargs():
                               type=int,
                               required=True,
                               help="Number of PCs to compute")
-
-    train_parser.add_argument("--method",
-                              default="PCA",
-                              choices=["PCA", "ICA"])
     
     eva_parser = subparsers.add_parser("explained-variance-analysis",
                                        help="Compute explained variances of PCs")
