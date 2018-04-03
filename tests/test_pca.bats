@@ -88,6 +88,15 @@ load model_setup_helper
     
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/figures/cluster_inertia_0_1.png" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/pca \
+	    --workdir ${WORKDIR_PATH} \
+        cluster-samples \
+        --components 0 1 \
+        --n-clusters 2
+    
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/analysis/clusters_2.tsv" ]
 }
 
 @test "pca (counts)" {
@@ -148,6 +157,15 @@ load model_setup_helper
     
     [ "$status" -eq 0 ]
     [ -e "${COUNTS_WORKDIR_PATH}/figures/cluster_inertia_0_1.png" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/pca \
+	    --workdir ${COUNTS_WORKDIR_PATH} \
+        cluster-samples \
+        --components 0 1 \
+        --n-clusters 2
+    
+    [ "$status" -eq 0 ]
+    [ -e "${COUNTS_WORKDIR_PATH}/analysis/clusters_2.tsv" ]
 }
 
 @test "Find min components to achieve explained variance threshold (categories)" {

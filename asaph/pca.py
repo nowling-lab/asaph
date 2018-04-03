@@ -439,6 +439,35 @@ def sweep_clusters(args):
     plt.savefig(fig_flname,
                 DPI=300)
 
+def cluster_samples(args):
+    workdir = args.workdir
+
+    analysis_dir = os.path.join(workdir, "analysis")
+    if not os.path.exists(analysis_dir):
+        os.makedirs(analysis_dir)
+    
+    project_summary = deserialize(os.path.join(workdir,
+                                               PROJECT_SUMMARY_FLNAME))
+
+    model_fl = os.path.join(workdir,
+                            "models",
+                            "pca.pkl")
+    model = joblib.load(model_fl)    
+    projected = model[PROJECTION_KEY]
+    selected = projected[:, args.components]
+
+    features = read_features(workdir)
+
+    _, labels, inertia = k_means(selected,
+                                 args.n_clusters,
+                                 n_jobs=-2)
+
+    fig_flname = os.path.join(analysis_dir,
+                              "clusters_%s.tsv" % args.n_clusters)
+
+    with open(fig_flname, "w") as fl:
+        for name, cluster in zip(features.sample_labels, labels):
+            fl.write("%s\t%s\n" % (name, cluster))
     
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - PCA")
@@ -538,7 +567,21 @@ def parseargs():
                                        nargs="+",
                                        required=True,
                                        help="Cluster counts to try")
-    
+
+    cluster_samples_parser = subparsers.add_parser("cluster-samples",
+                                                   help="Cluster samples with K-Means")
+                     
+    cluster_samples_parser.add_argument("--components",
+                                       type=int,
+                                       nargs="+",
+                                       required=True,
+                                       help="Components to use in projection")
+
+    cluster_samples_parser.add_argument("--n-clusters",
+                                       type=int,
+                                       required=True,
+                                       help="Number of clusters")
+                     
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -566,6 +609,8 @@ if __name__ == "__main__":
         snp_association_tests(args)
     elif args.mode == "sweep-clusters":
         sweep_clusters(args)
+    elif args.mode == "cluster-samples":
+        cluster_samples(args)
     else:
         print "Unknown mode '%s'" % args.mode
         sys.exit(1)
