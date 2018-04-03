@@ -26,6 +26,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn
 
+from sklearn.cluster import k_means
 from sklearn.decomposition import FastICA
 from sklearn.decomposition import PCA
 from sklearn.externals import joblib
@@ -403,6 +404,50 @@ def snp_association_tests(args):
 
                 fl.write("\t".join([chrom, pos, str(p_value)]))
                 fl.write("\n")
+
+def sweep_clusters(args):
+    workdir = args.workdir
+
+    figures_dir = os.path.join(workdir, "figures")
+    if not os.path.exists(figures_dir):
+        os.makedirs(figures_dir)
+    
+    project_summary = deserialize(os.path.join(workdir,
+                                               PROJECT_SUMMARY_FLNAME))
+
+    model_fl = os.path.join(workdir,
+                            "models",
+                            "pca.pkl")
+    model = joblib.load(model_fl)    
+    projected = model[PROJECTION_KEY]
+    selected = projected[:, args.components]
+
+    features = read_features(workdir)
+
+    inertia_values = []
+    for k in args.n_clusters:
+        print "Clustering with %s states" % k
+        _, _, inertia = k_means(selected,
+                                k,
+                                n_jobs=-2)
+        inertia_values.append(inertia)
+
+
+    plt.plot(args.n_clusters,
+             inertia_values,
+             "k.-")
+    plt.xlabel("Number of Clusters", fontsize=16)
+    plt.ylabel("Inertia", fontsize=16)
+
+    fig_flname = os.path.join(figures_dir,
+                              "cluster_inertia")
+    for dim in args.components:
+        fig_flname += "_%s" % dim
+    fig_flname += ".png"
+
+    plt.savefig(fig_flname,
+                DPI=300)
+
     
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - PCA")
@@ -492,6 +537,20 @@ def parseargs():
 
     pop_association_parser = subparsers.add_parser("pop-association-tests",
                                                    help="Run association tests on PCs vs population labels")
+
+    sweep_clusters_parser = subparsers.add_parser("sweep-clusters",
+                                                   help="K-Means for a range of clusters")
+    sweep_clusters_parser.add_argument("--components",
+                                       type=int,
+                                       nargs="+",
+                                       required=True,
+                                       help="Components to use in projection")
+
+    sweep_clusters_parser.add_argument("--n-clusters",
+                                       type=int,
+                                       nargs="+",
+                                       required=True,
+                                       help="Cluster counts to try")
     
     return parser.parse_args()
 
@@ -518,6 +577,8 @@ if __name__ == "__main__":
         pop_association_tests(args)
     elif args.mode == "snp-association-tests":
         snp_association_tests(args)
+    elif args.mode == "sweep-clusters":
+        sweep_clusters(args)
     else:
         print "Unknown mode '%s'" % args.mode
         sys.exit(1)

@@ -79,6 +79,15 @@ load model_setup_helper
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/analysis/snp_pc_0_association_tests.tsv" ]
     [ -e "${WORKDIR_PATH}/analysis/snp_pc_1_association_tests.tsv" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/pca \
+	    --workdir ${WORKDIR_PATH} \
+        sweep-clusters \
+        --components 0 1 \
+        --n-clusters 2 4 6 8
+    
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/figures/cluster_inertia_0_1.png" ]
 }
 
 @test "ica (categories)" {
@@ -193,6 +202,15 @@ load model_setup_helper
 
     [ "$status" -eq 0 ]
     [ -e "${COUNTS_WORKDIR_PATH}/analysis/population_pca_association_tests.tsv" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/pca \
+	    --workdir ${COUNTS_WORKDIR_PATH} \
+        sweep-clusters \
+        --components 0 1 \
+        --n-clusters 2 4 6 8
+    
+    [ "$status" -eq 0 ]
+    [ -e "${COUNTS_WORKDIR_PATH}/figures/cluster_inertia_0_1.png" ]
 }
 
 @test "Find min components to achieve explained variance threshold (categories)" {
