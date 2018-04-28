@@ -49,6 +49,16 @@ def calculate_intercept_(labels):
 
     return - np.log(1. / prob - 1.)
 
+def calculate_null_model(n_samples, intercepts):
+    n_classes = len(intercepts)
+    null_prob = np.zeros((n_samples, n_classes))
+    for i in xrange(n_samples):
+        for j in xrange(n_classes):
+            null_prob[i, j] = 1.0 / (1.0 + np.exp(-intercepts[j]))
+
+    return null_prob
+
+
 def calculate_intercept(labels):
     label_ids = sorted(set(labels))
 
@@ -58,9 +68,6 @@ def calculate_intercept(labels):
         binary_labels = np.array(binary_labels)
         intercepts[i] = calculate_intercept_(binary_labels)
 
-    if len(label_ids) == 2:
-        return intercepts[-1]
-    
     return intercepts
 
 def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=None, set_intercept=True, g_scaling_factor=1.0):
@@ -74,6 +81,7 @@ def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=No
         testing_labels = labels
 
     # re-orders labels from smallest to biggest
+    # and makes labels consecutive
     # so that intercepts match
     label_encoder = LabelEncoder()
     training_labels = label_encoder.fit_transform(training_labels)
@@ -82,7 +90,10 @@ def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=No
     n_classes = len(set(training_labels))
 
     if set_intercept:
-        intercept_init = calculate_intercept(training_labels)
+        if n_classes == 2:
+            intercept_init = calculate_intercept(training_labels)[-1]
+        else:
+            intercept_init = calculate_intercept(training_labels)
     else:
         intercept_init = None
 
@@ -101,9 +112,8 @@ def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=No
         df = testing_features_alternate.shape[1] - testing_features_null.shape[1]
     else:
         intercepts = calculate_intercept(training_labels)
-        null_prob = np.zeros((testing_labels.shape[0], n_classes))
-        for i in xrange(testing_labels.shape[0]):
-            null_prob[i, :] = 1.0 / (1.0 + np.exp(-intercepts))
+        null_prob = calculate_null_model(training_labels.shape[0],
+                                         intercepts)
         df = testing_features_alternate.shape[1]
 
     lr_model.fit(training_features_alternate,
