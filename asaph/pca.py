@@ -184,7 +184,8 @@ def plot_projections(args):
                         label=pop_name)
         plt.xlabel("Principal Component %s" % p1, fontsize=16)
         plt.ylabel("Principal Component %s" % p2, fontsize=16)
-        plt.legend()
+        if len(all_labels) > 1:
+            plt.legend()
         plt.savefig(fig_flname,
                     DPI=300)
 
