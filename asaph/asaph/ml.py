@@ -111,8 +111,8 @@ def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=No
         null_prob = lr_model.predict_proba(testing_features_null)
         df = testing_features_alternate.shape[1] - testing_features_null.shape[1]
     else:
-        intercepts = calculate_intercept(training_labels)
-        null_prob = calculate_null_model(training_labels.shape[0],
+        intercepts = calculate_intercept(testing_labels)
+        null_prob = calculate_null_model(testing_labels.shape[0],
                                          intercepts)
         df = testing_features_alternate.shape[1]
 
