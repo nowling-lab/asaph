@@ -32,22 +32,6 @@ from asaph.newioutils import serialize
 
 onehot_to_ints = np.array([1, 2, 3])
 
-def sample_pairs(n_samples, items):
-    sampled = set()
-    while len(sampled) < n_samples:
-        key1, value1 = random.choice(items)
-        key2, value2 = random.choice(items)
-
-        if key1 == key2:
-            continue
-        
-        pair = frozenset([key1, key2])
-        if pair in sampled:
-            continue
-
-        sampled.add(pair)
-        yield (key1, value1), (key2, value2)
-
 def pair_association(pair1, pair2, features):
     snp_label1, feature_idx1 = pair1
     snp_label2, feature_idx2 = pair2
@@ -57,17 +41,17 @@ def pair_association(pair1, pair2, features):
                            onehot_to_ints)
     snp_features2 = np.dot(features.feature_matrix[:, feature_idx2],
                            onehot_to_ints)
-    
+
     v = cramers_v(snp_features1,
                   snp_features2)
 
     return snp_label1, snp_label2, v
 
-def sample_pairs(n_samples, items):
+def sample_pairs(n_samples, items_one, items_two):
     sampled = set()
     while len(sampled) < n_samples:
-        key1, value1 = random.choice(items)
-        key2, value2 = random.choice(items)
+        key1, value1 = random.choice(items_one)
+        key2, value2 = random.choice(items_two)
 
         if key1 == key2:
             continue
@@ -79,15 +63,37 @@ def sample_pairs(n_samples, items):
         sampled.add(pair)
         yield (key1, value1), (key2, value2)
 
-def pairwise_associations(features, stats_dir, n_samples):    
+def pairwise_associations(features, flname, n_samples, set_one=None, set_two=None):
     next_output = 1
-    if n_samples is not None:
-        pairs = sample_pairs(n_samples, features.snp_feature_map.items())
-    else:
-        pairs = itertools.combinations(features.snp_feature_map.iteritems(), 2)
 
-    flname = "snp_pairwise_associations.txt"
-    with open(os.path.join(stats_dir, flname), "w") as fl:
+    snps_set_one = features.snp_feature_map
+    if set_one:
+        snps_set_one = dict()
+        for key in set_one:
+            if key in features.snp_feature_map:
+                snps_set_one[key] = features.snp_feature_map[key]
+
+    snps_set_one = snps_set_one.items()
+
+    snps_set_two = features.snp_feature_map
+    if set_two:
+        snps_set_two = dict()
+        for key in set_two:
+            if key in features.snp_feature_map:
+                snps_set_two[key] = features.snp_feature_map[key]
+
+    snps_set_two = snps_set_two.items()
+
+    if n_samples is not None:
+        pairs = sample_pairs(n_samples, snps_set_one, snps_set_two)
+    else:
+        pairs = itertools.product(snps_set_one, snps_set_two)
+
+    print "Found %s SNPs in set one" % len(snps_set_one)
+    print "Found %s SNPs in set two" % len(snps_set_two)
+    print "Evaluating", (len(snps_set_one) * len(snps_set_two)), "pairs"
+
+    with open(flname, "w") as fl:
         for i, (pair1, pair2) in enumerate(pairs):
             snp_label1, snp_label2, v = pair_association(pair1,
                                                          pair2,
@@ -201,9 +207,21 @@ def parseargs():
     pairwise_parser = subparsers.add_parser("pairwise",
                                             help="Compute pairwise association of SNPs")
 
-    pairwise_parser.add_argument("--samples",
+    pairwise_parser.add_argument("--n-samples",
                                  type=int,
                                  help="Calculate on sampled pairs")
+
+    pairwise_parser.add_argument("--subset-1",
+                                 type=str,
+                                 help="List of scaffolds and positions")
+
+    pairwise_parser.add_argument("--subset-2",
+                                 type=str,
+                                 help="List of scaffolds and positions")
+
+    pairwise_parser.add_argument("--output-fl",
+                                 type=str,
+                                 help="List of scaffolds and positions")
 
     single_parser = subparsers.add_parser("pairwise-single",
                                          help="Compute pairwise association versus a single SNP")
@@ -236,16 +254,37 @@ if __name__ == "__main__":
     project_summary = deserialize(os.path.join(args.workdir, PROJECT_SUMMARY_FLNAME))
     
     features = read_features(args.workdir)
-    print features.feature_matrix.shape
 
     if args.mode == "pairwise":
         if project_summary.feature_encoding != "categories":
             print "Pairwise Cramer's V only works with the 'categories' feature encoding."
             sys.exit(1)
 
+        set_one = None
+        if args.subset_1:
+            with open(args.subset_1) as fl:
+                set_one = set()
+                for ln in fl:
+                    cols = ln.strip().split()
+                    set_one.add((cols[0], cols[1]))
+
+        set_two = None
+        if args.subset_2:
+            with open(args.subset_2) as fl:
+                set_two = set()
+                for ln in fl:
+                    cols = ln.strip().split()
+                    set_two.add((cols[0], cols[1]))
+
+        outfl = os.path.join(stats_dir, "snp_pairwise_associations.txt")
+        if args.output_fl:
+            outfl = os.path.join(stats_dir, args.output_fl)
+
         pairwise_associations(features,
-                              stats_dir,
-                              args.samples)
+                              outfl,
+                              args.n_samples,
+                              set_one=set_one,
+                              set_two=set_two)
         
     if args.mode == "populations":
         if project_summary.feature_encoding == "categories":

@@ -43,7 +43,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/cramers_v \
 	    --workdir ${WORKDIR_PATH} \
         pairwise \
-        --samples 100
+        --n-samples 100
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/statistics/snp_pairwise_associations.txt" ]
