@@ -85,7 +85,8 @@ def explained_variance_analysis(args):
 
     plt.clf()
     plt.grid(True)
-    plt.plot(explained_variance_ratios, "m.-")
+    plt.plot(xrange(1, len(explained_variance_ratios) + 1),
+             explained_variance_ratios, "m.-")
     plt.xlabel("Principal Component", fontsize=16)
     plt.ylabel("Explained Variance Ratio", fontsize=16)
     plt.ylim([0., 1.])
@@ -174,8 +175,8 @@ def plot_projections(args):
                   ["s"] * len(colors) + \
                   ["+"] * len(colors)
         for idx, (pop_idx, pop_name) in enumerate(populations):
-            plt.scatter(projected[pop_idx, p1],
-                        projected[pop_idx, p2],
+            plt.scatter(projected[pop_idx, p1 - 1],
+                        projected[pop_idx, p2 - 1],
                         color=colors[idx % len(colors)],
                         marker=markers[idx % len(markers)],
                         edgecolor="k",
@@ -204,7 +205,7 @@ def plot_densities(args):
         fig_flname = os.path.join(figures_dir,
                                   "pca_density_%s.png" % i)
         plt.clf()
-        seaborn.distplot(projected[:, i])
+        seaborn.distplot(projected[:, i - 1])
         plt.xlabel("PC %s Coordinate" % i, fontsize=16)
         plt.ylabel("Density", fontsize=16)
         plt.ylim([0.0, 1.0])
@@ -264,7 +265,7 @@ def analyze_weights(args):
         plt.xlabel("Feature Weights", fontsize=16)
         plt.ylabel("Count(Features)", fontsize=16)
         plot_fl = os.path.join(figures_dir,
-                               "pca_feature_weights_pc%s.png" % i)
+                               "pca_feature_weights_pc%s.png" % (i + 1))
         plt.savefig(plot_fl,
                     DPI=300)
 
@@ -302,7 +303,7 @@ def pop_association_tests(args):
             p_value = likelihood_ratio_test(features,
                                             class_labels,
                                             lr)
-            fl.write("%s\t%s\n" % (i, p_value))
+            fl.write("%s\t%s\n" % (i + 1, p_value))
 
 def generate_training_set(features, projections):
     """
@@ -373,8 +374,9 @@ def snp_association_tests(args):
                 chrom, pos = snp_label
 
                 snp_features = data_model.feature_matrix[:, feature_idx]
-                n_copies, class_labels, imputed_projections = generate_training_set(snp_features,
-                                                                                    projections[:, pc])
+                triplet = generate_training_set(snp_features,
+                                                projections[:, pc - 1])
+                n_copies, class_labels, imputed_projections = triplet
 
                 imputed_projections = imputed_projections.reshape(-1, 1)
 
@@ -412,13 +414,14 @@ def sweep_clusters(args):
                             "pca.pkl")
     model = joblib.load(model_fl)    
     projected = model[PROJECTION_KEY]
-    selected = projected[:, args.components]
+    components = map(lambda idx: idx - 1, args.components)
+    selected = projected[:, components]
 
     features = read_features(workdir)
 
     inertia_values = []
     for k in args.n_clusters:
-        print "Clustering with %s states" % k
+        print "Clustering with %s clusters" % k
         _, _, inertia = k_means(selected,
                                 k,
                                 n_jobs=-2)
@@ -455,7 +458,8 @@ def cluster_samples(args):
                             "pca.pkl")
     model = joblib.load(model_fl)    
     projected = model[PROJECTION_KEY]
-    selected = projected[:, args.components]
+    components = map(lambda idx: idx - 1, args.components)
+    selected = projected[:, components]
 
     features = read_features(workdir)
 

@@ -31,25 +31,25 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
         plot-projections \
-        --pairs 0 1 2 3
+        --pairs 1 2 3 4
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/figures/pca_projection_0_1.png" ]
-    [ -e "${WORKDIR_PATH}/figures/pca_projection_2_3.png" ]
+    [ -e "${WORKDIR_PATH}/figures/pca_projection_1_2.png" ]
+    [ -e "${WORKDIR_PATH}/figures/pca_projection_3_4.png" ]
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
         plot-densities \
-        --components 0 1
+        --components 1 2
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/figures/pca_density_0.png" ]
     [ -e "${WORKDIR_PATH}/figures/pca_density_1.png" ]
+    [ -e "${WORKDIR_PATH}/figures/pca_density_2.png" ]
     
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
         output-coordinates \
-        --selected-components 0 1 2 3 \
+        --selected-components 1 2 3 4 \
         --output-fl ${WORKDIR_PATH}/pca_coordinates.txt
 
     [ "$status" -eq 0 ]
@@ -61,8 +61,8 @@ load model_setup_helper
         --weights 1.0 1.0
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/figures/pca_feature_weights_pc0.png" ]
     [ -e "${WORKDIR_PATH}/figures/pca_feature_weights_pc1.png" ]
+    [ -e "${WORKDIR_PATH}/figures/pca_feature_weights_pc2.png" ]
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
@@ -74,25 +74,25 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
         snp-association-tests \
-        --components 0 1
+        --components 1 2
     
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/analysis/snp_pc_0_association_tests.tsv" ]
     [ -e "${WORKDIR_PATH}/analysis/snp_pc_1_association_tests.tsv" ]
+    [ -e "${WORKDIR_PATH}/analysis/snp_pc_2_association_tests.tsv" ]
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
         sweep-clusters \
-        --components 0 1 \
+        --components 1 2 \
         --n-clusters 2 4 6 8
     
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/figures/cluster_inertia_0_1.png" ]
+    [ -e "${WORKDIR_PATH}/figures/cluster_inertia_1_2.png" ]
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
         cluster-samples \
-        --components 0 1 \
+        --components 1 2 \
         --n-clusters 2
     
     [ "$status" -eq 0 ]
@@ -118,16 +118,16 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${COUNTS_WORKDIR_PATH} \
         plot-projections \
-        --pairs 0 1 2 3
+        --pairs 1 2 3 4
 
     [ "$status" -eq 0 ]
-    [ -e "${COUNTS_WORKDIR_PATH}/figures/pca_projection_0_1.png" ]
-    [ -e "${COUNTS_WORKDIR_PATH}/figures/pca_projection_2_3.png" ]
+    [ -e "${COUNTS_WORKDIR_PATH}/figures/pca_projection_1_2.png" ]
+    [ -e "${COUNTS_WORKDIR_PATH}/figures/pca_projection_3_4.png" ]
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${COUNTS_WORKDIR_PATH} \
         output-coordinates \
-        --selected-components 0 1 2 3 \
+        --selected-components 1 2 3 4 \
         --output-fl ${COUNTS_WORKDIR_PATH}/pca_coordinates.txt
 
     [ "$status" -eq 0 ]
@@ -139,8 +139,8 @@ load model_setup_helper
         --weights 1.0 1.0
 
     [ "$status" -eq 0 ]
-    [ -e "${COUNTS_WORKDIR_PATH}/figures/pca_feature_weights_pc0.png" ]
     [ -e "${COUNTS_WORKDIR_PATH}/figures/pca_feature_weights_pc1.png" ]
+    [ -e "${COUNTS_WORKDIR_PATH}/figures/pca_feature_weights_pc2.png" ]
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${COUNTS_WORKDIR_PATH} \
@@ -152,11 +152,11 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${COUNTS_WORKDIR_PATH} \
         sweep-clusters \
-        --components 0 1 \
+        --components 1 2 \
         --n-clusters 2 4 6 8
     
     [ "$status" -eq 0 ]
-    [ -e "${COUNTS_WORKDIR_PATH}/figures/cluster_inertia_0_1.png" ]
+    [ -e "${COUNTS_WORKDIR_PATH}/figures/cluster_inertia_1_2.png" ]
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${COUNTS_WORKDIR_PATH} \
