@@ -243,6 +243,74 @@ def output_coordinates(args):
             fl.write("\t".join(line))
             fl.write("\n")
 
+def output_loading_magnitudes(args):
+    workdir = args.workdir
+
+    analysis_dir = os.path.join(workdir, "analysis")
+    if not os.path.exists(analysis_dir):
+        os.makedirs(analysis_dir)
+    
+    data_model = read_features(workdir)
+
+    model_fl = os.path.join(workdir,
+                            "models",
+                            "pca.pkl")
+    model = joblib.load(model_fl)    
+    pca = model[MODEL_KEY]
+    components = pca.components_
+    selected = components[map(lambda idx: idx - 1, args.components), :]
+
+    output_fl = os.path.join(analysis_dir, "pca_loading_magnitudes.tsv")
+    with open(output_fl, "w") as fl:
+        header = ["chromosome", "position"]
+        header.extend(map(str, args.components))
+        fl.write("\t".join(header))
+        fl.write("\n")
+        for i, pair in enumerate(data_model.snp_feature_map.iteritems()):
+            snp_label, feature_idx = pair
+            chrom, pos = snp_label
+
+            features = selected[:, feature_idx]
+            norms = np.sqrt(np.sum(features**2, axis=1))
+            
+            fl.write("%s\t%s\t" % (chrom, pos))
+            fl.write("\t".join(map(str, norms)))
+            fl.write("\n")
+
+def output_loading_factors(args):
+    workdir = args.workdir
+
+    analysis_dir = os.path.join(workdir, "analysis")
+    if not os.path.exists(analysis_dir):
+        os.makedirs(analysis_dir)
+    
+    data_model = read_features(workdir)
+
+    model_fl = os.path.join(workdir,
+                            "models",
+                            "pca.pkl")
+    model = joblib.load(model_fl)    
+    pca = model[MODEL_KEY]
+    components = pca.components_
+    selected = components[map(lambda idx: idx - 1, args.components), :]
+
+    output_fl = os.path.join(analysis_dir, "pca_loading_factors.tsv")
+    with open(output_fl, "w") as fl:
+        header = ["chromosome", "position", "dummy variable"]
+        header.extend(map(str, args.components))
+        fl.write("\t".join(header))
+        fl.write("\n")
+        for i, pair in enumerate(data_model.snp_feature_map.iteritems()):
+            snp_label, feature_idx = pair
+            chrom, pos = snp_label
+
+            for j, idx in enumerate(feature_idx):
+                features = selected[:, idx]
+            
+                fl.write("%s\t%s\t%s\t" % (chrom, pos, j))
+                fl.write("\t".join(map(str, features)))
+                fl.write("\n")
+
 def analyze_weights(args):
     workdir = args.workdir
 
@@ -594,6 +662,24 @@ def parseargs():
                                        type=int,
                                        required=True,
                                        help="Number of clusters")
+
+    loading_magnitudes_parser = subparsers.add_parser("output-loading-magnitudes",
+                                                      help="Output loading magnitudes")
+
+    loading_magnitudes_parser.add_argument("--components",
+                                           type=int,
+                                           nargs="+",
+                                           required=True,
+                                           help="Components to output")
+    
+    loading_factors_parser = subparsers.add_parser("output-loading-factors",
+                                                   help="Output loading factors")
+
+    loading_factors_parser.add_argument("--components",
+                                        type=int,
+                                        nargs="+",
+                                        required=True,
+                                        help="Components to output")
                      
     return parser.parse_args()
 
@@ -614,8 +700,10 @@ if __name__ == "__main__":
         min_components_explained_variance(args)
     elif args.mode == "analyze-weights":
         analyze_weights(args)
-    elif args.mode == "extract-genotypes":
-        extract_genotypes(args)
+    elif args.mode == "output-loading-magnitudes":
+        output_loading_magnitudes(args)
+    elif args.mode == "output-loading-factors":
+        output_loading_factors(args)
     elif args.mode == "pop-association-tests":
         pop_association_tests(args)
     elif args.mode == "snp-association-tests":

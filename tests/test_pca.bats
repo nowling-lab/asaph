@@ -73,6 +73,22 @@ load model_setup_helper
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
+        output-loading-magnitudes \
+        --components 1 2
+    
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/analysis/pca_loading_magnitudes.tsv" ]
+
+    run ${BATS_TEST_DIRNAME}/../bin/pca \
+	    --workdir ${WORKDIR_PATH} \
+        output-loading-factors \
+        --components 1 2
+    
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/analysis/pca_loading_factors.tsv" ]
+    
+    run ${BATS_TEST_DIRNAME}/../bin/pca \
+	    --workdir ${WORKDIR_PATH} \
         snp-association-tests \
         --components 1 2
     
