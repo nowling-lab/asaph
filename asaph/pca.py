@@ -31,6 +31,7 @@ from sklearn.cluster import k_means
 from sklearn.decomposition import PCA
 from sklearn.externals import joblib
 from sklearn.linear_model import SGDClassifier
+from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import binarize
 
 from asaph.ml import estimate_lr_iter
@@ -372,7 +373,13 @@ def pop_association_tests(args):
             p_value = likelihood_ratio_test(features,
                                             class_labels,
                                             lr)
-            fl.write("%s\t%s\n" % (i + 1, p_value))
+
+            lr.fit(features, class_labels)
+            pred_labels = lr.predict(features)
+            acc = 100. * accuracy_score(class_labels,
+                                        pred_labels)
+            
+            fl.write("%s\t%s\t%s\n" % (i + 1, p_value, acc))
 
 def generate_training_set(features, projections):
     """
