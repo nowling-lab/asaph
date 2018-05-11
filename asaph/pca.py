@@ -32,6 +32,7 @@ from sklearn.decomposition import PCA
 from sklearn.externals import joblib
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import binarize
 
 from asaph.ml import estimate_lr_iter
@@ -361,7 +362,7 @@ def pop_association_tests(args):
     # we set the intercept to the class ratios in the lr test function
     lr = SGDClassifier(penalty="l2",
                        loss="log",
-                       n_iter = n_iter,
+                       n_iter = n_iter * 10.,
                        fit_intercept=False)
 
     pvalues_fl = os.path.join(analysis_dir, "population_pca_association_tests.tsv")
@@ -378,6 +379,13 @@ def pop_association_tests(args):
             pred_labels = lr.predict(features)
             acc = 100. * accuracy_score(class_labels,
                                         pred_labels)
+
+            cm = confusion_matrix(class_labels,
+                                  pred_labels)
+            
+            print (i+1), p_value, acc
+            print cm
+            print
             
             fl.write("%s\t%s\t%s\n" % (i + 1, p_value, acc))
 
