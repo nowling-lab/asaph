@@ -363,7 +363,7 @@ def pop_association_tests(args):
     lr = SGDClassifier(penalty="l2",
                        loss="log",
                        n_iter = n_iter * 10.,
-                       fit_intercept=False)
+                       fit_intercept=True)
 
     pvalues_fl = os.path.join(analysis_dir, "population_pca_association_tests.tsv")
     class_labels = np.array(data_model.class_labels)
@@ -373,7 +373,8 @@ def pop_association_tests(args):
 
             p_value = likelihood_ratio_test(features,
                                             class_labels,
-                                            lr)
+                                            lr,
+                                            set_intercept=False)
 
             lr.fit(features, class_labels)
             pred_labels = lr.predict(features)
