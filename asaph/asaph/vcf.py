@@ -278,35 +278,18 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
     snp_features = defaultdict(list)
     snp_genotypes = defaultdict(dict)
     column_idx = 0
-    col_dict = dict()
     feature_columns = []
     for feature_idx, ((chrom, pos, gt), column) in enumerate(extractor):
-        if compress:
-            if column not in col_dict:
-                col_dict[column] = column_idx
-                snp_features[(chrom, pos)].append(column_idx)
-                snp_genotypes[(chrom, pos)][column_idx] = gt
-                feature_columns.append(column)
-                column_idx += 1
-            else:
-                feature_column_idx = col_dict[column]
-                snp_genotypes[(chrom, pos)][feature_column_idx] = gt
-                snp_features[(chrom, pos)].append(feature_column_idx)
-        else:
-            snp_genotypes[(chrom, pos)][column_idx] = gt
-            snp_features[(chrom, pos)].append(column_idx)
-            feature_columns.append(column)
-            column_idx += 1
+        snp_genotypes[(chrom, pos)][column_idx] = gt
+        snp_features[(chrom, pos)].append(column_idx)
+        feature_columns.append(column)
+        column_idx += 1
 
     # need to transpose, otherwise we get (n_features, n_individuals) instead
     feature_matrix = np.array(feature_columns).T
 
     print feature_matrix.shape[0], "individuals"
-    if compress:
-        print (feature_idx + 1), "features before compression"
-        print feature_matrix.shape[1], "features after compression"
-    else:
-        print feature_matrix.shape[1], "features"
+    print feature_matrix.shape[1], "features"
 
     class_labels = [populations[ident] for ident in extractor.rows_to_names]
 
