@@ -29,6 +29,8 @@ from models import CATEGORIES_FEATURE_TYPE
 
 DEFAULT_COLUMNS = {'CHROM' : 0, 'POS' : 1, 'ID' : 2, 'REF' : 3, 'ALT' : 4, 'QUAL' : 5, 'FILTER' : 6, 'INFO' : 7, 'FORMAT' : 8}
 
+GENOTYPE_OFFSET = 9
+
 UNKNOWN_GENOTYPE = (0, 0)
 
 def read_groups(flname):
@@ -44,7 +46,7 @@ def read_groups(flname):
     return groups, group_names
 
 ## Parsing
-def parse_vcf_line(ln, individual_names):
+def parse_vcf_line(ln, kept_pairs):
     """
     Takes a string containing a line of a VCF file
     and a list of individual names.
@@ -62,36 +64,51 @@ def parse_vcf_line(ln, individual_names):
     alleles = (cols[DEFAULT_COLUMNS["REF"]],
                cols[DEFAULT_COLUMNS["ALT"]])
 
-    individual_genotypes = OrderedDict()
-    for i, col in enumerate(cols[len(DEFAULT_COLUMNS):]):
-        genotype_pair = col.split(":")[0]
+    individual_genotypes = []
+    for idx, name in kept_pairs:
+        col = cols[GENOTYPE_OFFSET + idx]
 
         ref_count = 0
         alt_count = 0
 
         # avoid caring whether / or | is used as separator by indexing
         # ignore unknown genotype (.)
-        if genotype_pair[0] == "0":
+        if col[0] == "0":
             ref_count += 1
-        elif genotype_pair[0] == "1":
+        elif col[0] == "1":
             alt_count += 1
 
-        if genotype_pair[2] == "0":
+        if col[2] == "0":
             ref_count += 1
-        elif genotype_pair[2] == "1":
+        elif col[2] == "1":
             alt_count += 1
 
-        individual_genotypes[individual_names[i]] = (ref_count, alt_count)
+        individual_genotypes.append((ref_count, alt_count))
 
     variant_label = (cols[DEFAULT_COLUMNS["CHROM"]], cols[DEFAULT_COLUMNS["POS"]])
-    return (variant_label, alleles, individual_genotypes)
+    return (variant_label, alleles, tuple(individual_genotypes))
 
 class VCFStreamer(object):
-    def __init__(self, flname, compressed):
+    def __init__(self, flname, compressed, kept_individuals):
         self.flname = flname
-        self.individual_names = None
+        self.kept_individuals = set(kept_individuals)
         self.compressed = compressed
         self.positions_read = 0
+
+        self.stream = self.__open__()
+        for ln in self.stream:
+            if ln.startswith("#CHROM"):
+                column_names = ln[1:].strip().split()
+                self.individual_names = column_names[len(DEFAULT_COLUMNS):]
+                break
+            elif ln.startswith("#"):
+                continue
+
+        self.kept_pairs = [(i, name) for i, name in enumerate(self.individual_names)
+                           if name in self.kept_individuals]
+
+        self.rows_to_names = [name for name in self.individual_names
+                              if name in self.kept_individuals]
 
     def __open__(self):
         if self.compressed:
@@ -104,32 +121,13 @@ class VCFStreamer(object):
                     yield ln
 
     def __iter__(self):
-        stream = self.__open__()
-        for ln in stream:
-            if ln.startswith("#CHROM"):
-                column_names = ln[1:].strip().split()
-                self.individual_names = column_names[len(DEFAULT_COLUMNS):]
-                break
-            elif ln.startswith("#"):
-                continue
-
-        for ln in stream:
+        for ln in self.stream:
             if not ln.startswith("#"):
                 self.positions_read += 1
-                yield parse_vcf_line(ln, self.individual_names)
+                yield parse_vcf_line(ln,
+                                     self.kept_pairs)
 
 ## Filters
-def select_individuals(stream, individual_ids):
-    """
-    Filter stream of pairs, only keeping genotypes
-    for individuals with ids in individual_ids
-    """
-    kept_individuals = set(individual_ids)
-
-    for label, alleles, allele_counts in stream:
-        selected = OrderedDict([(name, allele_counts[name]) for name in kept_individuals])
-        yield (label, alleles, selected)
-
 def filter_invariants(min_percentage, stream):
     """
     Filter out variants where the least-frequently occurring allele occurs less than some threshold.
@@ -139,7 +137,7 @@ def filter_invariants(min_percentage, stream):
     for label, alleles, genotypes in stream:
         total_ref_count = 0
         total_alt_count = 0
-        for sample_ref_count, sample_alt_count in genotypes.itervalues():
+        for sample_ref_count, sample_alt_count in genotypes:
             total_ref_count += sample_ref_count
             total_alt_count += sample_alt_count
 
@@ -159,23 +157,16 @@ class UnknownGenotypeAnnotator(object):
     """
     Record which samples have unknown genotypes for each site.
     """
-    def __init__(self, stream, individual_names):
+    def __init__(self, stream):
         self.stream = stream
-        self.name_to_row = dict()
-        self.rows_to_names = []
-        for idx, name in enumerate(individual_names):
-            self.name_to_row[name] = idx
-            self.rows_to_names.append(name)
-
         self.unknown_genotypes = dict()
 
     def __iter__(self):
         for variant_label, alleles, genotypes in self.stream:
             chrom, pos = variant_label
-            gt_unknown = [False] * len(self.name_to_row)
+            gt_unknown = [False] * len(genotypes)
 
-            for name, allele_counts in genotypes.items():
-                row_idx = self.name_to_row[name]
+            for row_idx, allele_counts in enumerate(genotypes):
                 is_unknown = (allele_counts[0] + allele_counts[1]) == 0
                 if is_unknown:
                     gt_unknown[row_idx] = True
@@ -186,22 +177,16 @@ class UnknownGenotypeAnnotator(object):
 
 ## Feature extraction
 class CountFeaturesExtractor(object):
-    def __init__(self, stream, individual_names):
+    def __init__(self, stream):
         self.stream = stream
-        self.name_to_row = dict()
-        self.rows_to_names = []
-        for idx, name in enumerate(individual_names):
-            self.name_to_row[name] = idx
-            self.rows_to_names.append(name)
 
     def __iter__(self):
         for variant_label, alleles, genotypes in self.stream:
             chrom, pos = variant_label
-            ref_column = [0.] * len(self.name_to_row)
-            alt_column = [0.] * len(self.name_to_row)
+            ref_column = [0.] * len(genotypes)
+            alt_column = [0.] * len(genotypes)
 
-            for name, allele_counts in genotypes.items():
-                row_idx = self.name_to_row[name]
+            for row_idx, allele_counts in enumerate(genotypes):
                 ref_column[row_idx] = allele_counts[0]
                 alt_column[row_idx] = allele_counts[1]
 
@@ -209,23 +194,17 @@ class CountFeaturesExtractor(object):
             yield (chrom, pos, alleles[1]), tuple(alt_column)
 
 class CategoricalFeaturesExtractor(object):
-    def __init__(self, stream, individual_names):
+    def __init__(self, stream):
         self.stream = stream
-        self.name_to_row = dict()
-        self.rows_to_names = []
-        for idx, name in enumerate(individual_names):
-            self.name_to_row[name] = idx
-            self.rows_to_names.append(name)
 
     def __iter__(self):
         for variant_label, alleles, genotypes in self.stream:
             chrom, pos = variant_label
-            homo1_column = [0.] * len(self.name_to_row)
-            homo2_column = [0.] * len(self.name_to_row)
-            het_column = [0.] * len(self.name_to_row)
+            homo1_column = [0.] * len(genotypes)
+            homo2_column = [0.] * len(genotypes)
+            het_column = [0.] * len(genotypes)
 
-            for name, allele_counts in genotypes.items():
-                row_idx = self.name_to_row[name]
+            for row_idx, allele_counts in enumerate(genotypes):
                 if allele_counts == (2, 0):
                     homo1_column[row_idx] = 1
                 elif allele_counts == (0, 2):
@@ -252,26 +231,21 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
     populations, population_names = read_groups(groups_flname)
 
     # returns triplets of (variant_label, variant_alleles, genotype_counts)
-    stream = VCFStreamer(vcf_flname, compressed_vcf)
-    selected_individuals = select_individuals(stream,
-                                              populations.keys())
+    stream = VCFStreamer(vcf_flname, compressed_vcf, populations.keys())
 
     # remove SNPs with least-frequently occurring alleles less than a threshold
     variants = filter_invariants(allele_min_freq_threshold,
-                                 selected_individuals)
+                                 stream)
 
     filtered_positions_counter = StreamCounter(variants)
 
-    unknown_annotator = UnknownGenotypeAnnotator(filtered_positions_counter,
-                                                 populations.keys())
+    unknown_annotator = UnknownGenotypeAnnotator(filtered_positions_counter)
 
     # extract features
     if feature_type == COUNTS_FEATURE_TYPE:
-        extractor = CountFeaturesExtractor(unknown_annotator,
-                                           populations.keys())
+        extractor = CountFeaturesExtractor(unknown_annotator)
     elif feature_type == CATEGORIES_FEATURE_TYPE:
-        extractor = CategoricalFeaturesExtractor(unknown_annotator,
-                                                 populations.keys())
+        extractor = CategoricalFeaturesExtractor(unknown_annotator)
     else:
         raise Exception, "Unknown feature type: %s" % feature_type
 
@@ -291,7 +265,7 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
     print feature_matrix.shape[0], "individuals"
     print feature_matrix.shape[1], "features"
 
-    class_labels = [populations[ident] for ident in extractor.rows_to_names]
+    class_labels = [populations[ident] for ident in stream.rows_to_names]
 
     project_summary = ProjectSummary(original_positions = stream.positions_read,
                                      filtered_positions = filtered_positions_counter.count,
@@ -306,7 +280,7 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
                             feature_matrix = feature_matrix)
     else:
         np.save(os.path.join(outbase, FEATURE_MATRIX_FLNAME), feature_matrix)
-    serialize(os.path.join(outbase, SAMPLE_LABELS_FLNAME), extractor.rows_to_names)
+    serialize(os.path.join(outbase, SAMPLE_LABELS_FLNAME), stream.rows_to_names)
     serialize(os.path.join(outbase, CLASS_LABELS_FLNAME), class_labels)
     serialize(os.path.join(outbase, SNP_FEATURE_INDICES_FLNAME), snp_features)
     serialize(os.path.join(outbase, SNP_FEATURE_GENOTYPES_FLNAME), snp_genotypes)
