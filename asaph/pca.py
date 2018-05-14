@@ -226,7 +226,7 @@ def output_coordinates(args):
                             "pca.pkl")
     model = joblib.load(model_fl)    
     projected = model[PROJECTION_KEY]
-    selected = projected[:, args.selected_components]
+    selected = projected[:, map(lambda idx: idx - 1, args.selected_components)]
 
     features = read_features(workdir)
 
