@@ -51,11 +51,14 @@ def read_features(basename):
     class_labels = deserialize(os.path.join(basename, CLASS_LABELS_FLNAME))
     sample_labels = deserialize(os.path.join(basename, SAMPLE_LABELS_FLNAME))
     if os.path.exists(os.path.join(basename, FEATURE_MATRIX_FLNAME + ".npz")):
-        loader = np.load(os.path.join(basename, FEATURE_MATRIX_FLNAME + ".npz"))
-        feature_matrix = sparse.csr_matrix((loader["data"],
-                                           loader["indices"],
-                                           loader["indptr"]),
-                                           shape = loader["shape"])
+        with np.load(os.path.join(basename, FEATURE_MATRIX_FLNAME + ".npz")) as loader:
+            if "feature_matrix" in loader:
+                feature_matrix = loader["feature_matrix"]
+            else:
+                feature_matrix = sparse.csr_matrix((loader["data"],
+                                                    loader["indices"],
+                                                    loader["indptr"]),
+                                                   shape = loader["shape"])
     else:
         feature_matrix = np.load(os.path.join(basename, FEATURE_MATRIX_FLNAME))
 

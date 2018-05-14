@@ -301,7 +301,11 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
                                      n_samples = len(class_labels),
                                      population_names = population_names)
 
-    np.save(os.path.join(outbase, FEATURE_MATRIX_FLNAME), feature_matrix)
+    if compress:
+        np.savez_compressed(os.path.join(outbase, FEATURE_MATRIX_FLNAME + ".npz"),
+                            feature_matrix = feature_matrix)
+    else:
+        np.save(os.path.join(outbase, FEATURE_MATRIX_FLNAME), feature_matrix)
     serialize(os.path.join(outbase, SAMPLE_LABELS_FLNAME), extractor.rows_to_names)
     serialize(os.path.join(outbase, CLASS_LABELS_FLNAME), class_labels)
     serialize(os.path.join(outbase, SNP_FEATURE_INDICES_FLNAME), snp_features)
