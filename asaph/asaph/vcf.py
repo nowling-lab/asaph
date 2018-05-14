@@ -64,8 +64,8 @@ def parse_vcf_line(ln, kept_pairs):
     alleles = (cols[DEFAULT_COLUMNS["REF"]],
                cols[DEFAULT_COLUMNS["ALT"]])
 
-    individual_genotypes = []
-    for idx, name in kept_pairs:
+    individual_genotypes = [None] * len(kept_pairs)
+    for i, (idx, name) in enumerate(kept_pairs):
         col = cols[GENOTYPE_OFFSET + idx]
 
         ref_count = 0
@@ -83,7 +83,7 @@ def parse_vcf_line(ln, kept_pairs):
         elif col[2] == "1":
             alt_count += 1
 
-        individual_genotypes.append((ref_count, alt_count))
+        individual_genotypes[i] = (ref_count, alt_count)
 
     variant_label = (cols[DEFAULT_COLUMNS["CHROM"]], cols[DEFAULT_COLUMNS["POS"]])
     return (variant_label, alleles, tuple(individual_genotypes))
