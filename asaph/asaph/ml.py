@@ -47,6 +47,10 @@ def calculate_intercept_(labels):
     # -b = log(1/p - 1)
     # b = -log(1/p - 1)
 
+    # clip prob to avoid numerical errors
+    prob = min(prob, 0.9999999)
+    prob = max(0.0000001, prob)
+    
     return - np.log(1. / prob - 1.)
 
 def calculate_null_model(n_samples, intercepts):
