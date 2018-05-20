@@ -164,14 +164,15 @@ class UnknownGenotypeAnnotator(object):
     def __iter__(self):
         for variant_label, alleles, genotypes in self.stream:
             chrom, pos = variant_label
-            gt_unknown = [False] * len(genotypes)
-
+            gt_unknown = set()
+            
             for row_idx, allele_counts in enumerate(genotypes):
                 is_unknown = (allele_counts[0] + allele_counts[1]) == 0
                 if is_unknown:
-                    gt_unknown[row_idx] = True
+                    gt_unknown.add(row_idx)
 
-            self.unknown_genotypes[variant_label] = tuple(gt_unknown)
+            if len(gt_unknown) > 0:
+                self.unknown_genotypes[variant_label] = gt_unknown
 
             yield variant_label, alleles, genotypes
 

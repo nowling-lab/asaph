@@ -57,7 +57,7 @@ def generate_training_set(feature_type, labels, features, sample_unknown_genotyp
             idx = N_COPIES * i + j
             training_labels[idx] = labels[i]
 
-            if not sample_unknown_genotype[i]:
+            if sample_unknown_genotype is not None and i in sample_unknown_genotype:
                 training_features[idx, :] = features[i, :]
             elif feature_type == CATEGORIES_FEATURE_TYPE:
                 training_features[idx, j] = 1.
@@ -95,7 +95,7 @@ def run_likelihood_ratio_tests(features, project_summary, args, stats_dir):
             training_labels, training_features = generate_training_set(project_summary.feature_encoding,
                                                                        labels,
                                                                        snp_features,
-                                                                       features.unknown_genotypes[snp_label])
+                                                                       features.unknown_genotypes.get(snp_label, None))
 
             set_intercept_to_class_prob = False
             if args.intercept == "class-probabilities":
