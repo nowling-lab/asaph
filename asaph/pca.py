@@ -85,6 +85,8 @@ def explained_variance_analysis(args):
     fig_flname = os.path.join(figures_dir,
                               "pca_explained_variance_ratios.png")
 
+    print explained_variance_ratios
+
     plt.clf()
     plt.grid(True)
     plt.plot(xrange(1, len(explained_variance_ratios) + 1),
