@@ -150,7 +150,7 @@ def filter_invariants(min_percentage, stream):
 
         fraction = min_count / float(total_ref_count + total_alt_count)
         
-        if fraction > min_percentage:
+        if fraction >= min_percentage:
             yield (label, alleles, genotypes)
 
 class UnknownGenotypeAnnotator(object):
