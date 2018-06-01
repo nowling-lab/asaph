@@ -66,8 +66,6 @@ def read_features(basename):
     genotypes = None
     if os.path.exists(genotypes_flname):
         genotypes = deserialize(genotypes_flname)
-    unknown_genotypes_flname = os.path.join(basename, UNKNOWN_GENOTYPES_FLNAME)
-    unknown_genotypes = None
 
     return Features(feature_matrix,
                     snp_features_map,
