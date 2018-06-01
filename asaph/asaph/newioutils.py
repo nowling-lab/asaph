@@ -31,7 +31,6 @@ SAMPLE_LABELS_FLNAME = "sample_labels"
 FEATURE_MATRIX_FLNAME = "feature_matrix.npy"
 SNP_FEATURE_INDICES_FLNAME = "snp_feature_indices"
 SNP_FEATURE_GENOTYPES_FLNAME = "snp_feature_genotypes"
-UNKNOWN_GENOTYPES_FLNAME = "unknown_genotypes"
 PROJECT_SUMMARY_FLNAME = "project_summary"
 
 def serialize(flname, obj):

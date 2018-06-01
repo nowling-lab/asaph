@@ -153,29 +153,6 @@ def filter_invariants(min_percentage, stream):
         if fraction >= min_percentage:
             yield (label, alleles, genotypes)
 
-class UnknownGenotypeAnnotator(object):
-    """
-    Record which samples have unknown genotypes for each site.
-    """
-    def __init__(self, stream):
-        self.stream = stream
-        self.unknown_genotypes = dict()
-
-    def __iter__(self):
-        for variant_label, alleles, genotypes in self.stream:
-            chrom, pos = variant_label
-            gt_unknown = set()
-            
-            for row_idx, allele_counts in enumerate(genotypes):
-                is_unknown = (allele_counts[0] + allele_counts[1]) == 0
-                if is_unknown:
-                    gt_unknown.add(row_idx)
-
-            if len(gt_unknown) > 0:
-                self.unknown_genotypes[variant_label] = gt_unknown
-
-            yield variant_label, alleles, genotypes
-
 ## Feature extraction
 class CountFeaturesExtractor(object):
     def __init__(self, stream):
@@ -240,13 +217,11 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
 
     filtered_positions_counter = StreamCounter(variants)
 
-    unknown_annotator = UnknownGenotypeAnnotator(filtered_positions_counter)
-
     # extract features
     if feature_type == COUNTS_FEATURE_TYPE:
-        extractor = CountFeaturesExtractor(unknown_annotator)
+        extractor = CountFeaturesExtractor(filtered_positions_counter)
     elif feature_type == CATEGORIES_FEATURE_TYPE:
-        extractor = CategoricalFeaturesExtractor(unknown_annotator)
+        extractor = CategoricalFeaturesExtractor(filtered_positions_counter)
     else:
         raise Exception, "Unknown feature type: %s" % feature_type
 
@@ -286,4 +261,3 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
     serialize(os.path.join(outbase, SNP_FEATURE_INDICES_FLNAME), snp_features)
     serialize(os.path.join(outbase, SNP_FEATURE_GENOTYPES_FLNAME), snp_genotypes)
     serialize(os.path.join(outbase, PROJECT_SUMMARY_FLNAME), project_summary)
-    serialize(os.path.join(outbase, UNKNOWN_GENOTYPES_FLNAME), unknown_annotator.unknown_genotypes)

@@ -34,7 +34,7 @@ from asaph.newioutils import deserialize
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
 from asaph.newioutils import serialize
 
-def generate_training_set(feature_type, labels, features, sample_unknown_genotype):
+def generate_training_set(feature_type, labels, features):
     n_samples, n_features = features.shape
 
     if feature_type == COUNTS_FEATURE_TYPE:
@@ -98,9 +98,7 @@ def run_likelihood_ratio_tests(features, project_summary, args, stats_dir):
 
             training_labels, training_features = generate_training_set(project_summary.feature_encoding,
                                                                        labels,
-                                                                       snp_features,
-                                                                       features.unknown_genotypes.get(snp_label, None))
-
+                                                                       snp_features)
             set_intercept_to_class_prob = False
             if args.intercept == "class-probabilities":
                 set_intercept_to_class_prob = True
