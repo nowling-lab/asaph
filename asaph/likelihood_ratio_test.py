@@ -53,11 +53,15 @@ def generate_training_set(feature_type, labels, features, sample_unknown_genotyp
     training_features = np.zeros((N_COPIES * n_samples, n_features))
 
     for i in xrange(n_samples):
+        gt = None
+        if features[i, :].sum() > 0:
+            gt = features[i, :].argmax()
+
         for j in xrange(N_COPIES):
             idx = N_COPIES * i + j
             training_labels[idx] = labels[i]
 
-            if sample_unknown_genotype is not None and i in sample_unknown_genotype:
+            if gt is not None:
                 training_features[idx, :] = features[i, :]
             elif feature_type == CATEGORIES_FEATURE_TYPE:
                 training_features[idx, j] = 1.
@@ -100,12 +104,12 @@ def run_likelihood_ratio_tests(features, project_summary, args, stats_dir):
             set_intercept_to_class_prob = False
             if args.intercept == "class-probabilities":
                 set_intercept_to_class_prob = True
-            
+
             p_value = likelihood_ratio_test((training_features, snp_features),
                                             (training_labels, labels),
                                             lr,
                                             set_intercept=set_intercept_to_class_prob)
-            
+
             if i == next_output:
                 print i, "SNP", snp_label, "has p-value", p_value
                 next_output *= 2
