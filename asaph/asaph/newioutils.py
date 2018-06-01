@@ -68,15 +68,12 @@ def read_features(basename):
         genotypes = deserialize(genotypes_flname)
     unknown_genotypes_flname = os.path.join(basename, UNKNOWN_GENOTYPES_FLNAME)
     unknown_genotypes = None
-    if os.path.exists(unknown_genotypes_flname):
-        unknown_genotypes = deserialize(unknown_genotypes_flname)
 
     return Features(feature_matrix,
                     snp_features_map,
                     class_labels,
                     sample_labels,
-                    genotypes,
-                    unknown_genotypes)
+                    genotypes)
 
 def write_rf_snps(basedir, snps, n_trees, model_id):
     model_dir = os.path.join(basedir, "models", "rf", str(n_trees))
