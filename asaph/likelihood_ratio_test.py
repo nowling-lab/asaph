@@ -96,9 +96,14 @@ def run_likelihood_ratio_tests(features, project_summary, args, stats_dir):
             labels = np.array(features.class_labels)
             snp_features = features.feature_matrix[:, feature_idx]
 
-            training_labels, training_features = generate_training_set(project_summary.feature_encoding,
-                                                                       labels,
-                                                                       snp_features)
+            if args.training_set == "adjusted":
+                training_labels, training_features = generate_training_set(project_summary.feature_encoding,
+                                                                           labels,
+                                                                           snp_features)
+            else:
+                training_labels = labels
+                training_features = snp_features
+
             set_intercept_to_class_prob = False
             if args.intercept == "class-probabilities":
                 set_intercept_to_class_prob = True
@@ -129,8 +134,8 @@ def parseargs():
 
     parser.add_argument("--training-set",
                         type=str,
-                        default="adjusted-for-unknown",
-                        choices=["adjusted-for-unknown",
+                        default="adjusted",
+                        choices=["adjusted",
                                  "unadjusted"])
 
     return parser.parse_args()
