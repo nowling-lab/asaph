@@ -24,7 +24,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/likelihood_ratio_test \
 	    --workdir ${WORKDIR_PATH} \
         --intercept none \
-        --training-set adjusted-for-unknown
+        --training-set adjusted
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.tsv" ]
@@ -34,7 +34,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/likelihood_ratio_test \
 	    --workdir ${WORKDIR_PATH} \
         --intercept none \
-        --training-set adjusted-for-unknown
+        --training-set adjusted
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.tsv" ]
@@ -44,7 +44,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/likelihood_ratio_test \
 	    --workdir ${WORKDIR_PATH} \
         --intercept free-parameter \
-        --training-set adjusted-for-unknown
+        --training-set adjusted
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.tsv" ]
@@ -92,7 +92,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/likelihood_ratio_test \
 	    --workdir ${COUNTS_WORKDIR_PATH} \
         --intercept none \
-        --training-set adjusted-for-unknown
+        --training-set adjusted
 
     [ "$status" -eq 0 ]
     [ -e "${COUNTS_WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.tsv" ]
@@ -102,7 +102,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/likelihood_ratio_test \
 	    --workdir ${COUNTS_WORKDIR_PATH} \
         --intercept none \
-        --training-set adjusted-for-unknown
+        --training-set adjusted
 
     [ "$status" -eq 0 ]
     [ -e "${COUNTS_WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.tsv" ]
@@ -112,7 +112,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/likelihood_ratio_test \
 	    --workdir ${COUNTS_WORKDIR_PATH} \
         --intercept free-parameter \
-        --training-set adjusted-for-unknown
+        --training-set adjusted
 
     [ "$status" -eq 0 ]
     [ -e "${COUNTS_WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.tsv" ]
