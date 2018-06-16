@@ -28,6 +28,7 @@ import numpy as np
 import seaborn
 
 from sklearn.cluster import k_means
+from sklearn.decomposition import NMF
 from sklearn.decomposition import PCA
 from sklearn.externals import joblib
 from sklearn.linear_model import SGDClassifier
@@ -54,9 +55,15 @@ def train(args):
         os.makedirs(models_dir)
 
     features = read_features(workdir)
+
+    if args.model_type == "PCA":
+        pca = PCA(n_components = args.n_components,
+                  whiten = True)
+    elif args.model_type == "NMF":
+        pca = NMF(n_components = args.n_components)
+    else:
+        raise Exception("Unknown model type %s" % args.model_type)
         
-    pca = PCA(n_components = args.n_components,
-              whiten = True)
     projections = pca.fit_transform(features.feature_matrix)
 
     model = { MODEL_KEY : pca,
@@ -321,16 +328,16 @@ def analyze_weights(args):
     figures_dir = os.path.join(workdir, "figures")
     if not os.path.exists(figures_dir):
         os.makedirs(figures_dir)
-    
+
     project_summary = deserialize(os.path.join(workdir,
                                                PROJECT_SUMMARY_FLNAME))
 
     model_fl = os.path.join(workdir,
                             "models",
                             "pca.pkl")
-    model = joblib.load(model_fl)    
+    model = joblib.load(model_fl)
     pca = model[MODEL_KEY]
-    
+
     for i, w in enumerate(args.weights):
         plt.clf()
         seaborn.distplot(w * pca.components_[i, :],
@@ -385,11 +392,11 @@ def pop_association_tests(args):
 
             cm = confusion_matrix(class_labels,
                                   pred_labels)
-            
+
             print (i+1), p_value, acc
             print cm
             print
-            
+
             fl.write("%s\t%s\t%s\n" % (i + 1, p_value, acc))
 
 def generate_training_set(features, projections):
@@ -478,7 +485,7 @@ def snp_association_tests(args):
                 # in case of underflow or overflow in a badly-behaving model
                 except ValueError:
                     p_value = 1.0
-                
+
                 if i == next_output:
                     print i, "SNP", snp_label, "and PC", pc, "has p-value", p_value
                     next_output *= 2
@@ -585,6 +592,13 @@ def parseargs():
                               type=int,
                               required=True,
                               help="Number of PCs to compute")
+
+    train_parser.add_argument("--model-type",
+                              type=str,
+                              choices=["PCA",
+                                       "NMF"],
+                              default="PCA")
+
     
     eva_parser = subparsers.add_parser("explained-variance-analysis",
                                        help="Compute explained variances of PCs")
@@ -689,7 +703,7 @@ def parseargs():
                                            nargs="+",
                                            required=True,
                                            help="Components to output")
-    
+
     loading_factors_parser = subparsers.add_parser("output-loading-factors",
                                                    help="Output loading factors")
 
