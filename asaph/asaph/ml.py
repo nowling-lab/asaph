@@ -27,6 +27,7 @@ from sklearn.ensemble import BaggingClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
+from sklearn.linear_model import SGDRegressor
 from sklearn.metrics import log_loss
 from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier
@@ -74,6 +75,63 @@ def upsample_features(feature_type, labels, features):
                 training_features[idx, 1] = j
 
     return training_labels, training_features
+
+def lin_reg_log_likelihood(lr, X, y):
+    pred_y = lr.predict(X)
+    N, n_params = X.shape
+    
+    error = y - pred_y
+    error2 = np.dot(error, error)
+    sigma2 = error2 / (N - 1)
+    
+    log_likelihood = -N * np.log(2. * np.pi * sigma2) / 2. - error2 / (2.0 * sigma2)
+    
+    return log_likelihood
+
+def lin_reg_lrtest(X, y, n_iter, g_scaling_factor=1.0):
+    alt_lr = SGDRegressor(fit_intercept = True, n_iter=n_iter)
+    alt_lr.fit(X,
+               y)
+    
+    null_lr = SGDRegressor(fit_intercept = False, n_iter=n_iter)
+    null_X = np.zeros((X.shape[0], 1))
+    null_lr.fit(null_X,
+                y)
+
+    null_likelihood = lin_reg_log_likelihood(null_lr,
+                                             null_X,
+                                             y)
+
+    alt_likelihood = lin_reg_log_likelihood(alt_lr,
+                                            X,
+                                            y)
+    
+    G = g_scaling_factor * 2. * (alt_likelihood - null_likelihood)
+    p_value = chi2.sf(G, X.shape[1])
+    
+    p_value = max(1e-300, p_value)
+    
+    return p_value, alt_lr
+
+def snp_linreg_pvalues(X, y, g_scaling_factor=1.0):
+    N_GENOTYPES = 3
+    n_iter = estimate_lr_iter(len(y))
+    gt_p_values = np.zeros(3)
+
+    snp_p_value, model = lin_reg_lrtest(X,
+                                        y,
+                                        n_iter=n_iter,
+                                        g_scaling_factor=g_scaling_factor)
+    gt_pred_ys = model.predict(np.eye(N_GENOTYPES))                                
+        
+    for i in xrange(N_GENOTYPES):
+        p_value, _ = lin_reg_lrtest(X[:, i].reshape(-1, 1),
+                                    y,
+                                    n_iter,
+                                    g_scaling_factor=g_scaling_factor)
+        gt_p_values[i] = p_value
+
+    return snp_p_value, gt_p_values, gt_pred_ys
 
 def calculate_intercept_(labels):
     n_class_1 = float(sum(labels))

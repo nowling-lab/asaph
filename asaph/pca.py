@@ -38,6 +38,9 @@ from sklearn.preprocessing import binarize
 
 from asaph.ml import estimate_lr_iter
 from asaph.ml import likelihood_ratio_test
+from asaph.ml import upsample_features
+from asaph.ml import snp_linreg_pvalues
+from asaph.models import CATEGORIES_FEATURE_TYPE
 from asaph.newioutils import read_features
 from asaph.newioutils import deserialize
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
@@ -431,9 +434,9 @@ def generate_training_set(features, projections):
                 class_labels[idx] = gt
 
     return N_COPIES, class_labels, imputed_projections
-    
 
-def snp_association_tests(args):
+
+def snp_logreg_association_tests(args):
     workdir = args.workdir
 
     analysis_dir = os.path.join(workdir, "analysis")
@@ -460,7 +463,7 @@ def snp_association_tests(args):
     
     n_pcs = projections.shape[0]
     for pc in args.components:
-        flname = os.path.join(analysis_dir, "snp_pc_%s_association_tests.tsv" % pc)
+        flname = os.path.join(analysis_dir, "snp_pc_%s_logreg_assoc_tests.tsv" % pc)
         with open(flname, "w") as fl:
             next_output = 1
             for i, pair in enumerate(data_model.snp_feature_map.iteritems()):
@@ -493,6 +496,59 @@ def snp_association_tests(args):
                 fl.write("\t".join([chrom, pos, str(p_value)]))
                 fl.write("\n")
 
+def snp_linreg_association_tests(args):
+    workdir = args.workdir
+
+    analysis_dir = os.path.join(workdir, "analysis")
+    if not os.path.exists(analysis_dir):
+        os.makedirs(analysis_dir)
+
+    project_summary = deserialize(os.path.join(workdir,
+                                               PROJECT_SUMMARY_FLNAME))
+    
+    model_fl = os.path.join(workdir,
+                            "models",
+                            "pca.pkl")
+    model = joblib.load(model_fl)    
+    projections = model[PROJECTION_KEY]
+
+    data_model = read_features(workdir)
+
+    n_pcs = projections.shape[0]
+    for pc in args.components:
+        flname = os.path.join(analysis_dir, "snp_pc_%s_linreg_assoc_tests.tsv" % pc)
+        with open(flname, "w") as fl:
+            next_output = 1
+            for i, pair in enumerate(data_model.snp_feature_map.iteritems()):
+                snp_label, feature_idx = pair
+                chrom, pos = snp_label
+
+                snp_features = data_model.feature_matrix[:, feature_idx]
+                triplet = upsample_features(CATEGORIES_FEATURE_TYPE,
+                                            projections[:, pc - 1],
+                                            snp_features)
+                labels, imputed_features = triplet
+
+                # since we make multiple copies of the original samples,
+                # we need to scale the log loss so that it is correct for
+                # the original sample size
+                triplet = snp_linreg_pvalues(imputed_features,
+                                             labels,
+                                             g_scaling_factor = 1.0 / 3.0)
+                snp_p_value, gt_p_values, gt_pred_ys = triplet
+
+                if i == next_output:
+                    print i, "SNP", snp_label, "and PC", pc, "has p-value", snp_p_value
+                    next_output *= 2
+
+                fl.write("\t".join([chrom, pos, str(snp_p_value)]))    
+                for j in xrange(3):
+                    fl.write("\t")
+                    fl.write(str(gt_p_values[j]))
+                    fl.write("\t")
+                    fl.write(str(gt_pred_ys[j]))
+                fl.write("\n")
+                
 def sweep_clusters(args):
     workdir = args.workdir
 
@@ -663,6 +719,13 @@ def parseargs():
                                         nargs="+",
                                         required=True,
                                         help="Components to perform testing on")
+    
+    snp_association_parser.add_argument("--model-type",
+                                        type=str,
+                                        choices=["logistic",
+                                                 "linear"],
+                                        required=True,
+                                        help="Type of model")
 
     pop_association_parser = subparsers.add_parser("pop-association-tests",
                                                    help="Run association tests on PCs vs population labels")
@@ -739,7 +802,10 @@ if __name__ == "__main__":
     elif args.mode == "pop-association-tests":
         pop_association_tests(args)
     elif args.mode == "snp-association-tests":
-        snp_association_tests(args)
+        if args.model_type == "linear":
+            snp_linreg_association_tests(args)
+        elif args.model_type == "logistic":
+            snp_logreg_association_tests(args)
     elif args.mode == "sweep-clusters":
         sweep_clusters(args)
     elif args.mode == "cluster-samples":

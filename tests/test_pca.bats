@@ -90,12 +90,23 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
         snp-association-tests \
-        --components 1 2
+        --components 1 2 \
+        --model-type logistic
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/analysis/snp_pc_1_association_tests.tsv" ]
-    [ -e "${WORKDIR_PATH}/analysis/snp_pc_2_association_tests.tsv" ]
+    [ -e "${WORKDIR_PATH}/analysis/snp_pc_1_logreg_assoc_tests.tsv" ]
+    [ -e "${WORKDIR_PATH}/analysis/snp_pc_2_logreg_assoc_tests.tsv" ]
 
+    run ${BATS_TEST_DIRNAME}/../bin/pca \
+	    --workdir ${WORKDIR_PATH} \
+        snp-association-tests \
+        --components 1 2 \
+        --model-type linear
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/analysis/snp_pc_1_linreg_assoc_tests.tsv" ]
+    [ -e "${WORKDIR_PATH}/analysis/snp_pc_2_linreg_assoc_tests.tsv" ]
+    
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
         sweep-clusters \
@@ -238,12 +249,23 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
         snp-association-tests \
-        --components 1 2
+        --components 1 2 \
+        --model-type logistic
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/analysis/snp_pc_1_association_tests.tsv" ]
-    [ -e "${WORKDIR_PATH}/analysis/snp_pc_2_association_tests.tsv" ]
+    [ -e "${WORKDIR_PATH}/analysis/snp_pc_1_logreg_assoc_tests.tsv" ]
+    [ -e "${WORKDIR_PATH}/analysis/snp_pc_2_logreg_assoc_tests.tsv" ]
 
+    run ${BATS_TEST_DIRNAME}/../bin/pca \
+	    --workdir ${WORKDIR_PATH} \
+        snp-association-tests \
+        --components 1 2 \
+        --model-type linear
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/analysis/snp_pc_1_linreg_assoc_tests.tsv" ]
+    [ -e "${WORKDIR_PATH}/analysis/snp_pc_2_linreg_assoc_tests.tsv" ]
+    
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
         sweep-clusters \
