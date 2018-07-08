@@ -27,49 +27,11 @@ from sklearn.linear_model import SGDClassifier
 
 from asaph.ml import estimate_lr_iter
 from asaph.ml import likelihood_ratio_test
-from asaph.models import COUNTS_FEATURE_TYPE
-from asaph.models import CATEGORIES_FEATURE_TYPE
+from asaph.ml import upsample_features
 from asaph.newioutils import read_features
 from asaph.newioutils import deserialize
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
 from asaph.newioutils import serialize
-
-def generate_training_set(feature_type, labels, features):
-    n_samples, n_features = features.shape
-
-    if feature_type == COUNTS_FEATURE_TYPE:
-        if n_features != 2:
-            raise ValueError, "Feature matrix for counts feature type must have 2 columns"
-    elif feature_type == CATEGORIES_FEATURE_TYPE:
-        if n_features != 3:
-            raise ValueError, "Feature matrix for categories feature type must have 3 columns"
-    else:
-        raise Exception, "LR Test does not support feature type %s" % feature_type
-
-    # we make 3 copies so we can impute each unknown genotype
-    # with each of the 3 known genotypes
-    N_COPIES = 3
-    training_labels = np.zeros(N_COPIES * n_samples)
-    training_features = np.zeros((N_COPIES * n_samples, n_features))
-
-    for i in xrange(n_samples):
-        gt = None
-        if features[i, :].sum() > 0:
-            gt = features[i, :].argmax()
-
-        for j in xrange(N_COPIES):
-            idx = N_COPIES * i + j
-            training_labels[idx] = labels[i]
-
-            if gt is not None:
-                training_features[idx, :] = features[i, :]
-            elif feature_type == CATEGORIES_FEATURE_TYPE:
-                training_features[idx, j] = 1.
-            elif feature_type == COUNTS_FEATURE_TYPE:
-                training_features[idx, 0] = 2 - j
-                training_features[idx, 1] = j
-
-    return training_labels, training_features
 
 def run_likelihood_ratio_tests(features, project_summary, args, stats_dir):
     if len(set(features.class_labels)) != 2:
@@ -97,9 +59,10 @@ def run_likelihood_ratio_tests(features, project_summary, args, stats_dir):
             snp_features = features.feature_matrix[:, feature_idx]
 
             if args.training_set == "adjusted":
-                training_labels, training_features = generate_training_set(project_summary.feature_encoding,
-                                                                           labels,
-                                                                           snp_features)
+                pair = upsample_features(project_summary.feature_encoding,
+                                         labels,
+                                         snp_features)
+                training_labels, training_features = pair
             else:
                 training_labels = labels
                 training_features = snp_features

@@ -31,9 +31,49 @@ from sklearn.metrics import log_loss
 from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier
 
+from asaph.models import COUNTS_FEATURE_TYPE
+from asaph.models import CATEGORIES_FEATURE_TYPE
+
 def estimate_lr_iter(n_samples):
     return max(20,
                int(np.ceil(25000. / n_samples)))
+
+def upsample_features(feature_type, labels, features):
+    n_samples, n_features = features.shape
+
+    if feature_type == COUNTS_FEATURE_TYPE:
+        if n_features != 2:
+            raise ValueError, "Feature matrix for counts feature type must have 2 columns"
+    elif feature_type == CATEGORIES_FEATURE_TYPE:
+        if n_features != 3:
+            raise ValueError, "Feature matrix for categories feature type must have 3 columns"
+    else:
+        raise Exception, "LR Test does not support feature type %s" % feature_type
+
+    # we make 3 copies so we can impute each unknown genotype
+    # with each of the 3 known genotypes
+    N_COPIES = 3
+    training_labels = np.zeros(N_COPIES * n_samples)
+    training_features = np.zeros((N_COPIES * n_samples, n_features))
+
+    for i in xrange(n_samples):
+        gt = None
+        if features[i, :].sum() > 0:
+            gt = features[i, :].argmax()
+
+        for j in xrange(N_COPIES):
+            idx = N_COPIES * i + j
+            training_labels[idx] = labels[i]
+
+            if gt is not None:
+                training_features[idx, :] = features[i, :]
+            elif feature_type == CATEGORIES_FEATURE_TYPE:
+                training_features[idx, j] = 1.
+            elif feature_type == COUNTS_FEATURE_TYPE:
+                training_features[idx, 0] = 2 - j
+                training_features[idx, 1] = j
+
+    return training_labels, training_features
 
 def calculate_intercept_(labels):
     n_class_1 = float(sum(labels))
