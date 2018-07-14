@@ -59,22 +59,18 @@ def run_likelihood_ratio_tests(features, project_summary, args, stats_dir):
             snp_features = features.feature_matrix[:, feature_idx]
 
             if args.training_set == "adjusted":
-                pair = upsample_features(project_summary.feature_encoding,
-                                         labels,
-                                         snp_features)
-                training_labels, training_features = pair
-            else:
-                training_labels = labels
-                training_features = snp_features
+                labels, snp_features = upsample_features(labels,
+                                                         snp_features)
 
             set_intercept_to_class_prob = False
             if args.intercept == "class-probabilities":
                 set_intercept_to_class_prob = True
 
-            p_value = likelihood_ratio_test((training_features, snp_features),
-                                            (training_labels, labels),
+            p_value = likelihood_ratio_test(snp_features,
+                                            labels,
                                             lr,
-                                            set_intercept=set_intercept_to_class_prob)
+                                            set_intercept=set_intercept_to_class_prob,
+                                            g_scaling_factor=1.0/3.0)
 
             if i == next_output:
                 print i, "SNP", snp_label, "has p-value", p_value

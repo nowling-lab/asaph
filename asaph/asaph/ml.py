@@ -32,28 +32,15 @@ from sklearn.metrics import log_loss
 from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier
 
-from asaph.models import COUNTS_FEATURE_TYPE
-from asaph.models import CATEGORIES_FEATURE_TYPE
-
 def estimate_lr_iter(n_samples):
     return max(20,
                int(np.ceil(25000. / n_samples)))
 
-def upsample_features(feature_type, labels, features):
+def upsample_features(labels, features):
     n_samples, n_features = features.shape
 
-    if feature_type == COUNTS_FEATURE_TYPE:
-        if n_features != 2:
-            raise ValueError, "Feature matrix for counts feature type must have 2 columns"
-    elif feature_type == CATEGORIES_FEATURE_TYPE:
-        if n_features != 3:
-            raise ValueError, "Feature matrix for categories feature type must have 3 columns"
-    else:
-        raise Exception, "LR Test does not support feature type %s" % feature_type
-
-    # we make 3 copies so we can impute each unknown genotype
-    # with each of the 3 known genotypes
-    N_COPIES = 3
+    # we make 1 copy for each variable so we can impute each unknown genotype
+    N_COPIES = features.shape[1]
     training_labels = np.zeros(N_COPIES * n_samples)
     training_features = np.zeros((N_COPIES * n_samples, n_features))
 
@@ -68,11 +55,8 @@ def upsample_features(feature_type, labels, features):
 
             if gt is not None:
                 training_features[idx, :] = features[i, :]
-            elif feature_type == CATEGORIES_FEATURE_TYPE:
+            else:
                 training_features[idx, j] = 1.
-            elif feature_type == COUNTS_FEATURE_TYPE:
-                training_features[idx, 0] = 2 - j
-                training_features[idx, 1] = j
 
     return training_labels, training_features
 
@@ -133,105 +117,40 @@ def snp_linreg_pvalues(X, y, g_scaling_factor=1.0):
 
     return snp_p_value, gt_p_values, gt_pred_ys
 
-def calculate_intercept_(labels):
-    n_class_1 = float(sum(labels))
-    n = float(len(labels))
-    prob = n_class_1 / n
+def likelihood_ratio_test(features_alternate, labels, lr_model, set_intercept=True, g_scaling_factor=1.0):
 
-    # p = 1 / (1 + e^{-b})
-    # (1 + e^{-b})p = 1
-    # 1 + e^{-b} = 1/p
-    # e^{-b} = 1/p - 1
-    # -b = log(1/p - 1)
-    # b = -log(1/p - 1)
+    n_samples = features_alternate.shape[0]
+    n_iter = estimate_lr_iter(n_samples)
 
-    # clip prob to avoid numerical errors
-    prob = min(prob, 0.9999999)
-    prob = max(0.0000001, prob)
-    
-    return - np.log(1. / prob - 1.)
+    # null model
+    null_lr = SGDClassifier(loss = "log",
+                            fit_intercept = False,
+                            n_iter = n_iter)
+    null_X = np.ones((n_samples, 1))
+    null_lr.fit(null_X,
+                labels)
+    null_prob = null_lr.predict_proba(null_X)
 
-def calculate_null_model(n_samples, intercepts):
-    n_classes = len(intercepts)
-    null_prob = np.zeros((n_samples, n_classes))
-    for i in xrange(n_samples):
-        for j in xrange(n_classes):
-            null_prob[i, j] = 1.0 / (1.0 + np.exp(-intercepts[j]))
-
-    return null_prob
-
-
-def calculate_intercept(labels):
-    label_ids = sorted(set(labels))
-
-    intercepts = np.zeros(len(label_ids))
-    for i, pos_label in enumerate(label_ids):
-        binary_labels = [1 if l == pos_label else 0 for l in labels]
-        binary_labels = np.array(binary_labels)
-        intercepts[i] = calculate_intercept_(binary_labels)
-
-    return intercepts
-
-def likelihood_ratio_test(features_alternate, labels, lr_model, features_null=None, set_intercept=True, g_scaling_factor=1.0):
-    if isinstance(features_alternate, tuple) and len(features_alternate) == 2:
-        training_features_alternate, testing_features_alternate = features_alternate
-        training_labels, testing_labels = labels
-    else:
-        training_features_alternate = features_alternate
-        testing_features_alternate = features_alternate
-        training_labels = labels
-        testing_labels = labels
-
-    # re-orders labels from smallest to biggest
-    # and makes labels consecutive
-    # so that intercepts match
-    label_encoder = LabelEncoder()
-    training_labels = label_encoder.fit_transform(training_labels)
-    testing_labels = label_encoder.transform(testing_labels)
-
-    n_classes = len(set(training_labels))
-
+    intercept_init = None
     if set_intercept:
-        if n_classes == 2:
-            intercept_init = calculate_intercept(training_labels)[-1]
-        else:
-            intercept_init = calculate_intercept(training_labels)
-    else:
-        intercept_init = None
+        intercept_init = null_lr.coef_[:, 0]
 
-    if features_null is not None:
-        if isinstance(features_null, tuple) and len(features_null) == 2:
-            training_features_null, testing_features_null = features_null
-        else:
-            training_features_null = features_null
-            testing_features_null = features_null
-
-        lr_model.fit(training_features_null,
-                     training_labels,
-                     intercept_init = intercept_init)
-        
-        null_prob = lr_model.predict_proba(testing_features_null)
-        df = testing_features_alternate.shape[1] - testing_features_null.shape[1]
-    else:
-        intercepts = calculate_intercept(testing_labels)
-        null_prob = calculate_null_model(testing_labels.shape[0],
-                                         intercepts)
-        df = testing_features_alternate.shape[1]
-
-    lr_model.fit(training_features_alternate,
-                 training_labels,
+    lr_model.fit(features_alternate,
+                 labels,
                  intercept_init = intercept_init)
+    alt_prob = lr_model.predict_proba(features_alternate)
         
-    alt_prob = lr_model.predict_proba(testing_features_alternate)
-
-    alt_log_likelihood = -log_loss(testing_labels,
+    alt_log_likelihood = -log_loss(labels,
                                    alt_prob,
                                    normalize=False)
-    null_log_likelihood = -log_loss(testing_labels,
+    null_log_likelihood = -log_loss(labels,
                                     null_prob,
                                     normalize=False)
 
     G = g_scaling_factor * 2.0 * (alt_log_likelihood - null_log_likelihood)
+    
+    # both models have intercepts so the intercepts cancel out
+    df = features_alternate.shape[1]
     p_value = chi2.sf(G, df)
 
     return p_value

@@ -40,7 +40,6 @@ from asaph.ml import estimate_lr_iter
 from asaph.ml import likelihood_ratio_test
 from asaph.ml import upsample_features
 from asaph.ml import snp_linreg_pvalues
-from asaph.models import CATEGORIES_FEATURE_TYPE
 from asaph.newioutils import read_features
 from asaph.newioutils import deserialize
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
@@ -524,8 +523,7 @@ def snp_linreg_association_tests(args):
                 chrom, pos = snp_label
 
                 snp_features = data_model.feature_matrix[:, feature_idx]
-                triplet = upsample_features(CATEGORIES_FEATURE_TYPE,
-                                            projections[:, pc - 1],
+                triplet = upsample_features(projections[:, pc - 1],
                                             snp_features)
                 labels, imputed_features = triplet
 

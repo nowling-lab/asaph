@@ -28,8 +28,6 @@ from sklearn.preprocessing import OneHotEncoder
 
 from asaph.ml import estimate_lr_iter
 from asaph.ml import likelihood_ratio_test
-from asaph.models import COUNTS_FEATURE_TYPE
-from asaph.models import CATEGORIES_FEATURE_TYPE
 from asaph.newioutils import read_features
 from asaph.newioutils import deserialize
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
@@ -37,53 +35,6 @@ from asaph.newioutils import serialize
 
 OUTPUT_DIR = "statistics"
 OUTPUT_FLNAME = "snp_association_tests.tsv"
-
-NUMERICAL_TYPE = "n"
-CATEGORICAL_TYPE = "c"
-SAMPLE_IDENTIFIER = "id"
-ALLOWED_TYPES = set([NUMERICAL_TYPE,
-                     CATEGORICAL_TYPE,
-                     SAMPLE_IDENTIFIER])
-
-def parse_variables_file(flname):
-    with open(flname) as fl:
-        field_types = []
-        for field_type in next(fl).split():
-            if field_type not in ALLOWED_TYPES:
-                raise Exception("Unknown field type '%s'" % field_type)
-            field_types.append(field_type)
-
-        # ignore sample identifier
-        data = [[] for _ in field_types[1:]]
-        sample_identifiers = []
-        for ln in fl:
-            fields = ln.split()
-            if len(fields) != len(field_types):
-                raise Exception("Found %s fields but have I have headers for %s fields" % (len(fields), len(field_types)))
-
-            # first column is the sample identifier
-            sample_identifiers.append(fields[0])
-            
-            row = [float(v) if t == NUMERICAL_TYPE else v
-                   for t, v in zip(field_types[1:], fields[1:])]
-
-            for i, v in enumerate(row):
-                data[i].append(v)
-
-    matrices = []
-    for field_type, column in zip(field_types, data):
-        column = np.array(column).reshape(-1, 1)
-        if field_type == NUMERICAL_TYPE:
-            matrices.append(column)
-        else:
-            encoder = OneHotEncoder(sparse=False)
-            matrix = encoder.fit_transform(column)
-            matrices.append(matrix)
-
-    features = np.hstack(matrices)
-
-    return sample_identifiers, features
-
 
 def prepare_model_variables(n_copies, testing_variables, null_variables):
     N_GENOTYPES = 3
@@ -178,15 +129,6 @@ def run_likelihood_ratio_tests(args):
 
     testing_variables = np.array(data_model.class_labels).reshape(-1, 1)
     null_variables = None
-    if args.variables_fl:
-        selected_sample_ids, null_variables = parse_variables_file(args.variables_fl)
-
-        selected_indices = select_samples(data_model,
-                                          selected_sample_ids)
-
-        # select subset and re-order
-        genotypes = genotypes[selected_indices, :]
-        testing_variables = testing_variables[selected_indices, :]
 
     N_COPIES = 3
     class_labels = None
@@ -213,7 +155,6 @@ def run_likelihood_ratio_tests(args):
             p_value = likelihood_ratio_test(testing_features,
                                             class_labels,
                                             lr,
-                                            features_null = null_features,
                                             g_scaling_factor = 1.0 / N_COPIES)
             
             if i == next_output:
@@ -227,10 +168,6 @@ def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - Single SNP Association Tests")
 
     parser.add_argument("--workdir", type=str, help="Work directory", required=True)
-
-    parser.add_argument("--variables-fl",
-                        type=str,
-                        help="Specify labels and variables for the null model")
 
     return parser.parse_args()
 
