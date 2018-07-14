@@ -79,3 +79,12 @@ load model_setup_helper
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.tsv" ]
 }
+
+@test "Calculate likelihood_ratio_test (categories, remove empty columns)" {
+    run ${BATS_TEST_DIRNAME}/../bin/likelihood_ratio_test \
+	    --workdir ${WORKDIR_PATH} \
+        --remove-empty-columns
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/statistics/snp_likelihood_ratio_tests.tsv" ]
+}

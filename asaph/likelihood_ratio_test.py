@@ -62,6 +62,14 @@ def run_likelihood_ratio_tests(features, project_summary, args, stats_dir):
                 labels, snp_features = upsample_features(labels,
                                                          snp_features)
 
+            # remove columns thta are all zeros since these
+            # aren't true degrees of freedom.  allows more
+            # calculation of p-values
+            if args.remove_empty_columns:
+                mask = np.all(snp_features == 0.,
+                              axis=0)
+                snp_features = snp_features[:, ~mask]
+
             set_intercept_to_class_prob = False
             if args.intercept == "class-probabilities":
                 set_intercept_to_class_prob = True
@@ -96,6 +104,9 @@ def parseargs():
                         default="adjusted",
                         choices=["adjusted",
                                  "unadjusted"])
+
+    parser.add_argument("--remove-empty-columns",
+                        action="store_true")
 
     return parser.parse_args()
 
