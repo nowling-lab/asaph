@@ -39,30 +39,12 @@ load model_setup_helper
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
-        plot-densities \
-        --components 1 2
-
-    [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/figures/pca_density_1.png" ]
-    [ -e "${WORKDIR_PATH}/figures/pca_density_2.png" ]
-
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${WORKDIR_PATH} \
         output-coordinates \
         --selected-components 1 2 3 4 \
         --output-fl ${WORKDIR_PATH}/pca_coordinates.txt
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/pca_coordinates.txt" ]
-
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${WORKDIR_PATH} \
-        analyze-weights \
-        --weights 1.0 1.0
-
-    [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/figures/pca_feature_weights_pc1.png" ]
-    [ -e "${WORKDIR_PATH}/figures/pca_feature_weights_pc2.png" ]
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
@@ -159,15 +141,6 @@ load model_setup_helper
 
     [ "$status" -eq 0 ]
     [ -e "${COUNTS_WORKDIR_PATH}/pca_coordinates.txt" ]
-
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${COUNTS_WORKDIR_PATH} \
-        analyze-weights \
-        --weights 1.0 1.0
-
-    [ "$status" -eq 0 ]
-    [ -e "${COUNTS_WORKDIR_PATH}/figures/pca_feature_weights_pc1.png" ]
-    [ -e "${COUNTS_WORKDIR_PATH}/figures/pca_feature_weights_pc2.png" ]
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${COUNTS_WORKDIR_PATH} \
@@ -283,26 +256,5 @@ load model_setup_helper
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/analysis/clusters_2.tsv" ]
-}
-
-
-@test "Find min components to achieve explained variance threshold (categories)" {
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${WORKDIR_PATH} \
-        min-components-explained-variance \
-        --init-n-components 10 \
-        --explained-variance-threshold 0.05
-
-    [ "$status" -eq 0 ]
-}
-
-@test "Find min components to achieve explained variance threshold (counts)" {
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${COUNTS_WORKDIR_PATH} \
-        min-components-explained-variance \
-        --init-n-components 10 \
-        --explained-variance-threshold 0.05
-
-    [ "$status" -eq 0 ]
 }
 

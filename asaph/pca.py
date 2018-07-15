@@ -106,38 +106,6 @@ def explained_variance_analysis(args):
     plt.savefig(fig_flname,
                 DPI=300)
 
-def min_components_explained_variance(args):
-    workdir = args.workdir
-
-    features = read_features(workdir)
-
-    n_components = args.init_n_components
-    while True:
-        print "Computing PCA with %s components" % n_components
-        pca = PCA(n_components = n_components,
-                  whiten = True)
-        pca.fit(features.feature_matrix)
-        explained_variance_ratios = pca.explained_variance_ratio_
-        sorted_ratios = np.sort(explained_variance_ratios)[::-1]
-        cum_ratios = np.cumsum(sorted_ratios)
-        total_explained_variance = cum_ratios[-1]
-        if total_explained_variance >= args.explained_variance_threshold:
-            break
-        n_components *= 2
-
-    needed_components = 0
-    achieved_ev_ratio = 0.0
-    for i, ev_ratio in enumerate(cum_ratios):
-        if ev_ratio >= args.explained_variance_threshold:
-            needed_components = i + 1
-            achieved_ev_ratio = ev_ratio
-            break
-
-    print "Explained-variance threshold of %s surpassed at %s with %s components" % \
-        (args.explained_variance_threshold,
-         achieved_ev_ratio,
-         needed_components)
-
 def pairwise(iterable):
     iterable = iter(iterable)
     try:
@@ -202,30 +170,6 @@ def plot_projections(args):
         plt.savefig(fig_flname,
                     DPI=300)
 
-def plot_densities(args):
-    workdir = args.workdir
-
-    figures_dir = os.path.join(workdir, "figures")
-    if not os.path.exists(figures_dir):
-        os.makedirs(figures_dir)
-
-    model_fl = os.path.join(workdir,
-                            "models",
-                            "pca.pkl")
-    model = joblib.load(model_fl)
-    projected = model[PROJECTION_KEY]
-    
-    for i in args.components:
-        fig_flname = os.path.join(figures_dir,
-                                  "pca_density_%s.png" % i)
-        plt.clf()
-        seaborn.distplot(projected[:, i - 1])
-        plt.xlabel("PC %s Coordinate" % i, fontsize=16)
-        plt.ylabel("Density", fontsize=16)
-        plt.ylim([0.0, 1.0])
-        plt.savefig(fig_flname,
-                    DPI=300)
-        
 def output_coordinates(args):
     workdir = args.workdir
 
@@ -323,33 +267,6 @@ def output_loading_factors(args):
                 fl.write("%s\t%s\t%s\t" % (chrom, pos, j))
                 fl.write("\t".join(map(str, features)))
                 fl.write("\n")
-
-def analyze_weights(args):
-    workdir = args.workdir
-
-    figures_dir = os.path.join(workdir, "figures")
-    if not os.path.exists(figures_dir):
-        os.makedirs(figures_dir)
-
-    project_summary = deserialize(os.path.join(workdir,
-                                               PROJECT_SUMMARY_FLNAME))
-
-    model_fl = os.path.join(workdir,
-                            "models",
-                            "pca.pkl")
-    model = joblib.load(model_fl)
-    pca = model[MODEL_KEY]
-
-    for i, w in enumerate(args.weights):
-        plt.clf()
-        seaborn.distplot(w * pca.components_[i, :],
-                         kde=False)
-        plt.xlabel("Feature Weights", fontsize=16)
-        plt.ylabel("Count(Features)", fontsize=16)
-        plot_fl = os.path.join(figures_dir,
-                               "pca_feature_weights_pc%s.png" % (i + 1))
-        plt.savefig(plot_fl,
-                    DPI=300)
 
 def pop_association_tests(args):
     workdir = args.workdir
@@ -679,37 +596,6 @@ def parseargs():
                              required=True,
                              help="Pairs of PCs to plot")
 
-    density_parser = subparsers.add_parser("plot-densities",
-                                           help="Plot densities along PC coordinates")
-    density_parser.add_argument("--components",
-                                type=int,
-                                nargs="+",
-                                required=True,
-                                help="Components to perform testing on")
-
-
-    count_parser = subparsers.add_parser("min-components-explained-variance",
-                                         help="Find number of components to explain specified percentage of variance")
-
-    count_parser.add_argument("--init-n-components",
-                              type=int,
-                              required=True,
-                              help="Initial number of components to compute")
-
-    count_parser.add_argument("--explained-variance-threshold",
-                              type=float,
-                              required=True,
-                              help="Minimum explained variance")
-
-    weight_analysis_parser = subparsers.add_parser("analyze-weights",
-                                                   help="Plot component weight distributions")
-
-    weight_analysis_parser.add_argument("--weights",
-                                        type=float,
-                                        nargs="+",
-                                        required=True,
-                                        help="Component weights")
-
     snp_association_parser = subparsers.add_parser("snp-association-tests",
                                                    help="Run association tests on PCs vs SNPs")
     snp_association_parser.add_argument("--components",
@@ -785,14 +671,8 @@ if __name__ == "__main__":
         explained_variance_analysis(args)
     elif args.mode == "plot-projections":
         plot_projections(args)
-    elif args.mode == "plot-densities":
-        plot_densities(args)
     elif args.mode == "output-coordinates":
         output_coordinates(args)
-    elif args.mode == "min-components-explained-variance":
-        min_components_explained_variance(args)
-    elif args.mode == "analyze-weights":
-        analyze_weights(args)
     elif args.mode == "output-loading-magnitudes":
         output_loading_magnitudes(args)
     elif args.mode == "output-loading-factors":
