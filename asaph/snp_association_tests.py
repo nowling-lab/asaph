@@ -63,18 +63,19 @@ def run_lrtest_gt_dep(data_model, project_summary, args, stats_dir):
             # they need to be one dimensional
             snp_genotypes = snp_genotypes.argmax(axis=1)
 
-            # likewise, the pops need to 2D and one-hot encoded
-            pops = pops.reshape(-1, 1)
-            pops = encoder.fit_transform(pops)
+            p_value = 1.0
+            if len(set(snp_genotypes)) > 1:
+                # likewise, the pops need to 2D and one-hot encoded
+                pops = pops.reshape(-1, 1)
+                pops = encoder.fit_transform(pops)
 
-            # since we make multiple copies of the original samples,
-            # we need to scale the log loss so that it is correct for
-            # the original sample size
-
-            p_value = likelihood_ratio_test(pops,
-                                            snp_genotypes,
-                                            lr,
-                                            g_scaling_factor = 1.0 / N_COPIES)
+                # since we make multiple copies of the original samples,
+                # we need to scale the log loss so that it is correct for
+                # the original sample size
+                p_value = likelihood_ratio_test(pops,
+                                                snp_genotypes,
+                                                lr,
+                                                g_scaling_factor = 1.0 / N_COPIES)
             
             if i == next_output:
                 print i, "Position", pos_label, "has p-value", p_value
