@@ -37,22 +37,18 @@ To improve run times, reduce memory usage, and stabilize rankings, Asaph support
                --features-type categories \
                --compress
                
-## Likelihood-Ratio Tests
-Asaph can perform single SNP association tests using Likelihood-Ratio Tests on Logistic Regression models. Once data is imported:
+## Single-SNP Association Tests
+Asaph can perform single-SNP association tests using Likelihood-Ratio Tests on Logistic Regression models. Once data is imported:
 
-    bin/likelihood_ratio_test --workdir <path/to/workdir>
+    bin/snp_association_tests --workdir <path/to/workdir>
     
 The p-value for each SNP is written to a tab-separated value file under 
 
-    <workdir>/statistics/snp_likelihood_ratio_tests.tsv
+    <workdir>/statistics/snp_lrtests_gt.tsv
+    
+OR
 
-A Bonferroni correction is often used for multiple hypothesis testing.  This can be conservative, however, since the SNPs are often correlated.  [Gao, et al.](http://onlinelibrary.wiley.com/doi/10.1002/gepi.20310/full) propose using PCA to identify the number of variables, after correlation is accounted for.  A search function is available in the PCA module:
-
-    bin/pca --workdir <path/to/workdir> \
-            min-components-explained-variance \
-            --init-n-components <min-components> \
-            --explained-variance-thresholds 0.999
-
+    <workdir>/statistics/snp_lrtests_pop.tsv
 
 ## SNP Rankings with Random Forests Variable Importance Scores
 Asaph's original purpose, which it has since outgrown, was to support calculation of variable importances scores and ranking of SNPs using Random Forests.  Once data is imported, Random Forest models can be trained with the command:

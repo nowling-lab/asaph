@@ -28,96 +28,14 @@ from sklearn.preprocessing import OneHotEncoder
 
 from asaph.ml import estimate_lr_iter
 from asaph.ml import likelihood_ratio_test
+from asaph.ml import upsample_features
 from asaph.newioutils import read_features
 from asaph.newioutils import deserialize
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
 from asaph.newioutils import serialize
 
-OUTPUT_DIR = "statistics"
-OUTPUT_FLNAME = "snp_association_tests.tsv"
 
-def prepare_model_variables(n_copies, testing_variables, null_variables):
-    N_GENOTYPES = 3
-    n_samples = testing_variables.shape[0]
-    testing_features = np.zeros((n_copies * n_samples,
-                                 testing_variables.shape[1]))
-    if null_variables is not None:
-        null_features = np.zeros((n_copies * n_samples,
-                                  null_variables.shape[1]))
-    for i in xrange(n_samples):
-        for j in xrange(n_copies):
-            idx = n_copies * i + j
-            testing_features[idx, :] = testing_variables[i, :]
-            if null_variables is not None:
-                null_features[idx, :] = null_variables[i, :]
-
-    if null_variables is not None:
-        testing_features = np.hstack([testing_features,
-                                      null_features])
-    else:
-        null_features = None
-
-    return testing_features, null_features
-
-def prepare_class_labels(n_copies, genotypes, class_labels=None):
-    """
-    Converts genotype categories to class labels and imputes unknown genotypes.
-    If class_labels is None, 
-    """
-
-    n_samples = genotypes.shape[0]
-    n_genotypes = genotypes.shape[1]
-    N_GENOTYPES = 3
-    if n_genotypes != N_GENOTYPES:
-        raise Exception("Must be using genotype categories!")
-
-    if n_samples != genotypes.shape[0]:
-        raise Exception("Genotype and feature matrices do not have same number of samples!")
-
-    if class_labels is None:
-        class_labels = np.zeros(n_copies * n_samples)
-
-    for i in xrange(n_samples):
-        gt = None
-        for j in xrange(N_GENOTYPES):
-            if genotypes[i, j] == 1.0:
-                gt = j
-        
-        for j in xrange(n_copies):
-            idx = n_copies * i + j
-
-            if gt is None:
-                class_labels[idx] = j
-            else:
-                class_labels[idx] = gt
-
-    return class_labels
-
-def select_samples(data_model, selected_sample_ids):
-    sample_indices = dict([(sample_name, idx) for idx, sample_name in
-                               enumerate(data_model.sample_labels)])
-        
-    selected_indices = []
-    for sample_id in selected_sample_ids:
-        if sample_id not in sample_indices:
-            raise Exception("Unknown sample id '%s', known ids are: %s" %
-                                (sample_id, ",".join(data_model.sample_labels)))
-        selected_indices.append(sample_indices[sample_id])
-
-    return selected_indices
-
-def run_likelihood_ratio_tests(args):
-    if not os.path.exists(args.workdir):
-        print "Work directory '%s' does not exist." % args.workdir
-        sys.exit(1)
-
-    stats_dir = os.path.join(args.workdir, OUTPUT_DIR)
-    if not os.path.exists(stats_dir):
-        os.makedirs(stats_dir)
-
-    project_summary = deserialize(os.path.join(args.workdir, PROJECT_SUMMARY_FLNAME))
-    
-    data_model = read_features(args.workdir)
+def run_lrtest_pop_dep(data_model, project_summary, args, stats_dir):
     genotypes = data_model.feature_matrix
     
     n_iter = estimate_lr_iter(len(data_model.class_labels))
@@ -127,33 +45,34 @@ def run_likelihood_ratio_tests(args):
                        n_iter = n_iter,
                        fit_intercept = False)
 
-    testing_variables = np.array(data_model.class_labels).reshape(-1, 1)
-    null_variables = None
+    labels = data_model.class_labels
+    encoder = OneHotEncoder(sparse=False)
 
-    N_COPIES = 3
-    class_labels = None
-    testing_features, null_features = prepare_model_variables(N_COPIES,
-                                                              testing_variables,
-                                                              null_variables)
-    
-    with open(os.path.join(stats_dir, OUTPUT_FLNAME), "w") as fl:
+    flname = "snp_lrtests_pop.tsv"
+    with open(os.path.join(stats_dir, flname), "w") as fl:
         next_output = 1
         for i, pair in enumerate(data_model.snp_feature_map.iteritems()):
             pos_label, feature_idx = pair
             chrom, pos = pos_label
 
-            pos_genotypes = genotypes[:, feature_idx]
+            N_COPIES = 3
+            pops, snp_genotypes = upsample_features(data_model.class_labels,
+                                                    genotypes[:, feature_idx])
 
-            class_labels = prepare_class_labels(N_COPIES,
-                                                pos_genotypes,
-                                                class_labels)
+            # as we're using the genotypes as the labels,
+            # they need to be one dimensional
+            snp_genotypes = snp_genotypes.argmax(axis=1)
+
+            # likewise, the pops need to 2D and one-hot encoded
+            pops = pops.reshape(-1, 1)
+            pops = encoder.fit_transform(pops)
 
             # since we make multiple copies of the original samples,
             # we need to scale the log loss so that it is correct for
             # the original sample size
 
-            p_value = likelihood_ratio_test(testing_features,
-                                            class_labels,
+            p_value = likelihood_ratio_test(pops,
+                                            snp_genotypes,
                                             lr,
                                             g_scaling_factor = 1.0 / N_COPIES)
             
@@ -163,15 +82,113 @@ def run_likelihood_ratio_tests(args):
 
             fl.write("\t".join([chrom, pos, str(p_value)]))
             fl.write("\n")
+
+
+def run_lrtest_gt_dep(features, project_summary, args, stats_dir):
+    if len(set(features.class_labels)) != 2:
+        raise ValueError, "LR Test currently only supports 2 populations."
+
+    n_iter = estimate_lr_iter(len(features.class_labels))
+
+    fit_intercept = False
+    if args.intercept == "free-parameter":
+        fit_intercept = True
+    
+    lr = SGDClassifier(penalty="l2",
+                       loss="log",
+                       n_iter = n_iter,
+                       fit_intercept = fit_intercept)
+    
+    flname = "snp_lrtests_gt.tsv"
+    with open(os.path.join(stats_dir, flname), "w") as fl:
+        next_output = 1
+        for i, pair in enumerate(features.snp_feature_map.iteritems()):
+            snp_label, feature_idx = pair
+            chrom, pos = snp_label
+
+            labels = np.array(features.class_labels)
+            snp_features = features.feature_matrix[:, feature_idx]
+
+            if args.training_set == "adjusted":
+                labels, snp_features = upsample_features(labels,
+                                                         snp_features)
+
+            # remove columns thta are all zeros since these
+            # aren't true degrees of freedom.  allows more
+            # calculation of p-values
+            if args.remove_empty_columns:
+                mask = np.all(snp_features == 0.,
+                              axis=0)
+                snp_features = snp_features[:, ~mask]
+
+            set_intercept_to_class_prob = False
+            if args.intercept == "class-probabilities":
+                set_intercept_to_class_prob = True
+
+            p_value = likelihood_ratio_test(snp_features,
+                                            labels,
+                                            lr,
+                                            set_intercept=set_intercept_to_class_prob,
+                                            g_scaling_factor=1.0/3.0)
+
+            if i == next_output:
+                print i, "SNP", snp_label, "has p-value", p_value
+                next_output *= 2
+
+            fl.write("\t".join([chrom, pos, str(p_value)]))
+            fl.write("\n")
             
 def parseargs():
-    parser = argparse.ArgumentParser(description="Asaph - Single SNP Association Tests")
+    parser = argparse.ArgumentParser(description="Asaph - Likelihood Ratio Test")
 
     parser.add_argument("--workdir", type=str, help="Work directory", required=True)
+
+    parser.add_argument("--intercept",
+                        type=str,
+                        default="class-probabilities",
+                        choices=["class-probabilities",
+                                 "none",
+                                 "free-parameter"])
+
+    parser.add_argument("--training-set",
+                        type=str,
+                        default="adjusted",
+                        choices=["adjusted",
+                                 "unadjusted"])
+
+    parser.add_argument("--remove-empty-columns",
+                        action="store_true")
+
+    parser.add_argument("--dependent-variable",
+                        type=str,
+                        default="genotype",
+                        choices=["genotype",
+                                 "population"])
 
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = parseargs()
 
-    run_likelihood_ratio_tests(args)
+    if not os.path.exists(args.workdir):
+        print "Work directory '%s' does not exist." % args.workdir
+        sys.exit(1)
+
+    stats_dir = os.path.join(args.workdir, "statistics")
+    if not os.path.exists(stats_dir):
+        os.makedirs(stats_dir)
+
+    project_summary = deserialize(os.path.join(args.workdir, PROJECT_SUMMARY_FLNAME))
+    
+    features = read_features(args.workdir)
+
+    if args.dependent_variable == "genotype":
+        run_lrtest_gt_dep(features,
+                          project_summary,
+                          args,
+                          stats_dir)
+    else:
+        run_lrtest_pop_dep(features,
+                           project_summary,
+                           args,
+                           stats_dir)
