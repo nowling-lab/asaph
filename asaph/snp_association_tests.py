@@ -35,7 +35,7 @@ from asaph.newioutils import PROJECT_SUMMARY_FLNAME
 from asaph.newioutils import serialize
 
 
-def run_lrtest_pop_dep(data_model, project_summary, args, stats_dir):
+def run_lrtest_gt_dep(data_model, project_summary, args, stats_dir):
     genotypes = data_model.feature_matrix
     
     n_iter = estimate_lr_iter(len(data_model.class_labels))
@@ -48,7 +48,7 @@ def run_lrtest_pop_dep(data_model, project_summary, args, stats_dir):
     labels = data_model.class_labels
     encoder = OneHotEncoder(sparse=False)
 
-    flname = "snp_lrtests_pop.tsv"
+    flname = "snp_lrtests_gt.tsv"
     with open(os.path.join(stats_dir, flname), "w") as fl:
         next_output = 1
         for i, pair in enumerate(data_model.snp_feature_map.iteritems()):
@@ -84,7 +84,7 @@ def run_lrtest_pop_dep(data_model, project_summary, args, stats_dir):
             fl.write("\n")
 
 
-def run_lrtest_gt_dep(features, project_summary, args, stats_dir):
+def run_lrtest_pop_dep(features, project_summary, args, stats_dir):
     if len(set(features.class_labels)) != 2:
         raise ValueError, "LR Test currently only supports 2 populations."
 
@@ -99,7 +99,7 @@ def run_lrtest_gt_dep(features, project_summary, args, stats_dir):
                        n_iter = n_iter,
                        fit_intercept = fit_intercept)
     
-    flname = "snp_lrtests_gt.tsv"
+    flname = "snp_lrtests_pop.tsv"
     with open(os.path.join(stats_dir, flname), "w") as fl:
         next_output = 1
         for i, pair in enumerate(features.snp_feature_map.iteritems()):
@@ -161,7 +161,7 @@ def parseargs():
 
     parser.add_argument("--dependent-variable",
                         type=str,
-                        default="genotype",
+                        default="population",
                         choices=["genotype",
                                  "population"])
 

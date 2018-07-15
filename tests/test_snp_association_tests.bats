@@ -17,7 +17,7 @@ load model_setup_helper
 	    --workdir ${WORKDIR_PATH}
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_gt.tsv" ]
+    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_pop.tsv" ]
 }
 
 @test "Calculate snp_association_tests (categories, class probabilities intercept, adjusted)" {
@@ -27,7 +27,7 @@ load model_setup_helper
         --training-set adjusted
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_gt.tsv" ]
+    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_pop.tsv" ]
 }
 
 @test "Calculate snp_association_tests (categories, no intercept, adjusted)" {
@@ -37,7 +37,7 @@ load model_setup_helper
         --training-set adjusted
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_gt.tsv" ]
+    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_pop.tsv" ]
 }
 
 @test "Calculate snp_association_tests (categories, free-parameter intercept, adjusted)" {
@@ -47,7 +47,7 @@ load model_setup_helper
         --training-set adjusted
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_gt.tsv" ]
+    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_pop.tsv" ]
 }
 
 @test "Calculate snp_association_tests (categories, class probabilities intercept, unadjusted)" {
@@ -57,7 +57,7 @@ load model_setup_helper
         --training-set unadjusted
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_gt.tsv" ]
+    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_pop.tsv" ]
 }
 
 @test "Calculate snp_association_tests (categories, no intercept, unadjusted)" {
@@ -67,7 +67,7 @@ load model_setup_helper
         --training-set unadjusted
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_gt.tsv" ]
+    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_pop.tsv" ]
 }
 
 @test "Calculate snp_association_tests (categories, free-parameter intercept, unadjusted)" {
@@ -77,7 +77,7 @@ load model_setup_helper
         --training-set unadjusted
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_gt.tsv" ]
+    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_pop.tsv" ]
 }
 
 @test "Calculate snp_association_tests (categories, remove empty columns)" {
@@ -86,14 +86,14 @@ load model_setup_helper
         --remove-empty-columns
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_gt.tsv" ]
+    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_pop.tsv" ]
 }
 
 @test "Calculate snp_association_tests (categories, pop dependent)" {
     run ${BATS_TEST_DIRNAME}/../bin/snp_association_tests \
 	    --workdir ${WORKDIR_PATH} \
-        --dependent-variable population
+        --dependent-variable genotype
 
     [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_pop.tsv" ]
+    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_gt.tsv" ]
 }
