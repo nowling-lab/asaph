@@ -86,9 +86,6 @@ def run_lrtest_gt_dep(data_model, project_summary, args, stats_dir):
 
 
 def run_lrtest_pop_dep(features, project_summary, args, stats_dir):
-    if len(set(features.class_labels)) != 2:
-        raise ValueError, "LR Test currently only supports 2 populations."
-
     n_iter = estimate_lr_iter(len(features.class_labels))
 
     fit_intercept = False
@@ -114,9 +111,9 @@ def run_lrtest_pop_dep(features, project_summary, args, stats_dir):
                 labels, snp_features = upsample_features(labels,
                                                          snp_features)
 
-            # remove columns thta are all zeros since these
-            # aren't true degrees of freedom.  allows more
-            # calculation of p-values
+            # remove columns that are all zeros since these
+            # aren't true degrees of freedom.  prevents
+            # under-estimating significance
             if args.remove_empty_columns:
                 mask = np.all(snp_features == 0.,
                               axis=0)
