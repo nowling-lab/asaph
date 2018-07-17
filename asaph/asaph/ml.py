@@ -118,39 +118,49 @@ def snp_linreg_pvalues(X, y, g_scaling_factor=1.0):
     return snp_p_value, gt_p_values, gt_pred_ys
 
 def likelihood_ratio_test(features_alternate, labels, lr_model, set_intercept=True, g_scaling_factor=1.0):
+    if isinstance(features_alternate, tuple) and len(features_alternate) == 2:
+        training_features, testing_features = features_alternate
+        training_labels, testing_labels = labels
+    else:
+        training_features = features_alternate
+        testing_features = features_alternate
+        training_labels = labels
+        testing_labels = labels
 
-    n_samples = features_alternate.shape[0]
-    n_iter = estimate_lr_iter(n_samples)
+    n_training_samples = training_features.shape[0]
+    n_testing_samples = testing_features.shape[0]
+    n_iter = estimate_lr_iter(n_testing_samples)
 
     # null model
     null_lr = SGDClassifier(loss = "log",
                             fit_intercept = False,
                             n_iter = n_iter)
-    null_X = np.ones((n_samples, 1))
-    null_lr.fit(null_X,
-                labels)
-    null_prob = null_lr.predict_proba(null_X)
+    null_training_X = np.ones((n_training_samples, 1))
+    null_testing_X = np.ones((n_testing_samples, 1))
+    null_lr.fit(null_training_X,
+                training_labels)
+    null_prob = null_lr.predict_proba(null_testing_X)
 
     intercept_init = None
     if set_intercept:
         intercept_init = null_lr.coef_[:, 0]
 
-    lr_model.fit(features_alternate,
-                 labels,
+    lr_model.fit(training_features,
+                 training_labels,
                  intercept_init = intercept_init)
-    alt_prob = lr_model.predict_proba(features_alternate)
+    alt_prob = lr_model.predict_proba(testing_features)
         
-    alt_log_likelihood = -log_loss(labels,
+    alt_log_likelihood = -log_loss(testing_labels,
                                    alt_prob,
                                    normalize=False)
-    null_log_likelihood = -log_loss(labels,
+    null_log_likelihood = -log_loss(testing_labels,
                                     null_prob,
                                     normalize=False)
 
     G = g_scaling_factor * 2.0 * (alt_log_likelihood - null_log_likelihood)
     
     # both models have intercepts so the intercepts cancel out
-    df = features_alternate.shape[1]
+    df = training_features.shape[1]
     p_value = chi2.sf(G, df)
 
     return p_value

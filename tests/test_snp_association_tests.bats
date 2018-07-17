@@ -20,31 +20,31 @@ load model_setup_helper
     [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_pop.tsv" ]
 }
 
-@test "Calculate snp_association_tests (categories, class probabilities intercept, adjusted)" {
+@test "Calculate snp_association_tests (categories, class probabilities intercept, adjusted training set)" {
     run ${BATS_TEST_DIRNAME}/../bin/snp_association_tests \
 	    --workdir ${WORKDIR_PATH} \
         --intercept none \
-        --training-set adjusted
+        --adjustment training-set
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_pop.tsv" ]
 }
 
-@test "Calculate snp_association_tests (categories, no intercept, adjusted)" {
+@test "Calculate snp_association_tests (categories, no intercept, adjusted training set)" {
     run ${BATS_TEST_DIRNAME}/../bin/snp_association_tests \
 	    --workdir ${WORKDIR_PATH} \
         --intercept none \
-        --training-set adjusted
+        --adjustment training-set
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_pop.tsv" ]
 }
 
-@test "Calculate snp_association_tests (categories, free-parameter intercept, adjusted)" {
+@test "Calculate snp_association_tests (categories, free-parameter intercept, adjusted training set)" {
     run ${BATS_TEST_DIRNAME}/../bin/snp_association_tests \
 	    --workdir ${WORKDIR_PATH} \
         --intercept free-parameter \
-        --training-set adjusted
+        --adjustment training-set
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_pop.tsv" ]
@@ -54,7 +54,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/snp_association_tests \
 	    --workdir ${WORKDIR_PATH} \
         --intercept class-probabilities \
-        --training-set unadjusted
+        --adjustment none
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_pop.tsv" ]
@@ -64,7 +64,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/snp_association_tests \
 	    --workdir ${WORKDIR_PATH} \
         --intercept none \
-        --training-set unadjusted
+        --adjustment none
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_pop.tsv" ]
@@ -74,7 +74,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/snp_association_tests \
 	    --workdir ${WORKDIR_PATH} \
         --intercept free-parameter \
-        --training-set unadjusted
+        --adjustment none
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_pop.tsv" ]
@@ -83,7 +83,17 @@ load model_setup_helper
 @test "Calculate snp_association_tests (categories, remove empty columns)" {
     run ${BATS_TEST_DIRNAME}/../bin/snp_association_tests \
 	    --workdir ${WORKDIR_PATH} \
-        --remove-empty-columns
+        --remove-empty-columns \
+        --adjustment scaling-factor
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_pop.tsv" ]
+}
+
+@test "Calculate snp_association_tests (categories, adjusted scaling factor)" {
+    run ${BATS_TEST_DIRNAME}/../bin/snp_association_tests \
+	    --workdir ${WORKDIR_PATH} \
+        --adjustment scaling-factor
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/statistics/snp_lrtests_pop.tsv" ]

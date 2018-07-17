@@ -107,7 +107,7 @@ def run_lrtest_pop_dep(features, project_summary, args, stats_dir):
             labels = np.array(features.class_labels)
             snp_features = features.feature_matrix[:, feature_idx]
 
-            if args.training_set == "adjusted":
+            if args.adjustment != "none":
                 labels, snp_features = upsample_features(labels,
                                                          snp_features)
 
@@ -123,11 +123,20 @@ def run_lrtest_pop_dep(features, project_summary, args, stats_dir):
             if args.intercept == "class-probabilities":
                 set_intercept_to_class_prob = True
 
+            scaling_factor = 1.0
+            if args.adjustment == "training-set":
+                snp_features = (snp_features,
+                                features.feature_matrix[:, feature_idx])
+                labels = (labels,
+                          np.array(features.class_labels))
+            elif args.adjustment == "scaling-factor":
+                scaling_factor = 1.0 / 3.0
+
             p_value = likelihood_ratio_test(snp_features,
                                             labels,
                                             lr,
                                             set_intercept=set_intercept_to_class_prob,
-                                            g_scaling_factor=1.0/3.0)
+                                            g_scaling_factor=scaling_factor)
 
             if i == next_output:
                 print i, "SNP", snp_label, "has p-value", p_value
@@ -148,11 +157,12 @@ def parseargs():
                                  "none",
                                  "free-parameter"])
 
-    parser.add_argument("--training-set",
+    parser.add_argument("--adjustment",
                         type=str,
-                        default="adjusted",
-                        choices=["adjusted",
-                                 "unadjusted"])
+                        default="training-set",
+                        choices=["training-set",
+                                 "scaling-factor",
+                                 "none"])
 
     parser.add_argument("--remove-empty-columns",
                         action="store_true")
