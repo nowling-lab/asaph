@@ -56,12 +56,12 @@ def run_lrtest_gt_dep(data_model, project_summary, args, stats_dir):
 
         headers = ["chrom", "pos", "snp_p_value"]
         for i in xrange(n_pops):
-            headers.append("pop_%i_p_value" % (i+1))
+            headers.append("%s" % project_summary.population_names[i])
 
         for i in xrange(n_pops):
-            headers.append("pop_%i_homo_ref_prob" % (i+1))
-            headers.append("pop_%i_homo_alt_prob" % (i+1))
-            headers.append("pop_%i_hetero_prob" % (i+1))
+            headers.append("%s_homo_ref" % project_summary.population_names[i])
+            headers.append("%s_homo_alt" % project_summary.population_names[i])
+            headers.append("%s_hetero" % project_summary.population_names[i])
 
         fl.write("\t".join(headers))
         fl.write("\n")
