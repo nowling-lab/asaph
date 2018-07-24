@@ -34,7 +34,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 def estimate_lr_iter(n_samples):
     return max(20,
-               int(np.ceil(25000. / n_samples)))
+               int(np.ceil(100000. / n_samples)))
 
 def upsample_features(labels, features):
     n_samples, n_features = features.shape
