@@ -73,7 +73,7 @@ def lin_reg_log_likelihood(lr, X, y):
     return log_likelihood
 
 def lin_reg_lrtest(X, y, n_iter, g_scaling_factor=1.0):
-    alt_lr = SGDRegressor(fit_intercept = True, n_iter=n_iter)
+    alt_lr = SGDRegressor(fit_intercept = False, n_iter=n_iter)
     alt_lr.fit(X,
                y)
     
