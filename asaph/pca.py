@@ -447,21 +447,15 @@ def snp_linreg_association_tests(args):
                 # since we make multiple copies of the original samples,
                 # we need to scale the log loss so that it is correct for
                 # the original sample size
-                triplet = snp_linreg_pvalues(imputed_features,
-                                             labels,
-                                             g_scaling_factor = 1.0 / 3.0)
-                snp_p_value, gt_p_values, gt_pred_ys = triplet
+                snp_p_value = snp_linreg_pvalues(imputed_features,
+                                                 labels,
+                                                 g_scaling_factor = 1.0 / 3.0)
 
                 if i == next_output:
                     print i, "SNP", snp_label, "and PC", pc, "has p-value", snp_p_value
                     next_output *= 2
 
                 fl.write("\t".join([chrom, pos, str(snp_p_value)]))    
-                for j in xrange(3):
-                    fl.write("\t")
-                    fl.write(str(gt_p_values[j]))
-                    fl.write("\t")
-                    fl.write(str(gt_pred_ys[j]))
                 fl.write("\n")
                 
 def sweep_clusters(args):

@@ -73,11 +73,13 @@ def lin_reg_log_likelihood(lr, X, y):
     return log_likelihood
 
 def lin_reg_lrtest(X, y, n_iter, g_scaling_factor=1.0):
+    # every record has at least one categorical variable on
+    # so the intercept can be zero with no change in the result
     alt_lr = SGDRegressor(fit_intercept = False, n_iter=n_iter)
     alt_lr.fit(X,
                y)
     
-    null_lr = SGDRegressor(fit_intercept = False, n_iter=n_iter)
+    null_lr = SGDRegressor(fit_intercept = True, n_iter=n_iter)
     null_X = np.zeros((X.shape[0], 1))
     null_lr.fit(null_X,
                 y)
@@ -91,31 +93,24 @@ def lin_reg_lrtest(X, y, n_iter, g_scaling_factor=1.0):
                                             y)
     
     G = g_scaling_factor * 2. * (alt_likelihood - null_likelihood)
-    p_value = chi2.sf(G, X.shape[1])
+    
+    # account for the alt model having no intercept,
+    # while the null model does have an intercept
+    p_value = chi2.sf(G, X.shape[1] - 1)
     
     p_value = max(1e-300, p_value)
     
     return p_value, alt_lr
 
 def snp_linreg_pvalues(X, y, g_scaling_factor=1.0):
-    N_GENOTYPES = 3
     n_iter = estimate_lr_iter(len(y))
-    gt_p_values = np.zeros(3)
 
     snp_p_value, model = lin_reg_lrtest(X,
                                         y,
                                         n_iter=n_iter,
                                         g_scaling_factor=g_scaling_factor)
-    gt_pred_ys = model.predict(np.eye(N_GENOTYPES))                                
-        
-    for i in xrange(N_GENOTYPES):
-        p_value, _ = lin_reg_lrtest(X[:, i].reshape(-1, 1),
-                                    y,
-                                    n_iter,
-                                    g_scaling_factor=g_scaling_factor)
-        gt_p_values[i] = p_value
-
-    return snp_p_value, gt_p_values, gt_pred_ys
+    
+    return snp_p_value
 
 def likelihood_ratio_test(features_alternate, labels, lr_model, set_intercept=True, g_scaling_factor=1.0):
     if isinstance(features_alternate, tuple) and len(features_alternate) == 2:
