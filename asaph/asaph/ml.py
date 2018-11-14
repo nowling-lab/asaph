@@ -63,10 +63,16 @@ def upsample_features(labels, features):
 def lin_reg_log_likelihood(lr, X, y):
     pred_y = lr.predict(X)
     N, n_params = X.shape
-    
+
+    # estimate variance (sigma2)
+    avg_y = np.mean(y)
+    diff = y - avg_y
+    diff2 = np.dot(diff, diff)
+    sigma2 = diff2 / (N - 1)
+
+    # residual sum of squares
     error = y - pred_y
     error2 = np.dot(error, error)
-    sigma2 = error2 / (N - 1)
     
     log_likelihood = -N * np.log(2. * np.pi * sigma2) / 2. - error2 / (2.0 * sigma2)
     
