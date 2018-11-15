@@ -88,7 +88,7 @@ def lin_reg_lrtest(X, y, n_iter, g_scaling_factor=1.0):
     alt_lr.fit(X,
                y,
                intercept_init = null_lr.intercept_)
-    
+
     null_likelihood = lin_reg_log_likelihood(null_lr,
                                              null_X,
                                              y)
@@ -96,13 +96,13 @@ def lin_reg_lrtest(X, y, n_iter, g_scaling_factor=1.0):
     alt_likelihood = lin_reg_log_likelihood(alt_lr,
                                             X,
                                             y)
-    
+
     G = g_scaling_factor * 2. * (alt_likelihood - null_likelihood)
-    
+
     p_value = chi2.sf(G, X.shape[1])
-    
+
     p_value = max(1e-300, p_value)
-    
+
     return p_value, alt_lr
 
 def snp_linreg_pvalues(X, y, g_scaling_factor=1.0):
@@ -112,7 +112,7 @@ def snp_linreg_pvalues(X, y, g_scaling_factor=1.0):
                                         y,
                                         n_iter=n_iter,
                                         g_scaling_factor=g_scaling_factor)
-    
+
     return snp_p_value
 
 def likelihood_ratio_test(features_alternate, labels, lr_model, set_intercept=True, g_scaling_factor=1.0):
