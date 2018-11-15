@@ -79,17 +79,16 @@ def lin_reg_log_likelihood(lr, X, y):
     return log_likelihood
 
 def lin_reg_lrtest(X, y, n_iter, g_scaling_factor=1.0):
-    # every record has at least one categorical variable on
-    # so the intercept can be zero with no change in the result
-    alt_lr = SGDRegressor(fit_intercept = False, n_iter=n_iter)
-    alt_lr.fit(X,
-               y)
-    
     null_lr = SGDRegressor(fit_intercept = True, n_iter=n_iter)
     null_X = np.zeros((X.shape[0], 1))
     null_lr.fit(null_X,
                 y)
 
+    alt_lr = SGDRegressor(fit_intercept = False, n_iter=n_iter)
+    alt_lr.fit(X,
+               y,
+               intercept_init = null_lr.intercept_)
+    
     null_likelihood = lin_reg_log_likelihood(null_lr,
                                              null_X,
                                              y)
@@ -100,9 +99,7 @@ def lin_reg_lrtest(X, y, n_iter, g_scaling_factor=1.0):
     
     G = g_scaling_factor * 2. * (alt_likelihood - null_likelihood)
     
-    # account for the alt model having no intercept,
-    # while the null model does have an intercept
-    p_value = chi2.sf(G, X.shape[1] - 1)
+    p_value = chi2.sf(G, X.shape[1])
     
     p_value = max(1e-300, p_value)
     
