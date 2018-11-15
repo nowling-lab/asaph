@@ -106,6 +106,8 @@ def lin_reg_lrtest(X, y, n_iter, g_scaling_factor=1.0):
     return p_value, alt_lr
 
 def snp_linreg_pvalues(X, y, g_scaling_factor=1.0):
+    N_GENOTYPES = 3
+    gt_p_values = np.zeros(3)
     n_iter = estimate_lr_iter(len(y))
 
     snp_p_value, model = lin_reg_lrtest(X,
@@ -113,7 +115,16 @@ def snp_linreg_pvalues(X, y, g_scaling_factor=1.0):
                                         n_iter=n_iter,
                                         g_scaling_factor=g_scaling_factor)
 
-    return snp_p_value
+    gt_pred_ys = model.predict(np.eye(N_GENOTYPES))
+
+    for i in xrange(N_GENOTYPES):
+        p_value, _ = lin_reg_lrtest(X[:, i].reshape(-1, 1),
+                                    y,
+                                    n_iter,
+                                    g_scaling_factor=g_scaling_factor)
+        gt_p_values[i] = p_value
+
+    return snp_p_value, gt_p_values, gt_pred_ys
 
 def likelihood_ratio_test(features_alternate, labels, lr_model, set_intercept=True, g_scaling_factor=1.0):
     if isinstance(features_alternate, tuple) and len(features_alternate) == 2:
