@@ -78,16 +78,23 @@ def lin_reg_log_likelihood(lr, X, y):
     
     return log_likelihood
 
-def lin_reg_lrtest(X, y, n_iter, g_scaling_factor=1.0):
+def lin_reg_lrtest(X, y, n_iter, set_intercept, g_scaling_factor=1.0):
     null_lr = SGDRegressor(fit_intercept = True, n_iter=n_iter)
     null_X = np.zeros((X.shape[0], 1))
     null_lr.fit(null_X,
                 y)
 
     alt_lr = SGDRegressor(fit_intercept = False, n_iter=n_iter)
+
+    intercept_init = None
+    dof = X.shape[1] - 1
+    if set_intercept:
+        intercept_init = null_lr.intercept_
+        dof = X.shape[1]
+
     alt_lr.fit(X,
                y,
-               intercept_init = null_lr.intercept_)
+               intercept_init = intercept_init)
 
     null_likelihood = lin_reg_log_likelihood(null_lr,
                                              null_X,
@@ -99,7 +106,7 @@ def lin_reg_lrtest(X, y, n_iter, g_scaling_factor=1.0):
 
     G = g_scaling_factor * 2. * (alt_likelihood - null_likelihood)
 
-    p_value = chi2.sf(G, X.shape[1])
+    p_value = chi2.sf(G, dof)
 
     p_value = max(1e-300, p_value)
 
@@ -110,17 +117,33 @@ def snp_linreg_pvalues(X, y, g_scaling_factor=1.0):
     gt_p_values = np.zeros(3)
     n_iter = estimate_lr_iter(len(y))
 
+    # when lig reg is performed with all
+    # genotypes as the features, every
+    # data point will have one of the
+    # features "on" so the intercept is not
+    # needed.  If used, we have an extra
+    # variable and then calculated p-value
+    # is larger than it needs to be.
     snp_p_value, model = lin_reg_lrtest(X,
                                         y,
-                                        n_iter=n_iter,
+                                        n_iter,
+                                        False,
                                         g_scaling_factor=g_scaling_factor)
 
     gt_pred_ys = model.predict(np.eye(N_GENOTYPES))
 
+    # when lig reg is performed with a single
+    # genotypes as the feature, only some of
+    # the data points will have one of the
+    # features "on" so the intercept is needed
+    # for the others.  If not used, we get a
+    # difference of 0 dof between the null
+    # and alternative models, which is invalid
     for i in xrange(N_GENOTYPES):
         p_value, _ = lin_reg_lrtest(X[:, i].reshape(-1, 1),
                                     y,
                                     n_iter,
+                                    True,
                                     g_scaling_factor=g_scaling_factor)
         gt_p_values[i] = p_value
 
