@@ -121,6 +121,21 @@ def genotype_ttest(X, y):
             
     return p_values
 
+def cluster_ttest(X, y):
+    # default to 1.0
+    n_clusters = len(set(y))
+    p_values = np.ones(n_clusters)
+    for i in range(n_clusters):
+        in_group = X[y == i]
+
+        # need at least 2 samples to do a t-test
+        if in_group.shape[0] > 1:
+            _, p_value = ttest_1samp(in_group, 0.0)
+            p_values[i] = p_value
+            
+    return p_values
+
+
 def snp_linreg_pvalues(X, y, g_scaling_factor=1.0):
     N_GENOTYPES = 3
     n_iter = estimate_lr_iter(len(y))

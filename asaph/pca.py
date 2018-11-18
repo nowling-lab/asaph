@@ -36,6 +36,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import binarize
 
+from asaph.ml import cluster_ttest
 from asaph.ml import estimate_lr_iter
 from asaph.ml import likelihood_ratio_test
 from asaph.ml import upsample_features
@@ -545,6 +546,103 @@ def cluster_samples(args):
             fl.write(",")
             fl.write(",".join(samples))
             fl.write("\n")
+
+def cluster_genotype_associations(args):
+    workdir = args.workdir
+
+    analysis_dir = os.path.join(workdir, "analysis")
+    if not os.path.exists(analysis_dir):
+        os.makedirs(analysis_dir)
+    
+    project_summary = deserialize(os.path.join(workdir,
+                                               PROJECT_SUMMARY_FLNAME))
+
+    model_fl = os.path.join(workdir,
+                            "models",
+                            "pca.pkl")
+    model = joblib.load(model_fl)    
+    projected = model[PROJECTION_KEY]
+    component = args.component - 1
+    selected = projected[:, component].reshape(-1, 1)
+
+    # Step 1. Cluster samples
+    print "Clustering"
+    centers, assignments, inertia = k_means(selected,
+                                            args.n_clusters,
+                                            n_jobs=-2)
+
+    # Step 2. T-test cluster means
+    print "Cluster t-tests"
+    cluster_pvalues = cluster_ttest(selected.flatten(), assignments)
+
+    data_model = read_features(workdir)
+    
+    clusters = defaultdict(list)
+    for name, cluster in zip(data_model.sample_labels, assignments):
+        clusters[cluster].append(name)
+        
+    flname = os.path.join(analysis_dir,
+                          "clusters_pc_%s.tsv" % args.component)
+
+    with open(flname, "w") as fl:
+        for i in xrange(args.n_clusters):
+            fl.write(str(i))
+            fl.write("\t")
+            fl.write(str(centers[i, 0]))
+            fl.write("\t")
+            fl.write(str(cluster_pvalues[i]))
+            fl.write("\t")
+            fl.write(",".join(clusters[i]))
+            fl.write("\n")
+
+    # Step 3. Association Tests
+    print "Association tests"
+    n_iter = estimate_lr_iter(len(data_model.class_labels))
+    # we set the intercept to the class ratios in the lr test function
+    lr = SGDClassifier(penalty="l2",
+                       loss="log",
+                       n_iter = n_iter,
+                       fit_intercept=False)
+
+    n_samples = data_model.feature_matrix.shape[0]
+    flname = "snp_pc_%s_cluster_assoc_tests.tsv" % args.component
+    path = os.path.join(analysis_dir, flname)
+    with open(path, "w") as fl:
+        next_output = 1
+        for i, pair in enumerate(data_model.snp_feature_map.iteritems()):
+            snp_label, feature_idx = pair
+            chrom, pos = snp_label
+
+            snp_features = data_model.feature_matrix[:, feature_idx]
+            pairs = upsample_features(assignments, snp_features)
+            imputed_assignments, imputed_features = pairs
+            imputed_features = imputed_features.argmax(axis=1)
+            
+            p_values = []
+            for k in xrange(args.n_clusters):
+                cluster_binary = np.zeros(3 * n_samples)
+                cluster_binary[imputed_assignments == k] = 1.0
+
+                for j in xrange(3):
+                    gt_binary = np.zeros((3 * n_samples, 1))
+                    gt_binary[imputed_features == j, 0] = 1.0
+
+                    p_value = likelihood_ratio_test(gt_binary,
+                                                    cluster_binary,
+                                                    lr,
+                                                    g_scaling_factor = 1.0 / 3.0)
+                    p_values.append(p_value)
+
+
+            fl.write("\t".join([chrom, pos]))
+            fl.write("\t")
+            fl.write("\t".join(map(str, p_values)))
+            fl.write("\n")
+                    
+            if i == next_output:
+                print i, "SNP", snp_label, "and cluster", k
+                next_output *= 2
+
     
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - PCA")
@@ -642,6 +740,18 @@ def parseargs():
                                        required=True,
                                        help="Number of clusters")
 
+    cluster_association_parser = subparsers.add_parser("cluster-association-tests",
+                                                   help="Run association tests on clusters vs genotypes")
+    cluster_association_parser.add_argument("--component",
+                                            type=int,
+                                            required=True,
+                                            help="Component to perform clustering on")
+
+    cluster_association_parser.add_argument("--n-clusters",
+                                            type=int,
+                                            required=True,
+                                            help="Number of clusters")
+
     loading_magnitudes_parser = subparsers.add_parser("output-loading-magnitudes",
                                                       help="Output loading magnitudes")
 
@@ -688,6 +798,8 @@ if __name__ == "__main__":
         sweep_clusters(args)
     elif args.mode == "cluster-samples":
         cluster_samples(args)
+    elif args.mode == "cluster-association-tests":
+        cluster_genotype_associations(args)
     else:
         print "Unknown mode '%s'" % args.mode
         sys.exit(1)
