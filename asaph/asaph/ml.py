@@ -143,8 +143,8 @@ def snp_linreg_pvalues(X, y):
     adj_y, adj_X = upsample_features(y, X)
     g_scaling_factor = 1.0 / N_GENOTYPES
 
-    snp_p_value, model = lin_reg_lrtest(X,
-                                        y,
+    snp_p_value, model = lin_reg_lrtest(adj_X,
+                                        adj_y,
                                         n_iter,
                                         g_scaling_factor=g_scaling_factor)
 
