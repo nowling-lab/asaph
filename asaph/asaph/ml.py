@@ -100,7 +100,7 @@ def lin_reg_lrtest(X, y, n_iter, g_scaling_factor=1.0):
 
     G = g_scaling_factor * 2. * (alt_likelihood - null_likelihood)
 
-    p_value = chi2.sf(G, X.shape[1])
+    p_value = chi2.sf(G, X.shape[1] - 1)
 
     p_value = max(1e-300, p_value)
 
