@@ -115,7 +115,7 @@ def genotype_ttest(X, y):
         in_group = y[flattened == i]
 
         # need at least 2 samples to do a t-test
-        if in_group.shape[0] > 1:
+        if in_group.shape[0] >= 2:
             _, p_value = ttest_1samp(in_group, 0.0)
             p_values[i] = p_value
 
@@ -129,8 +129,8 @@ def genotype_normality_test(X, y):
     for i in range(3):
         in_group = y[flattened == i]
 
-        # need at least 2 samples to do a t-test
-        if in_group.shape[0] > 1:
+        # need at least 3 samples to do a shapiro test
+        if in_group.shape[0] >= 3:
             _, p_value = shapiro(in_group)
             p_values[i] = p_value
 
