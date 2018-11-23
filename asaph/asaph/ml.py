@@ -21,6 +21,7 @@ import numpy as np
 import numpy.linalg as la
 
 from scipy.stats import chi2
+from scipy.stats import shapiro
 from scipy.stats import ttest_1samp
 
 from sklearn.decomposition import TruncatedSVD
@@ -112,18 +113,35 @@ def genotype_ttest(X, y):
     p_values = np.ones(3)
     for i in range(3):
         in_group = y[flattened == i]
-        out_group = y[flattened != i]
 
         # need at least 2 samples to do a t-test
         if in_group.shape[0] > 1:
             _, p_value = ttest_1samp(in_group, 0.0)
             p_values[i] = p_value
-            
+
     return p_values
 
-def snp_linreg_pvalues(X, y, g_scaling_factor=1.0):
+def genotype_normality_test(X, y):
+    flattened = X.argmax(axis=1)
+
+    # default to 1.0
+    p_values = np.ones(3)
+    for i in range(3):
+        in_group = y[flattened == i]
+
+        # need at least 2 samples to do a t-test
+        if in_group.shape[0] > 1:
+            _, p_value = shapiro(in_group)
+            p_values[i] = p_value
+
+    return p_values
+
+def snp_linreg_pvalues(X, y):
     N_GENOTYPES = 3
     n_iter = estimate_lr_iter(len(y))
+
+    adj_y, adj_X = upsample_features(y, X)
+    g_scaling_factor = 1.0 / N_GENOTYPES
 
     snp_p_value, model = lin_reg_lrtest(X,
                                         y,
@@ -131,9 +149,10 @@ def snp_linreg_pvalues(X, y, g_scaling_factor=1.0):
                                         g_scaling_factor=g_scaling_factor)
 
     gt_pred_ys = model.predict(np.eye(N_GENOTYPES))
-    gt_p_values = genotype_ttest(X, y)
+    gt_ttest_pvalues = genotype_ttest(X, y)
+    gt_normality_pvalues = genotype_normality_test(X, y)
 
-    return snp_p_value, gt_p_values, gt_pred_ys
+    return snp_p_value, gt_ttest_pvalues, gt_normality_pvalues, gt_pred_ys
 
 def likelihood_ratio_test(features_alternate, labels, lr_model, set_intercept=True, g_scaling_factor=1.0):
     if isinstance(features_alternate, tuple) and len(features_alternate) == 2:

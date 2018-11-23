@@ -38,7 +38,6 @@ from sklearn.preprocessing import binarize
 
 from asaph.ml import estimate_lr_iter
 from asaph.ml import likelihood_ratio_test
-from asaph.ml import upsample_features
 from asaph.ml import snp_linreg_pvalues
 from asaph.newioutils import read_features
 from asaph.newioutils import deserialize
@@ -440,17 +439,13 @@ def snp_linreg_association_tests(args):
                 chrom, pos = snp_label
 
                 snp_features = data_model.feature_matrix[:, feature_idx]
-                triplet = upsample_features(projections[:, pc - 1],
-                                            snp_features)
-                labels, imputed_features = triplet
 
                 # since we make multiple copies of the original samples,
                 # we need to scale the log loss so that it is correct for
                 # the original sample size
-                triplet = snp_linreg_pvalues(imputed_features,
-                                             labels,
-                                             g_scaling_factor = 1.0 / 3.0)
-                snp_p_value, gt_p_values, gt_pred_ys = triplet
+                triplet = snp_linreg_pvalues(snp_features,
+                                             projections[:, pc - 1])
+                snp_p_value, gt_ttest_pvalues, gt_normality_pvalues, gt_pred_ys = triplet
 
                 if i == next_output:
                     print i, "SNP", snp_label, "and PC", pc, "has p-value", snp_p_value
@@ -459,11 +454,13 @@ def snp_linreg_association_tests(args):
                 fl.write("\t".join([chrom, pos, str(snp_p_value)]))
                 for j in xrange(3):
                     fl.write("\t")
-                    fl.write(str(gt_p_values[j]))
+                    fl.write(str(gt_ttest_pvalues[j]))
+                    fl.write("\t")
+                    fl.write(str(gt_normality_pvalues[j]))
                     fl.write("\t")
                     fl.write(str(gt_pred_ys[j]))
                 fl.write("\n")
-                
+
 def sweep_clusters(args):
     workdir = args.workdir
 
