@@ -72,7 +72,7 @@ def parseargs():
 
     parser.add_argument("--feature-type",
                         choices=["categories", "counts"],
-                        default="counts",
+                        default="categories",
                         help="Feature representation to use")
     
     format_group = parser.add_mutually_exclusive_group(required=True)
