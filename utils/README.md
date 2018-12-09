@@ -6,7 +6,7 @@ This directory contains several small but useful scripts I created for analyzing
 * `split_by_chromosome.py`: Select SNP data from an association test file from a single chromosome. Supports renaming the chromosome in the output.
 
 ## Significance Testing of Scripts
-Once Asaph calculates p-values for SNPs, either against a principal component or a population, we need to perform significant testing to identify which SNPs have a significant association.  The `sig_test_snps.py` can be used to do this.  Since we are testing multiple SNPs, we need to apply a correction for multiple hypothesis testing.  I liked to use the Bonferroni corection, with one caveat.  Instead of using the number of tests, I used the number of samples.  In our work, the number of samples is often far smaller than the number of SNPs and determines the true degrees of freedom.  The formula is as follows:
+Once Asaph calculates p-values for SNPs, either against a principal component or a population, we need to perform significant testing to identify which SNPs have a significant association.  The `sig_test_snps.py` can be used to do this.  Since we are testing multiple SNPs, we need to apply a correction for multiple hypothesis testing.  I liked to use the Bonferroni correction, with one caveat.  Instead of using the number of tests, I used the number of samples.  In our work, the number of samples is often far smaller than the number of SNPs and determines the true degrees of freedom.  The formula is as follows:
 
 ```
 alpha_corrected = alpha / (n_samples - 1)
