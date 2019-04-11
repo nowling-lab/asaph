@@ -24,16 +24,21 @@ import numpy as np
 
 from sklearn.cluster import k_means
 
+from scipy.stats import chi2
 from scipy.stats import chisquare
 
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import log_loss
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
 
 import matplotlib
 matplotlib.use("PDF")
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 def read_pca_coordinates(flname):
     sample_coordinates = []
@@ -42,7 +47,7 @@ def read_pca_coordinates(flname):
         # skip header
         next(fl)
         for ln in fl:
-            cols = ln.split()
+            cols = ln.split("\t")
 
             sample_name = cols[0]
             coordinates = list(map(float, cols[3:]))
@@ -103,10 +108,10 @@ def sweep_clusters(coordinates, components, n_clusters, plot_flname):
 
     inertia_values = []
     for k in n_clusters:
-        print("Clustering with %s clusters" % k)
         _, _, inertia = k_means(selected,
                                 k,
                                 n_jobs=-2)
+        print("Clustering with %s clusters: %s" % (k, inertia))
         inertia_values.append(inertia)
 
     plt.plot(n_clusters,
@@ -127,6 +132,7 @@ def test_clusters(coordinates, components, n_clusters, sample_names, labels):
                                       n_clusters,
                                       n_jobs=-2)
 
+    # calculate observation table
     n_labels = len(set(labels.values()))
     sample_labels = []
     obs_table = np.zeros((n_clusters, n_labels))
@@ -159,6 +165,8 @@ def test_clusters(coordinates, components, n_clusters, sample_names, labels):
                           ddof=ddof)
 
     print(obs_table)
+    print()
+    print(exp_table)
     
     print("Chi2 p-value:", pvalue)
 
@@ -174,12 +182,15 @@ def test_clusters(coordinates, components, n_clusters, sample_names, labels):
         lr = SGDClassifier(loss="log", penalty="l2", max_iter=1000, tol=1e-4)
         lr.fit(features, sample_labels)
         pred_labels = lr.predict(features)
-        acc = accuracy_score(pred_labels, sample_labels)
+        acc = accuracy_score(sample_labels, pred_labels)
+        bal_acc = balanced_accuracy_score(sample_labels, pred_labels)
 
         print(pred_labels)
+        print()
         print(sample_labels)
 
         print("Classifier accuracy:", acc)
+        print("Balanced accuracy:", bal_acc)
 
 def likelihood_ratio_test(features_alternate, labels, lr_model, set_intercept=True, g_scaling_factor=1.0):
     if isinstance(features_alternate, tuple) and len(features_alternate) == 2:
@@ -196,9 +207,12 @@ def likelihood_ratio_test(features_alternate, labels, lr_model, set_intercept=Tr
     n_iter = estimate_lr_iter(n_testing_samples)
 
     # null model
-    null_lr = SGDClassifier(loss = "log",
+    null_lr = SGDClassifier(penalty="l2",
+                            loss = "log",
+                            max_iter = n_iter * 10.,
                             fit_intercept = False,
-                            n_iter = n_iter)
+                            tol=1e-8)
+    
     null_training_X = np.ones((n_training_samples, 1))
     null_testing_X = np.ones((n_testing_samples, 1))
     null_lr.fit(null_training_X,
@@ -231,7 +245,56 @@ def likelihood_ratio_test(features_alternate, labels, lr_model, set_intercept=Tr
 
 def estimate_lr_iter(n_samples):
     return max(20,
-               int(np.ceil(100000. / n_samples)))
+               int(np.ceil(1000000. / n_samples)))
+
+def create_class_labels(sample_names, sample_labels):
+    str_labels = [sample_labels[name] for name in sample_names]
+
+    encoder = LabelEncoder()
+    labels = encoder.fit_transform(str_labels)
+
+    return labels, encoder.classes_
+    
+
+def test_labels(coordinates, sample_names, sample_labels):
+    class_labels, class_names = create_class_labels(sample_names, sample_labels)
+
+    n_iter = estimate_lr_iter(len(coordinates))
+    # we set the intercept to the class ratios in the lr test function
+    lr = SGDClassifier(penalty="l2",
+                       loss="log",
+                       max_iter = n_iter * 10.,
+                       tol=1e-8,
+                       fit_intercept=True)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        for i in range(coordinates.shape[1]):
+            features = coordinates[:, i].reshape(-1, 1)
+        
+            p_value = likelihood_ratio_test(features,
+                                            class_labels,
+                                            lr,
+                                            set_intercept=False)
+
+            lr.fit(features, class_labels)
+            pred_labels = lr.predict(features)
+            acc = 100. * accuracy_score(class_labels,
+                                        pred_labels)
+
+            bal_acc = 100. * balanced_accuracy_score(class_labels,
+                                                     pred_labels)
+
+            cm = confusion_matrix(class_labels,
+                                  pred_labels)
+
+            print("Component:", (i+1))
+            print("p-value: ", p_value)
+            print("Accuracy:", acc)
+            print("Balanced accuracy:", bal_acc)
+            print(cm)
+            print()
+
 
 def parseargs():
     parser = argparse.ArgumentParser()
@@ -292,6 +355,14 @@ def parseargs():
                                        type=str,
                                        required=True,
                                        help="Labels file")
+
+    label_test_parser = subparsers.add_parser("test-labels",
+                                              help="Run association tests on PCs vs labels")
+
+    label_test_parser.add_argument("--labels-fl",
+                                   type=str,
+                                   required=True,
+                                   help="Labels file")
     
     return parser.parse_args()
 
@@ -324,6 +395,12 @@ if __name__ == "__main__":
                       args.n_clusters,
                       sample_names,
                       labels)
+
+    elif args.mode == "test-labels":
+        labels = read_labels(args.labels_fl)
+        test_labels(coordinates,
+                    sample_names,
+                    labels)
         
     else:
         print("Unknown mode '%s'" % args.mode)
