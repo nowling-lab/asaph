@@ -29,20 +29,20 @@ If you did association testing using SNPs from across the genome, you will need 
 
 ```
 $ for i in 2L 2R X 3R 3L;
-    do
+  do
       python split_by_chromsome.py --input <workdir>/analysis/snp_pc_1_logreg_assoc_tests.tsv \
                                    --output <workdir>/analysis/snp_pc_1_${i}_logreg_assoc_tests.tsv \
                                    --select-id $i \
                                    --output-id $i
-    done
+  done
 ```
 
 You can use the included script like so:
 
 ```
 $ for i in 2L 2R X 3R 3L;
-    do
+  do
       python manhattan_plot.py --input-tsv <workdir>/analysis/snp_pc_1_${i}_logreg_assoc_tests.tsv \
                                --plot-fl <workdir>/figures/manhattan_pc_1_${i}.png
-    done
+  done
 ```
