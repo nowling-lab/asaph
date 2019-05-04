@@ -40,6 +40,9 @@ matplotlib.use("PDF")
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# apply seaborn style config
+sns.set()
+
 def read_pca_coordinates(flname):
     sample_coordinates = []
     sample_names = []
