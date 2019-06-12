@@ -16,6 +16,7 @@ limitations under the License.
 
 
 import argparse
+from collections import defaultdict
 import os
 import sys
 import warnings
@@ -195,6 +196,30 @@ def test_clusters(coordinates, components, n_clusters, sample_names, labels):
         print("Classifier accuracy:", acc)
         print("Balanced accuracy:", bal_acc)
 
+def output_clusters(coordinates, components, n_clusters, sample_names, labels_fl):
+    components = list(map(lambda idx: idx - 1, components))
+    
+    selected = coordinates[:, components]
+
+    _, cluster_idx, inertia = k_means(selected,
+                                      n_clusters,
+                                      n_jobs=-2)
+
+    # group samples by cluster
+    populations = defaultdict(set)
+    for i, sample_name in enumerate(sample_names):
+        cluster_assignment = cluster_idx[i]
+        populations[cluster_assignment].add(sample_name)
+
+    with open(labels_fl, "w") as fl:
+        for pop_name, samples in populations.items():
+            fl.write(str(pop_name))
+            for name in samples:
+                fl.write(",")
+                fl.write(name)
+            fl.write("\n")
+        
+
 def likelihood_ratio_test(features_alternate, labels, lr_model, set_intercept=True, g_scaling_factor=1.0):
     if isinstance(features_alternate, tuple) and len(features_alternate) == 2:
         training_features, testing_features = features_alternate
@@ -359,6 +384,25 @@ def parseargs():
                                        required=True,
                                        help="Labels file")
 
+    out_clusters_parser = subparsers.add_parser("output-clusters",
+                                                help="Output cluster labels")
+
+    out_clusters_parser.add_argument("--components",
+                                     type=int,
+                                     nargs="+",
+                                     required=True,
+                                     help="Components to use in projection")
+
+    out_clusters_parser.add_argument("--n-clusters",
+                                     type=int,
+                                     required=True,
+                                     help="Number of clusters")
+    
+    out_clusters_parser.add_argument("--labels-fl",
+                                     type=str,
+                                     required=True,
+                                     help="Labels file to output")
+    
     label_test_parser = subparsers.add_parser("test-labels",
                                               help="Run association tests on PCs vs labels")
 
@@ -398,6 +442,13 @@ if __name__ == "__main__":
                       args.n_clusters,
                       sample_names,
                       labels)
+
+    elif args.mode == "output-clusters":
+        output_clusters(coordinates,
+                        args.components,
+                        args.n_clusters,
+                        sample_names,
+                        args.labels_fl)
 
     elif args.mode == "test-labels":
         labels = read_labels(args.labels_fl)
