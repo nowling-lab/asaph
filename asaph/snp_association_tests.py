@@ -48,21 +48,13 @@ def run_lrtest_gt_dep(data_model, project_summary, args, stats_dir):
 
     labels = data_model.class_labels
     encoder = OneHotEncoder(sparse=False)
-
+    
     flname = "snp_lrtests_gt.tsv"
     n_pops = len(set(data_model.class_labels))
     with open(os.path.join(stats_dir, flname), "w") as fl:
         next_output = 1
 
         headers = ["chrom", "pos", "snp_p_value"]
-        for i in xrange(n_pops):
-            headers.append("%s" % project_summary.population_names[i])
-
-        for i in xrange(n_pops):
-            headers.append("%s_homo_ref" % project_summary.population_names[i])
-            headers.append("%s_homo_alt" % project_summary.population_names[i])
-            headers.append("%s_hetero" % project_summary.population_names[i])
-
         fl.write("\t".join(headers))
         fl.write("\n")
         
@@ -73,16 +65,12 @@ def run_lrtest_gt_dep(data_model, project_summary, args, stats_dir):
             N_COPIES = 3
             pops, snp_genotypes = upsample_features(data_model.class_labels,
                                                     genotypes[:, feature_idx])
-
-
+            
             # as we're using the genotypes as the labels,
             # they need to be one dimensional
             snp_genotypes = snp_genotypes.argmax(axis=1)
 
             p_value = 1.0
-            pop_p_values = np.ones(n_pops)
-            pop_features = np.eye(n_pops)
-            pop_gt_probs = np.zeros((n_pops, 3))
             if len(set(snp_genotypes)) > 1:
                 # likewise, the pops need to 2D and one-hot encoded
                 pops = pops.reshape(-1, 1)
@@ -95,27 +83,12 @@ def run_lrtest_gt_dep(data_model, project_summary, args, stats_dir):
                                                 snp_genotypes,
                                                 lr,
                                                 g_scaling_factor = 1.0 / N_COPIES)
-
-                # samples x genotypes matrix
-                pop_gt_probs = lr.predict_proba(pop_features)
-                
-                for j in xrange(n_pops):
-                    pop_p_values[j] = likelihood_ratio_test(pops[:, j].reshape(-1, 1),
-                                                            snp_genotypes,
-                                                            lr,
-                                                            g_scaling_factor = 1.0 / N_COPIES)
-
             
             if i == next_output:
                 print i, "Position", pos_label, "has p-value", p_value
                 next_output *= 2
 
             fl.write("\t".join([chrom, pos, "%.2E" % p_value]))
-            fl.write("\t")
-            fl.write("\t".join(map(lambda f: "%.2E" % f, pop_p_values)))
-            for j in xrange(n_pops):
-                fl.write("\t")
-                fl.write("\t".join(map(lambda f: "%.3f" % f, pop_gt_probs[j, :])))
             fl.write("\n")
 
 
