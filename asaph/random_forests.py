@@ -30,14 +30,18 @@ from asaph.analysis import histogram_sparse_to_dense
 from asaph.analysis import plot_feature_histogram
 from asaph.analysis import similarity_within_model
 from asaph.analysis import plot_similarity_within_model
+
 from asaph.ml import ConstrainedBaggingRandomForest
-from asaph.newioutils import read_features
-from asaph.newioutils import read_rf_snps
-from asaph.newioutils import write_rf_snps
 
 from asaph.newioutils import deserialize
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
+from asaph.newioutils import read_populations
+from asaph.newioutils import read_features
+from asaph.newioutils import read_rf_snps
 from asaph.newioutils import serialize
+from asaph.newioutils import write_rf_snps
+
+from asaph.utils import make_labels
 
 def write_interactions(basedir, n_trees, used_feature_sets):
     model_dir = os.path.join(basedir, "models", "rf", str(n_trees))
@@ -47,7 +51,7 @@ def write_interactions(basedir, n_trees, used_feature_sets):
     flname = os.path.join(model_dir, "interactions")
     serialize(flname, used_feature_sets)
 
-def train_model(args):
+def train_model(args, sample_populations):
     workdir = args["workdir"]
 
     figures_dir = os.path.join(workdir, "figures")
@@ -65,6 +69,8 @@ def train_model(args):
         sys.exit(1)
 
     features = read_features(workdir)
+    class_labels = make_labels(features.sample_labels,
+                               sample_populations)
 
     rf = ConstrainedBaggingRandomForest(n_trees,
                                         n_resamples,
@@ -72,7 +78,7 @@ def train_model(args):
     feature_importances, used_feature_counts, used_feature_sets = \
                                                rf.feature_importances(
                                                    features.feature_matrix,
-                                                   features.class_labels,
+                                                   class_labels,
                                                    statistics=args["statistics"],
                                                    interactions=args["interactions"])
 
@@ -91,9 +97,11 @@ def train_model(args):
     rf = ConstrainedBaggingRandomForest(n_trees,
                                         n_resamples,
                                         args["batch_size"])
+    
     feature_importances, _, _ = rf.feature_importances(features.feature_matrix,
-                                                    features.class_labels,
-                                                    statistics=False)
+                                                       class_labels,
+                                                       statistics=False)
+    
     snp_importances = features.rank_snps(feature_importances)
     write_rf_snps(workdir, snp_importances, n_trees, "model2")
 
@@ -204,6 +212,11 @@ def parseargs():
     train_parser.add_argument("--interactions",
                               action="store_true",
                               help="Record feature interactions")
+
+    train_parser.add_argument("--populations",
+                              type=str,
+                              help="Population labels",
+                              required=True)
     
     analyze_parser = subparsers.add_parser("analyze-rankings",
                                            help="Analyze rankings")
@@ -230,7 +243,14 @@ if __name__ == "__main__":
     args = parseargs()
 
     if args.mode == "train":
-        train_model(vars(args))
+        sample_populations, populations = read_populations(args.populations)
+    
+        n_pops = len(populations)
+        if n_pops < 2:
+            raise Exception("Need at least 2 populations!")
+
+        train_model(vars(args), sample_populations)
+        
     elif args.mode == "analyze-rankings":
         analyze_rankings(vars(args))
     elif args.mode == "output-rankings":

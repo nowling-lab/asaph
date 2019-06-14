@@ -16,6 +16,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/random_forests \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--statistics \
 	--interactions \
 	--trees 100
@@ -69,6 +70,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/random_forests \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--trees 100 \
 	--statistics \
 	--interactions \
