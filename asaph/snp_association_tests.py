@@ -30,27 +30,37 @@ from sklearn.preprocessing import OneHotEncoder
 from asaph.ml import estimate_lr_iter
 from asaph.ml import likelihood_ratio_test
 from asaph.ml import upsample_features
-from asaph.newioutils import read_features
 from asaph.newioutils import deserialize
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
+from asaph.newioutils import read_features
+from asaph.newioutils import read_populations
 from asaph.newioutils import serialize
 
+def make_labels(sample_labels, sample_populations):
+    populations = []
+    for name in sample_labels:
+        if name in sample_populations:
+            populations.append(sample_populations[name])
+        else:
+            raise Exception("Population unknown for sample '%s'" % name)
 
-def run_lrtest_gt_dep(data_model, project_summary, args, stats_dir):
+    return populations
+
+def run_lrtest_gt_dep(data_model, project_summary, args, stats_dir, class_labels):
     genotypes = data_model.feature_matrix
     
-    n_iter = estimate_lr_iter(len(data_model.class_labels))
+    n_iter = estimate_lr_iter(len(class_labels))
 
     lr = SGDClassifier(penalty="l2",
                        loss="log",
                        n_iter = n_iter,
                        fit_intercept = False)
 
-    labels = data_model.class_labels
     encoder = OneHotEncoder(sparse=False)
     
-    flname = "snp_lrtests_gt.tsv"
-    n_pops = len(set(data_model.class_labels))
+    flname = "snp_lrtests_gt.tsv"    
+    n_pops = len(set(class_labels))
+    
     with open(os.path.join(stats_dir, flname), "w") as fl:
         next_output = 1
 
@@ -63,7 +73,7 @@ def run_lrtest_gt_dep(data_model, project_summary, args, stats_dir):
             chrom, pos = pos_label
 
             N_COPIES = 3
-            pops, snp_genotypes = upsample_features(data_model.class_labels,
+            pops, snp_genotypes = upsample_features(class_labels,
                                                     genotypes[:, feature_idx])
             
             # as we're using the genotypes as the labels,
@@ -92,8 +102,9 @@ def run_lrtest_gt_dep(data_model, project_summary, args, stats_dir):
             fl.write("\n")
 
 
-def run_lrtest_pop_dep(features, project_summary, args, stats_dir):
-    n_iter = estimate_lr_iter(len(features.class_labels))
+def run_lrtest_pop_dep(features, project_summary, args, stats_dir, class_labels):
+    n_iter = estimate_lr_iter(len(class_labels))
+    labels = np.array(class_labels)
 
     fit_intercept = False
     if args.intercept == "free-parameter":
@@ -111,7 +122,6 @@ def run_lrtest_pop_dep(features, project_summary, args, stats_dir):
             snp_label, feature_idx = pair
             chrom, pos = snp_label
 
-            labels = np.array(features.class_labels)
             snp_features = features.feature_matrix[:, feature_idx]
 
             if args.adjustment != "none":
@@ -157,6 +167,8 @@ def parseargs():
 
     parser.add_argument("--workdir", type=str, help="Work directory", required=True)
 
+    parser.add_argument("--populations", type=str, help="Populations file", required=True)
+
     parser.add_argument("--intercept",
                         type=str,
                         default="class-probabilities",
@@ -185,6 +197,12 @@ def parseargs():
 if __name__ == "__main__":
     args = parseargs()
 
+    populations, sample_populations = read_populations(args.populations)
+
+    n_pops = len(populations)
+    if n_pops < 2:
+        raise Exception("Need at least 2 populations!")
+    
     if not os.path.exists(args.workdir):
         print "Work directory '%s' does not exist." % args.workdir
         sys.exit(1)
@@ -197,13 +215,18 @@ if __name__ == "__main__":
     
     features = read_features(args.workdir)
 
+    class_labels = make_labels(features.sample_labels,
+                               sample_populations)
+    
     if args.dependent_variable == "genotype":
         run_lrtest_gt_dep(features,
                           project_summary,
                           args,
-                          stats_dir)
+                          stats_dir,
+                          class_labels)
     else:
         run_lrtest_pop_dep(features,
                            project_summary,
                            args,
-                           stats_dir)
+                           stats_dir,
+                           class_labels)

@@ -16,6 +16,7 @@ limitations under the License.
 
 import cPickle
 from collections import defaultdict
+from collections import OrderedDict
 import glob
 import os
 import struct
@@ -32,6 +33,31 @@ FEATURE_MATRIX_FLNAME = "feature_matrix.npy"
 SNP_FEATURE_INDICES_FLNAME = "snp_feature_indices"
 SNP_FEATURE_GENOTYPES_FLNAME = "snp_feature_genotypes"
 PROJECT_SUMMARY_FLNAME = "project_summary"
+
+def read_populations(flname):
+    """
+    Read populations from a file.
+
+    We assume that the file has one population per line.  The population name
+    comes first and is followed by a comma.  The name of each sample follows,
+    also separated by comma.
+
+    For example:
+
+    pop1,sample_1,sample_2
+    pop2,sample_3,sample_4
+    """
+    with open(flname) as fl:
+        groups = OrderedDict()
+        group_names = OrderedDict()
+        for group_id, ln in enumerate(fl):
+            cols = ln.strip().split(",")
+            for ident in cols[1:]:
+                groups[ident] = group_id
+                group_names[group_id] = cols[0]
+
+    return groups, group_names
+
 
 def serialize(flname, obj):
     fl = open(flname, "w")
