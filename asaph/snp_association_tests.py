@@ -35,16 +35,7 @@ from asaph.newioutils import PROJECT_SUMMARY_FLNAME
 from asaph.newioutils import read_features
 from asaph.newioutils import read_populations
 from asaph.newioutils import serialize
-
-def make_labels(sample_labels, sample_populations):
-    populations = []
-    for name in sample_labels:
-        if name in sample_populations:
-            populations.append(sample_populations[name])
-        else:
-            raise Exception("Population unknown for sample '%s'" % name)
-
-    return populations
+from asaph.utils import make_labels
 
 def run_lrtest_gt_dep(data_model, project_summary, args, stats_dir, class_labels):
     genotypes = data_model.feature_matrix
@@ -104,7 +95,7 @@ def run_lrtest_gt_dep(data_model, project_summary, args, stats_dir, class_labels
 
 def run_lrtest_pop_dep(features, project_summary, args, stats_dir, class_labels):
     n_iter = estimate_lr_iter(len(class_labels))
-    labels = np.array(class_labels)
+    class_labels = np.array(class_labels)
 
     fit_intercept = False
     if args.intercept == "free-parameter":
@@ -125,8 +116,10 @@ def run_lrtest_pop_dep(features, project_summary, args, stats_dir, class_labels)
             snp_features = features.feature_matrix[:, feature_idx]
 
             if args.adjustment != "none":
-                labels, snp_features = upsample_features(labels,
-                                                         snp_features)
+                upsampled_labels, snp_features = upsample_features(class_labels,
+                                                                   snp_features)
+            else:
+                upsampled_labels = labels
 
             # remove columns that are all zeros since these
             # aren't true degrees of freedom.  prevents
@@ -144,13 +137,13 @@ def run_lrtest_pop_dep(features, project_summary, args, stats_dir, class_labels)
             if args.adjustment == "training-set":
                 snp_features = (snp_features,
                                 features.feature_matrix[:, feature_idx])
-                labels = (labels,
-                          np.array(features.class_labels))
+                upsampled_labels = (upsampled_labels,
+                                    class_labels)
             elif args.adjustment == "scaling-factor":
                 scaling_factor = 1.0 / 3.0
 
             p_value = likelihood_ratio_test(snp_features,
-                                            labels,
+                                            upsampled_labels,
                                             lr,
                                             set_intercept=set_intercept_to_class_prob,
                                             g_scaling_factor=scaling_factor)
@@ -197,7 +190,7 @@ def parseargs():
 if __name__ == "__main__":
     args = parseargs()
 
-    populations, sample_populations = read_populations(args.populations)
+    sample_populations, populations = read_populations(args.populations)
 
     n_pops = len(populations)
     if n_pops < 2:
@@ -214,9 +207,10 @@ if __name__ == "__main__":
     project_summary = deserialize(os.path.join(args.workdir, PROJECT_SUMMARY_FLNAME))
     
     features = read_features(args.workdir)
-
+    
     class_labels = make_labels(features.sample_labels,
                                sample_populations)
+    print class_labels
     
     if args.dependent_variable == "genotype":
         run_lrtest_gt_dep(features,
