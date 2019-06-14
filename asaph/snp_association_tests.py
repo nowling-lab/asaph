@@ -119,7 +119,7 @@ def run_lrtest_pop_dep(features, project_summary, args, stats_dir, class_labels)
                 upsampled_labels, snp_features = upsample_features(class_labels,
                                                                    snp_features)
             else:
-                upsampled_labels = labels
+                upsampled_labels = class_labels
 
             # remove columns that are all zeros since these
             # aren't true degrees of freedom.  prevents
@@ -210,7 +210,6 @@ if __name__ == "__main__":
     
     class_labels = make_labels(features.sample_labels,
                                sample_populations)
-    print class_labels
     
     if args.dependent_variable == "genotype":
         run_lrtest_gt_dep(features,
