@@ -16,6 +16,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--bagging \
 	--method sgd-l2 \
 	--n-models 50
@@ -28,6 +29,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--bagging \
 	--method sgd-l2 \
 	--n-models 75
@@ -40,6 +42,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--bagging \
 	--method sgd-l2 \
 	--n-models 150
@@ -76,6 +79,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--method sgd-l2 \
 	--n-models 50
 
@@ -87,6 +91,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--method sgd-l2 \
 	--n-models 75
 
@@ -98,6 +103,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--method sgd-l2 \
 	--n-models 150
 
@@ -133,6 +139,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--bagging \
 	--method sgd-en \
 	--n-models 50
@@ -145,6 +152,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--bagging \
 	--method sgd-en \
 	--n-models 75
@@ -157,6 +165,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--bagging \
 	--method sgd-en \
 	--n-models 150
@@ -193,6 +202,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--method sgd-en \
 	--n-models 50
 
@@ -204,6 +214,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--method sgd-en \
 	--n-models 75
 
@@ -215,6 +226,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--method sgd-en \
 	--n-models 150
 
@@ -250,6 +262,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--bagging \
 	--method sag-l2 \
 	--n-models 50
@@ -262,6 +275,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--bagging \
 	--method sag-l2 \
 	--n-models 75
@@ -274,6 +288,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--bagging \
 	--method sag-l2 \
 	--n-models 150
@@ -310,6 +325,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--method sag-l2 \
 	--n-models 50
 
@@ -321,6 +337,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--method sag-l2 \
 	--n-models 75
 
@@ -332,6 +349,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--method sag-l2 \
 	--n-models 150
 
@@ -367,6 +385,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--bagging \
 	--method asgd-l2 \
 	--n-models 50
@@ -379,6 +398,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--bagging \
 	--method asgd-l2 \
 	--n-models 75
@@ -391,6 +411,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--bagging \
 	--method asgd-l2 \
 	--n-models 150
@@ -427,6 +448,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--method asgd-l2 \
 	--n-models 50
 
@@ -438,6 +460,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--method asgd-l2 \
 	--n-models 75
 
@@ -449,6 +472,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--method asgd-l2 \
 	--n-models 150
 
@@ -484,6 +508,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--bagging \
 	--n-models 50
 
@@ -495,6 +520,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--bagging \
 	--n-models 75
 
@@ -506,6 +532,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--bagging \
 	--n-models 150
 
@@ -540,6 +567,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--n-models 50
 
     [ "$status" -eq 0 ]
@@ -550,6 +578,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--n-models 75
 
     [ "$status" -eq 0 ]
@@ -560,6 +589,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/logistic_regression \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--n-models 150
 
     [ "$status" -eq 0 ]

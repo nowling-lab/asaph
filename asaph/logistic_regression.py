@@ -31,12 +31,18 @@ from asaph.analysis import plot_similarity_curves
 from asaph.analysis import similarity_curves
 from asaph.analysis import similarity_within_model
 from asaph.analysis import plot_similarity_within_model
+
 from asaph.models import ProjectSummary
+
 from asaph.ml import LogisticRegressionEnsemble
-from asaph.newioutils import read_features
-from asaph.newioutils import serialize
+
 from asaph.newioutils import deserialize
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
+from asaph.newioutils import read_features
+from asaph.newioutils import read_populations
+from asaph.newioutils import serialize
+
+from asaph.utils import make_labels
 
 def write_snps(basedir, snps, method, n_models, model_id):
     model_dir = os.path.join(basedir, "models", "lr-" + method, str(n_models))
@@ -94,10 +100,12 @@ def analyze_rankings(args):
                            n_models,
                            common_feature_percentages)
 
-def train(args):
+def train(args, sample_populations):
     workdir = args.workdir
 
     features = read_features(workdir)
+    class_labels = make_labels(features.sample_labels,
+                               sample_populations)
 
     print "Training Ensemble 1"
     lr1 = LogisticRegressionEnsemble(args.n_models,
@@ -105,7 +113,7 @@ def train(args):
                                      args.batch_size,
                                      bagging=args.bagging)
     feature_importances = lr1.feature_importances(features.feature_matrix,
-                                                  features.class_labels)
+                                                  class_labels)
     snp_importances = features.rank_snps(feature_importances)
     write_snps(workdir, snp_importances, args.method, args.n_models, "1")
 
@@ -115,7 +123,7 @@ def train(args):
                                      args.batch_size,
                                      bagging=args.bagging)
     feature_importances = lr2.feature_importances(features.feature_matrix,
-                                                  features.class_labels)
+                                                  class_labels)
     snp_importances = features.rank_snps(feature_importances)
     write_snps(workdir, snp_importances, args.method, args.n_models, "2")
 
@@ -201,6 +209,11 @@ def parseargs():
                               default=100,
                               help="Number of models to train in each batch.")
 
+    train_parser.add_argument("--populations",
+                              type=str,
+                              help="Population labels",
+                              required=True)
+
     analyze_parser = subparsers.add_parser("analyze-rankings",
                                            help="Analyze rankings")
 
@@ -237,7 +250,14 @@ if __name__ == "__main__":
     args = parseargs()
 
     if args.mode == "train":
-        train(args)
+        sample_populations, populations = read_populations(args.populations)
+
+        n_pops = len(populations)
+        if n_pops < 2:
+            raise Exception("Need at least 2 populations!")
+
+        train(args, sample_populations)
+
     elif args.mode == "analyze-rankings":
         analyze_rankings(args)
     elif args.mode == "output-rankings":

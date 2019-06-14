@@ -78,6 +78,7 @@ Asaph can also be used for training ensembles of Logistic Regression models.  By
 
     bin/logistic_regression --workdir <path/to/workdir> \
                             train \
+                            --populations <populations file>
                             --n-models <number of models>
 
 Convergence of the SNP rankings can be evaluated like with the command:
