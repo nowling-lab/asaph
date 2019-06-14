@@ -30,6 +30,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/random_forests \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--trees 250
 
     [ "$status" -eq 0 ]
@@ -39,6 +40,7 @@ load model_setup_helper
     run ${BATS_TEST_DIRNAME}/../bin/random_forests \
 	--workdir ${WORKDIR_PATH} \
 	train \
+    --populations ${POPS_PATH} \
 	--trees 500
 
     [ "$status" -eq 0 ]
