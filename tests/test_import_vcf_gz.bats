@@ -89,7 +89,6 @@ setup() {
     run ${IMPORT_CMD} \
 	    --workdir ${WORKDIR_PATH} \
 	    --vcf-gz ${VCF_GZ_PATH} \
-	    --populations ${POPS_PATH} \
 	    --feature-type categories \
 	    --compress
 
