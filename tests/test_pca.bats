@@ -30,28 +30,12 @@ load model_setup_helper
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
-        plot-projections \
-        --pairs 1 2 3 4
-
-    [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/figures/pca_projection_1_2.png" ]
-    [ -e "${WORKDIR_PATH}/figures/pca_projection_3_4.png" ]
-
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${WORKDIR_PATH} \
         output-coordinates \
         --selected-components 1 2 3 4 \
         --output-fl ${WORKDIR_PATH}/pca_coordinates.txt
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/pca_coordinates.txt" ]
-
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${WORKDIR_PATH} \
-        pop-association-tests
-
-    [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/analysis/population_pca_association_tests.tsv" ]
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
@@ -88,24 +72,6 @@ load model_setup_helper
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/analysis/snp_pc_1_linreg_assoc_tests.tsv" ]
     [ -e "${WORKDIR_PATH}/analysis/snp_pc_2_linreg_assoc_tests.tsv" ]
-    
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${WORKDIR_PATH} \
-        sweep-clusters \
-        --components 1 2 \
-        --n-clusters 2 4 6 8
-
-    [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/figures/cluster_inertia_1_2.png" ]
-
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${WORKDIR_PATH} \
-        cluster-samples \
-        --components 1 2 \
-        --n-clusters 2
-
-    [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/analysis/clusters_2.tsv" ]
 }
 
 @test "pca (counts)" {
@@ -126,46 +92,12 @@ load model_setup_helper
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${COUNTS_WORKDIR_PATH} \
-        plot-projections \
-        --pairs 1 2 3 4
-
-    [ "$status" -eq 0 ]
-    [ -e "${COUNTS_WORKDIR_PATH}/figures/pca_projection_1_2.png" ]
-    [ -e "${COUNTS_WORKDIR_PATH}/figures/pca_projection_3_4.png" ]
-
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${COUNTS_WORKDIR_PATH} \
         output-coordinates \
         --selected-components 1 2 3 4 \
         --output-fl ${COUNTS_WORKDIR_PATH}/pca_coordinates.txt
 
     [ "$status" -eq 0 ]
     [ -e "${COUNTS_WORKDIR_PATH}/pca_coordinates.txt" ]
-
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${COUNTS_WORKDIR_PATH} \
-        pop-association-tests
-
-    [ "$status" -eq 0 ]
-    [ -e "${COUNTS_WORKDIR_PATH}/analysis/population_pca_association_tests.tsv" ]
-
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${COUNTS_WORKDIR_PATH} \
-        sweep-clusters \
-        --components 1 2 \
-        --n-clusters 2 4 6 8
-    
-    [ "$status" -eq 0 ]
-    [ -e "${COUNTS_WORKDIR_PATH}/figures/cluster_inertia_1_2.png" ]
-
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${COUNTS_WORKDIR_PATH} \
-        cluster-samples \
-        --components 0 1 \
-        --n-clusters 2
-    
-    [ "$status" -eq 0 ]
-    [ -e "${COUNTS_WORKDIR_PATH}/analysis/clusters_2.tsv" ]
 }
 
 @test "nmf (categories)" {
@@ -180,28 +112,12 @@ load model_setup_helper
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
-        plot-projections \
-        --pairs 1 2 3 4
-
-    [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/figures/pca_projection_1_2.png" ]
-    [ -e "${WORKDIR_PATH}/figures/pca_projection_3_4.png" ]
-
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${WORKDIR_PATH} \
         output-coordinates \
         --selected-components 1 2 3 4 \
         --output-fl ${WORKDIR_PATH}/pca_coordinates.txt
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/pca_coordinates.txt" ]
-
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${WORKDIR_PATH} \
-        pop-association-tests
-
-    [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/analysis/population_pca_association_tests.tsv" ]
 
     run ${BATS_TEST_DIRNAME}/../bin/pca \
 	    --workdir ${WORKDIR_PATH} \
@@ -237,24 +153,6 @@ load model_setup_helper
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/analysis/snp_pc_1_linreg_assoc_tests.tsv" ]
-    [ -e "${WORKDIR_PATH}/analysis/snp_pc_2_linreg_assoc_tests.tsv" ]
-    
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${WORKDIR_PATH} \
-        sweep-clusters \
-        --components 1 2 \
-        --n-clusters 2 4 6 8
-
-    [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/figures/cluster_inertia_1_2.png" ]
-
-    run ${BATS_TEST_DIRNAME}/../bin/pca \
-	    --workdir ${WORKDIR_PATH} \
-        cluster-samples \
-        --components 1 2 \
-        --n-clusters 2
-
-    [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/analysis/clusters_2.tsv" ]
+    [ -e "${WORKDIR_PATH}/analysis/snp_pc_2_linreg_assoc_tests.tsv" ]    
 }
 

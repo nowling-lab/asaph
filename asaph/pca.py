@@ -39,10 +39,10 @@ from sklearn.preprocessing import binarize
 from asaph.ml import estimate_lr_iter
 from asaph.ml import likelihood_ratio_test
 from asaph.ml import snp_linreg_pvalues
+
 from asaph.newioutils import read_features
 from asaph.newioutils import deserialize
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
-
 
 MODEL_KEY = "model"
 PROJECTION_KEY = "projected-coordinates"
@@ -105,70 +105,6 @@ def explained_variance_analysis(args):
     plt.savefig(fig_flname,
                 DPI=300)
 
-def pairwise(iterable):
-    iterable = iter(iterable)
-    try:
-        while True:
-            a = next(iterable)
-            b = next(iterable)
-            yield a, b
-    except StopIteration:
-        pass
-    
-def plot_projections(args):
-    if len(args.pairs) % 2 != 0:
-        print "Error: PCs must be provided in pairs of 2"
-        sys.exit(1)
-
-    workdir = args.workdir
-
-    figures_dir = os.path.join(workdir, "figures")
-    if not os.path.exists(figures_dir):
-        os.makedirs(figures_dir)
-
-    model_fl = os.path.join(workdir,
-                            "models",
-                            "pca.pkl")
-    model = joblib.load(model_fl)
-    projected = model[PROJECTION_KEY]
-    
-    features = read_features(workdir)
-    
-    project_summary = deserialize(os.path.join(workdir,
-                                               PROJECT_SUMMARY_FLNAME))
-
-    all_labels = set(features.class_labels)
-    labels = np.array(features.class_labels, dtype=np.int32)
-    populations = []
-    for l in all_labels:
-        pop = labels == l
-        pop_name = project_summary.population_names[l]
-        populations.append((pop, pop_name))
-
-    for p1, p2 in pairwise(args.pairs):
-        fig_flname = os.path.join(figures_dir,
-                                  "pca_projection_%s_%s.png" % (str(p1), str(p2)))
-        plt.clf()
-        plt.grid(True)
-        colors = ["m", "c", "k", "r", "g", "b"]
-        markers = ["o"] * len(colors) + \
-                  ["s"] * len(colors) + \
-                  ["+"] * len(colors)
-        for idx, (pop_idx, pop_name) in enumerate(populations):
-            plt.scatter(projected[pop_idx, p1 - 1],
-                        projected[pop_idx, p2 - 1],
-                        color=colors[idx % len(colors)],
-                        marker=markers[idx % len(markers)],
-                        edgecolor="k",
-                        alpha=0.7,
-                        label=pop_name)
-        plt.xlabel("Principal Component %s" % p1, fontsize=16)
-        plt.ylabel("Principal Component %s" % p2, fontsize=16)
-        if len(all_labels) > 1:
-            plt.legend()
-        plt.savefig(fig_flname,
-                    DPI=300)
-
 def output_coordinates(args):
     workdir = args.workdir
 
@@ -185,14 +121,13 @@ def output_coordinates(args):
     features = read_features(workdir)
 
     with open(args.output_fl, "w") as fl:
-        headers = ["sample", "population_index", "population_name"]
+        headers = ["sample", "population_name"]
         headers.extend(map(str, args.selected_components))
         fl.write("\t".join(headers))
         fl.write("\n")
 
         for i in xrange(len(features.sample_labels)):
             sample = features.sample_labels[i]
-            pop_idx = features.class_labels[i]
             pop_name = project_summary.population_names[pop_idx]
             line = [sample, str(pop_idx), pop_name]
             line.extend(map(str, selected[i, :]))
@@ -267,56 +202,6 @@ def output_loading_factors(args):
                 fl.write("\t".join(map(str, features)))
                 fl.write("\n")
 
-def pop_association_tests(args):
-    workdir = args.workdir
-
-    analysis_dir = os.path.join(workdir, "analysis")
-    if not os.path.exists(analysis_dir):
-        os.makedirs(analysis_dir)
-
-    project_summary = deserialize(os.path.join(workdir,
-                                               PROJECT_SUMMARY_FLNAME))
-    
-    model_fl = os.path.join(workdir,
-                            "models",
-                            "pca.pkl")
-    model = joblib.load(model_fl)    
-    projections = model[PROJECTION_KEY]
-
-    data_model = read_features(workdir)
-
-    n_iter = estimate_lr_iter(len(data_model.sample_labels))
-    # we set the intercept to the class ratios in the lr test function
-    lr = SGDClassifier(penalty="l2",
-                       loss="log",
-                       n_iter = n_iter * 10.,
-                       fit_intercept=True)
-
-    pvalues_fl = os.path.join(analysis_dir, "population_pca_association_tests.tsv")
-    class_labels = np.array(data_model.class_labels)
-    with open(pvalues_fl, "w") as fl:
-        for i in xrange(projections.shape[1]):
-            features = projections[:, i].reshape(-1, 1)
-
-            p_value = likelihood_ratio_test(features,
-                                            class_labels,
-                                            lr,
-                                            set_intercept=False)
-
-            lr.fit(features, class_labels)
-            pred_labels = lr.predict(features)
-            acc = 100. * accuracy_score(class_labels,
-                                        pred_labels)
-
-            cm = confusion_matrix(class_labels,
-                                  pred_labels)
-
-            print (i+1), p_value, acc
-            print cm
-            print
-
-            fl.write("%s\t%s\t%s\n" % (i + 1, p_value, acc))
-
 def generate_training_set(features, projections):
     """
     Converts genotype categories to class labels and imputed unknown genotypes.
@@ -369,7 +254,7 @@ def snp_logreg_association_tests(args):
 
     data_model = read_features(workdir)
 
-    n_iter = estimate_lr_iter(len(data_model.class_labels))
+    n_iter = estimate_lr_iter(len(data_model.sample_labels))
     # we set the intercept to the class ratios in the lr test function
     lr = SGDClassifier(penalty="l2",
                        loss="log",
@@ -461,87 +346,6 @@ def snp_linreg_association_tests(args):
                     fl.write(str(gt_pred_ys[j]))
                 fl.write("\n")
 
-def sweep_clusters(args):
-    workdir = args.workdir
-
-    figures_dir = os.path.join(workdir, "figures")
-    if not os.path.exists(figures_dir):
-        os.makedirs(figures_dir)
-    
-    project_summary = deserialize(os.path.join(workdir,
-                                               PROJECT_SUMMARY_FLNAME))
-
-    model_fl = os.path.join(workdir,
-                            "models",
-                            "pca.pkl")
-    model = joblib.load(model_fl)    
-    projected = model[PROJECTION_KEY]
-    components = map(lambda idx: idx - 1, args.components)
-    selected = projected[:, components]
-
-    features = read_features(workdir)
-
-    inertia_values = []
-    for k in args.n_clusters:
-        print "Clustering with %s clusters" % k
-        _, _, inertia = k_means(selected,
-                                k,
-                                n_jobs=-2)
-        inertia_values.append(inertia)
-
-
-    plt.plot(args.n_clusters,
-             inertia_values,
-             "k.-")
-    plt.xlabel("Number of Clusters", fontsize=16)
-    plt.ylabel("Inertia", fontsize=16)
-
-    fig_flname = os.path.join(figures_dir,
-                              "cluster_inertia")
-    for dim in args.components:
-        fig_flname += "_%s" % dim
-    fig_flname += ".png"
-
-    plt.savefig(fig_flname,
-                DPI=300)
-
-def cluster_samples(args):
-    workdir = args.workdir
-
-    analysis_dir = os.path.join(workdir, "analysis")
-    if not os.path.exists(analysis_dir):
-        os.makedirs(analysis_dir)
-    
-    project_summary = deserialize(os.path.join(workdir,
-                                               PROJECT_SUMMARY_FLNAME))
-
-    model_fl = os.path.join(workdir,
-                            "models",
-                            "pca.pkl")
-    model = joblib.load(model_fl)    
-    projected = model[PROJECTION_KEY]
-    components = map(lambda idx: idx - 1, args.components)
-    selected = projected[:, components]
-
-    features = read_features(workdir)
-
-    _, labels, inertia = k_means(selected,
-                                 args.n_clusters,
-                                 n_jobs=-2)
-
-    fig_flname = os.path.join(analysis_dir,
-                              "clusters_%s.tsv" % args.n_clusters)
-
-    clusters = defaultdict(list)
-    for name, cluster in zip(features.sample_labels, labels):
-        clusters[cluster].append(name)
-        
-    with open(fig_flname, "w") as fl:
-        for cluster, samples in clusters.iteritems():
-            fl.write(str(cluster))
-            fl.write(",")
-            fl.write(",".join(samples))
-            fl.write("\n")
     
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - PCA")
@@ -584,15 +388,6 @@ def parseargs():
                                required=True,
                                help="Output file")
     
-    plot_parser = subparsers.add_parser("plot-projections",
-                                        help="Plot samples on principal coordinates")
-
-    plot_parser.add_argument("--pairs",
-                             type=int,
-                             nargs="+",
-                             required=True,
-                             help="Pairs of PCs to plot")
-
     snp_association_parser = subparsers.add_parser("snp-association-tests",
                                                    help="Run association tests on PCs vs SNPs")
     snp_association_parser.add_argument("--components",
@@ -607,37 +402,6 @@ def parseargs():
                                                  "linear"],
                                         required=True,
                                         help="Type of model")
-
-    pop_association_parser = subparsers.add_parser("pop-association-tests",
-                                                   help="Run association tests on PCs vs population labels")
-
-    sweep_clusters_parser = subparsers.add_parser("sweep-clusters",
-                                                   help="K-Means for a range of clusters")
-    sweep_clusters_parser.add_argument("--components",
-                                       type=int,
-                                       nargs="+",
-                                       required=True,
-                                       help="Components to use in projection")
-
-    sweep_clusters_parser.add_argument("--n-clusters",
-                                       type=int,
-                                       nargs="+",
-                                       required=True,
-                                       help="Cluster counts to try")
-
-    cluster_samples_parser = subparsers.add_parser("cluster-samples",
-                                                   help="Cluster samples with K-Means")
-                     
-    cluster_samples_parser.add_argument("--components",
-                                       type=int,
-                                       nargs="+",
-                                       required=True,
-                                       help="Components to use in projection")
-
-    cluster_samples_parser.add_argument("--n-clusters",
-                                       type=int,
-                                       required=True,
-                                       help="Number of clusters")
 
     loading_magnitudes_parser = subparsers.add_parser("output-loading-magnitudes",
                                                       help="Output loading magnitudes")
@@ -666,25 +430,17 @@ if __name__ == "__main__":
        train(args) 
     elif args.mode == "explained-variance-analysis":
         explained_variance_analysis(args)
-    elif args.mode == "plot-projections":
-        plot_projections(args)
     elif args.mode == "output-coordinates":
         output_coordinates(args)
     elif args.mode == "output-loading-magnitudes":
         output_loading_magnitudes(args)
     elif args.mode == "output-loading-factors":
         output_loading_factors(args)
-    elif args.mode == "pop-association-tests":
-        pop_association_tests(args)
     elif args.mode == "snp-association-tests":
         if args.model_type == "linear":
             snp_linreg_association_tests(args)
         elif args.model_type == "logistic":
             snp_logreg_association_tests(args)
-    elif args.mode == "sweep-clusters":
-        sweep_clusters(args)
-    elif args.mode == "cluster-samples":
-        cluster_samples(args)
     else:
         print "Unknown mode '%s'" % args.mode
         sys.exit(1)
