@@ -1,4 +1,4 @@
-# Associating Testing
+# Association Testing
 
 In our 2018 JBCB paper [Adjusted Likelihood-Ratio Test for Variants with Unknown Genotypes](https://www.worldscientific.com/doi/10.1142/S0219720018400206), we described an association test that is adjusted for missing genotypes to avoid false positives.  In this tutorial, we describe how to use Asaph to run the association tests.
 
