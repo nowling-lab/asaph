@@ -22,7 +22,6 @@ from scipy import sparse
 
 from newioutils import *
 from vcf import UNKNOWN_GENOTYPE
-from vcf import read_groups
 
 DNA_MAP = {"A" : 0,
            "T" : 1,
@@ -51,13 +50,14 @@ AA_MAP = {"A" : 0,
           "W" : 19,
           "Y" : 20}
 
-def stream_fasta_fl(flname, kept_individuals):
+def stream_fasta_fl(flname, kept_individuals=None):
     with open(flname) as fl:
         identifier = None
         sequence = ""
         for ln in fl:
             if ln.startswith(">"):
-                if identifier != None and identifier in kept_individuals:
+                if identifier != None and \
+                   (kept_individuals is None or identifier in kept_individuals):
                     yield identifier, sequence
 
                 identifier = ln[1:].strip()
@@ -89,15 +89,19 @@ def convert(groups_flname, fasta_flname, seq_type, outbase):
     else:
         raise NotImplementedError, "Unknown sequence type (%s)" % seq_type
 
-    groups = read_groups(groups_flname)
+    if groups_flname:
+        groups = read_populations(groups_flname)
+        kept_individuals = set(groups.keys())
+    else:
+        kept_individuals = None
 
-    class_labels = [groups[ident] for ident in groups.keys()]
     sample_labels = []
     rows = []
     cols = []
     values = []
     feature_labels = None
-    for row, (sample_label, sequence) in enumerate(stream_fasta_fl(fasta_flname, set(groups.keys()))):
+    stream = stream_fasta_fl(fasta_flname, kept_individuals)
+    for row, (sample_label, sequence) in enumerate(stream):
         sample_features, feature_labels = extract_feature_vector(sequence, char_map, row)
         for r, c, v in sample_features:
             rows.append(r)
@@ -115,7 +119,6 @@ def convert(groups_flname, fasta_flname, seq_type, outbase):
              indices = feature_matrix.indices,
              indptr = feature_matrix.indptr,
              shape = feature_matrix.shape)
-
 
     serialize(os.path.join(outbase, FEATURE_LABELS_FLNAME), feature_labels)
     serialize(os.path.join(outbase, SAMPLE_LABELS_FLNAME), sample_labels)

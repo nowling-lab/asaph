@@ -33,18 +33,6 @@ GENOTYPE_OFFSET = 9
 
 UNKNOWN_GENOTYPE = (0, 0)
 
-def read_groups(flname):
-    fl = open(flname)
-    groups = OrderedDict()
-    group_names = OrderedDict()
-    for group_id, ln in enumerate(fl):
-        cols = ln.strip().split(",")
-        for ident in cols[1:]:
-            groups[ident] = group_id
-            group_names[group_id] = cols[0]
-
-    return groups, group_names
-
 ## Parsing
 def parse_vcf_line(ln, kept_pairs):
     """
@@ -89,9 +77,12 @@ def parse_vcf_line(ln, kept_pairs):
     return (variant_label, alleles, tuple(individual_genotypes))
 
 class VCFStreamer(object):
-    def __init__(self, flname, compressed, kept_individuals):
+    def __init__(self, flname, compressed, kept_individuals=None):
         self.flname = flname
-        self.kept_individuals = set(kept_individuals)
+        if kept_individuals:
+            self.kept_individuals = set(kept_individuals)
+        else:
+            self.kept_individuals = None
         self.compressed = compressed
         self.positions_read = 0
 
@@ -105,10 +96,12 @@ class VCFStreamer(object):
                 continue
 
         self.kept_pairs = [(i, name) for i, name in enumerate(self.individual_names)
-                           if name in self.kept_individuals]
+                           if self.kept_individuals is None \
+                           or name in self.kept_individuals]
 
         self.rows_to_names = [name for name in self.individual_names
-                              if name in self.kept_individuals]
+                              if self.kept_individuals is None \
+                              or name in self.kept_individuals]
 
     def __open__(self):
         if self.compressed:
@@ -206,10 +199,13 @@ class StreamCounter(object):
 
 def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compressed_vcf, allele_min_freq_threshold):
     # dictionary of individual ids to population ids
-    populations, population_names = read_groups(groups_flname)
-
-    # returns triplets of (variant_label, variant_alleles, genotype_counts)
-    stream = VCFStreamer(vcf_flname, compressed_vcf, populations.keys())
+    if groups_flname is not None:
+        populations, population_names = read_populations(groups_flname)
+        # returns triplets of (variant_label, variant_alleles, genotype_counts)
+        stream = VCFStreamer(vcf_flname, compressed_vcf, populations.keys())
+    else:
+        population_names = None
+        stream = VCFStreamer(vcf_flname, compressed_vcf)
 
     # remove SNPs with least-frequently occurring alleles less than a threshold
     variants = filter_invariants(allele_min_freq_threshold,
@@ -241,14 +237,12 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
     print feature_matrix.shape[0], "individuals"
     print feature_matrix.shape[1], "features"
 
-    class_labels = [populations[ident] for ident in stream.rows_to_names]
-
     project_summary = ProjectSummary(original_positions = stream.positions_read,
                                      filtered_positions = filtered_positions_counter.count,
                                      n_features = feature_matrix.shape[1],
                                      feature_encoding = feature_type,
                                      compressed = compress,
-                                     n_samples = len(class_labels),
+                                     n_samples = len(stream.rows_to_names),
                                      population_names = population_names)
 
     if compress:

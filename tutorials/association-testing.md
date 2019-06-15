@@ -17,13 +17,12 @@ To create an Asaph project, we first need to import the data.  A minimal command
 ```
 $ bin/import --vcf <path/to/vcf> \
     --compress \
-    --populations <path/to/populations_file> \
     --workdir <path/to/workdir>
 ```
 
 Asaph currently supports encoding SNPs as features in two ways: categories and counts.  In the categorical scheme, each genotype (e.g., A/T, A/A, T/T) is represented as a binary variable. In the counts scheme, each allele (e.g., A, T) is represented as an integer giving the number of copies (e.g., 0, 1, 2) of each allele the sample has.  The default and recommended scheme is to use categories.
 
-A file listing the sample ids for each population must also be specified.  The populations file contains one group per line, with the first column indicating the population name, and the sample names separated by commas like so:
+If you only wish to use a subset of the samples in the VCF file, you can provide a populations file using the `--selected-samples` flag.  The populations file contains one group per line, with the first column indicating the population name, and the sample names separated by commas like so:
 
 ```
 Population 1,Sample1,Sample2

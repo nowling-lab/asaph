@@ -31,7 +31,6 @@ setup() {
     run ${IMPORT_CMD} \
 	    --workdir ${WORKDIR_PATH} \
 	    --vcf-gz ${VCF_GZ_PATH} \
-	    --populations ${POPS_PATH} \
 	    --feature-type counts
 
     N_FEATURE_INDICES=$((N_SNPS * 2))
@@ -51,7 +50,6 @@ setup() {
     run ${IMPORT_CMD} \
 	    --workdir ${WORKDIR_PATH} \
 	    --vcf-gz ${VCF_GZ_PATH} \
-	    --populations ${POPS_PATH} \
 	    --feature-type categories
 
     N_FEATURE_INDICES=$((N_SNPS * 3))
@@ -71,7 +69,6 @@ setup() {
     run ${IMPORT_CMD} \
 	    --workdir ${WORKDIR_PATH} \
 	    --vcf-gz ${VCF_GZ_PATH} \
-	    --populations ${POPS_PATH} \
 	    --feature-type counts \
 	    --compress
 

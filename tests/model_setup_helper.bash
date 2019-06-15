@@ -24,13 +24,11 @@ setup() {
     ${BATS_TEST_DIRNAME}/../bin/import \
 			            --workdir ${WORKDIR_PATH} \
 			            --vcf ${VCF_PATH} \
-			            --populations ${POPS_PATH} \
 			            --feature-type categories
     
     ${BATS_TEST_DIRNAME}/../bin/import \
 			            --workdir ${COUNTS_WORKDIR_PATH} \
 			            --vcf ${VCF_PATH} \
-			            --populations ${POPS_PATH} \
 			            --feature-type counts
 }
 

@@ -23,42 +23,37 @@ from asaph.vcf import convert as convert_vcf
 from asaph.fasta import convert as convert_fasta
 
 def import_fasta(args):
-    seq_type = args["seq"]
+    seq_type = args.seq
     if seq_type is None:
         print "Sequence type must be specified for import"
         sys.exit(1)
 
-    workdir = args["workdir"]
-    if not os.path.exists(workdir):
-        os.makedirs(workdir)
+    if not os.path.exists(args.workdir):
+        os.makedirs(args.workdir)
 
-    convert_fasta(args["populations"],
-                  args["fasta"],
+    convert_fasta(args.selected_samples,
+                  args.fasta,
                   seq_type,
-                  workdir)
+                  args.workdir)
 
 def import_vcf(args):
-    workdir = args["workdir"]
-    if not os.path.exists(workdir):
-        os.makedirs(workdir)
+    if not os.path.exists(args.workdir):
+        os.makedirs(args.workdir)
 
-
-    if args["vcf"] is not None:
-        convert_vcf(args["populations"],
-                    args["vcf"],
-                    workdir,
-                    args["compress"],
-                    args["feature_type"],
-                    False,
-                    args["allele_min_freq_threshold"])
-    elif args["vcf_gz"] is not None:
-        convert_vcf(args["populations"],
-                    args["vcf_gz"],
-                    workdir,
-                    args["compress"],
-                    args["feature_type"],
-                    True,
-                    args["allele_min_freq_threshold"])
+    if args.vcf is not None:
+        flname = args.vcf
+        gzipped = False
+    else:
+        flname = args.vcf_gz
+        gzipped = True
+        
+    convert_vcf(args.selected_samples,
+                flname,
+                args.workdir,
+                args.compress,
+                args.feature_type,
+                gzipped,
+                args.allele_min_freq_threshold)
 
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph")
@@ -80,9 +75,9 @@ def parseargs():
     format_group.add_argument("--fasta", type=str, help="FASTA file to import")
     format_group.add_argument("--vcf-gz", type=str, help="Gzipped VCF file to import")
     
-    parser.add_argument("--populations",
+    parser.add_argument("--selected-samples",
                         type=str,
-                        help="Populations file to import")
+                        help="Use only these samples")
     
     parser.add_argument("--workdir",
                         type=str,
@@ -94,13 +89,12 @@ def parseargs():
                         help="Minimum allele frequency allowed",
                         default=0.000001)
 
-    return vars(parser.parse_args())
+    return parser.parse_args()
 
 if __name__ == "__main__":
     args = parseargs()
 
-    if args["vcf"] is not None \
-       or args["vcf_gz"] is not None:
+    if args.vcf or args.vcf_gz:
         import_vcf(args)
-    elif args["fasta"] is not None:
+    elif args.fasta:
         import_fasta(args)
