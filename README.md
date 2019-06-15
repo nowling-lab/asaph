@@ -25,7 +25,7 @@ Tutorials for using Asaph for analyses described in our papers are located in th
 ## Citing Asaph
 Please cite the following papers if you are using Asaph in your work:
 
-* RJ Nowling and SJ Emrich. [Detecting Chromosomal Inversions from Dense SNPs by Combining PCA and Association Tests](/publications/ACMBCB_2018.pdf). *Proceedings of the 9th ACM International Conference on Bioinformatics, Computational Biology and Health Informatics* (ACM-BCB 2018), August 2018. [Slides from the Talk](/publications/RNowling_ACMBCB2018_slides.pdf)
+* RJ Nowling and SJ Emrich. [Detecting Chromosomal Inversions from Dense SNPs by Combining PCA and Association Tests](/publications/ACMBCB_2018.pdf). *Proceedings of the 9th ACM International Conference on Bioinformatics, Computational Biology and Health Informatics* (ACM-BCB 2018), August 2018.
 * RJ Nowling and SJ Emrich. [Adjusted Likelihood-Ratio Test for Variants with Unknown Genotypes](https://www.worldscientific.com/doi/10.1142/S0219720018400206). *Journal of Bioinformatics and Computational Biology* (JBCB), 16(5) 2018.
 
 
