@@ -129,7 +129,7 @@ def output_coordinates(args):
         for i in xrange(len(features.sample_labels)):
             sample = features.sample_labels[i]
             pop_name = project_summary.population_names[pop_idx]
-            line = [sample, str(pop_idx), pop_name]
+            line = [sample, pop_name]
             line.extend(map(str, selected[i, :]))
             fl.write("\t".join(line))
             fl.write("\n")
