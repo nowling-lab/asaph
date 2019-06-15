@@ -119,6 +119,5 @@ def convert(groups_flname, fasta_flname, seq_type, outbase):
 
     serialize(os.path.join(outbase, FEATURE_LABELS_FLNAME), feature_labels)
     serialize(os.path.join(outbase, SAMPLE_LABELS_FLNAME), sample_labels)
-    serialize(os.path.join(outbase, CLASS_LABELS_FLNAME), class_labels)
     serialize(os.path.join(outbase, FIXED_DIFFERENCES_FLNAME), dict())
     serialize(os.path.join(outbase, MISSING_DATA_FLNAME), dict())
