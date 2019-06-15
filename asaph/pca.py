@@ -398,7 +398,7 @@ def parseargs():
                                         type=str,
                                         choices=["logistic",
                                                  "linear"],
-                                        required=True,
+                                        default="logistic",
                                         help="Type of model")
 
     loading_magnitudes_parser = subparsers.add_parser("output-loading-magnitudes",
