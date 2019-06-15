@@ -25,7 +25,6 @@ import matplotlib
 matplotlib.use("PDF")
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn
 
 from sklearn.cluster import k_means
 from sklearn.decomposition import NMF
@@ -128,8 +127,7 @@ def output_coordinates(args):
 
         for i in xrange(len(features.sample_labels)):
             sample = features.sample_labels[i]
-            pop_name = project_summary.population_names[pop_idx]
-            line = [sample, pop_name]
+            line = [sample]
             line.extend(map(str, selected[i, :]))
             fl.write("\t".join(line))
             fl.write("\n")
