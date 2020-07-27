@@ -26,11 +26,8 @@ from scipy import sparse
 
 from .models import *
 
-FEATURE_LABELS_FLNAME = "feature_labels"
 SAMPLE_LABELS_FLNAME = "sample_labels"
 FEATURE_MATRIX_FLNAME = "feature_matrix.npy"
-SNP_FEATURE_INDICES_FLNAME = "snp_feature_indices"
-SNP_FEATURE_GENOTYPES_FLNAME = "snp_feature_genotypes"
 PROJECT_SUMMARY_FLNAME = "project_summary"
 
 def read_populations(flname):
@@ -71,7 +68,6 @@ def deserialize(flname):
     return obj
 
 def read_features(basename):
-    snp_features_map = deserialize(os.path.join(basename, SNP_FEATURE_INDICES_FLNAME))
     sample_labels = deserialize(os.path.join(basename, SAMPLE_LABELS_FLNAME))
     if os.path.exists(os.path.join(basename, FEATURE_MATRIX_FLNAME + ".npz")):
         with np.load(os.path.join(basename, FEATURE_MATRIX_FLNAME + ".npz")) as loader:
@@ -85,16 +81,8 @@ def read_features(basename):
     else:
         feature_matrix = np.load(os.path.join(basename, FEATURE_MATRIX_FLNAME))
 
-    # to avoid breaking older formats
-    genotypes_flname = os.path.join(basename, SNP_FEATURE_GENOTYPES_FLNAME)
-    genotypes = None
-    if os.path.exists(genotypes_flname):
-        genotypes = deserialize(genotypes_flname)
-
     return Features(feature_matrix,
-                    snp_features_map,
-                    sample_labels,
-                    genotypes)
+                    sample_labels)
 
 def write_rf_snps(basedir, snps, n_trees, model_id):
     model_dir = os.path.join(basedir, "models", "rf", str(n_trees))

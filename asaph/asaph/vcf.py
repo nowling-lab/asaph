@@ -14,15 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from collections import OrderedDict
 import gzip
 import os
 import sys
 
 import numpy as np
+from scipy import sparse
+
+from sklearn.feature_extraction import FeatureHasher
 
 from newioutils import *
-
 from models import ProjectSummary
 from models import COUNTS_FEATURE_TYPE
 from models import CATEGORIES_FEATURE_TYPE
@@ -145,47 +146,41 @@ def filter_invariants(min_percentage, stream):
         
         if fraction >= min_percentage:
             yield (label, alleles, genotypes)
-
+            
 ## Feature extraction
-class CountFeaturesExtractor(object):
+class FeatureStringsExtractor(object):
     def __init__(self, stream):
         self.stream = stream
 
     def __iter__(self):
         for variant_label, alleles, genotypes in self.stream:
-            chrom, pos = variant_label
-            ref_column = [0.] * len(genotypes)
-            alt_column = [0.] * len(genotypes)
+            string_features = [None] * len(genotypes)
 
-            for row_idx, allele_counts in enumerate(genotypes):
-                ref_column[row_idx] = allele_counts[0]
-                alt_column[row_idx] = allele_counts[1]
+            homo_ref = ("%s_%s_het_%s" % (variant_label[0],
+                                          variant_label[1],
+                                          alleles[0]),
+                        1)
 
-            yield (chrom, pos, alleles[0]), tuple(ref_column)
-            yield (chrom, pos, alleles[1]), tuple(alt_column)
+            homo_alt = ("%s_%s_het_%s" % (variant_label[0],
+                                          variant_label[1],
+                                          alleles[1]),
+                        1)
 
-class CategoricalFeaturesExtractor(object):
-    def __init__(self, stream):
-        self.stream = stream
+            het = ("%s_%s_%s_%s" % (variant_label[0],
+                                    variant_label[1],
+                                    alleles[0],
+                                    alleles[1]),
+                   1)
 
-    def __iter__(self):
-        for variant_label, alleles, genotypes in self.stream:
-            chrom, pos = variant_label
-            homo1_column = [0.] * len(genotypes)
-            homo2_column = [0.] * len(genotypes)
-            het_column = [0.] * len(genotypes)
-
-            for row_idx, allele_counts in enumerate(genotypes):
+            for i, allele_counts in enumerate(genotypes):
                 if allele_counts == (2, 0):
-                    homo1_column[row_idx] = 1
+                    string_features[i] = homo_ref
                 elif allele_counts == (0, 2):
-                    homo2_column[row_idx] = 1
+                    string_features[i] = homo_alt
                 elif allele_counts == (1, 1):
-                    het_column[row_idx] = 1
+                    string_features[i] = het
 
-            yield (chrom, pos, (alleles[0] + "/" + alleles[0])), tuple(homo1_column)
-            yield (chrom, pos, (alleles[1] + "/" + alleles[1])), tuple(homo2_column)
-            yield (chrom, pos, (alleles[0] + "/" + alleles[1])), tuple(het_column)
+            yield string_features
 
 class StreamCounter(object):
     def __init__(self, stream):
@@ -197,42 +192,59 @@ class StreamCounter(object):
             self.count += 1
             yield item
 
-def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compressed_vcf, allele_min_freq_threshold):
+class Chunker(object):
+    def __init__(self, chunk_size, n_samples, stream):
+        self.chunk_size = chunk_size
+        self.n_samples = n_samples
+        self.buffer = [list() for i in xrange(n_samples)]
+        self.chunk_count = 0
+        self.processed_chunks = 0
+        self.stream = stream
+
+    def __iter__(self):
+        for feature_pairs in self.stream:
+            if self.chunk_count >= self.chunk_size:
+                self.processed_chunks += 1
+                print "Processed chunk", self.processed_chunks
+                yield self.buffer
+                self.buffer = [list() for i in xrange(self.n_samples)]
+                self.chunk_count = 0
+
+            self.chunk_count += 1
+            for i, pair in enumerate(feature_pairs):
+                if pair != None:
+                    self.buffer[i].append(pair)
+
+        if self.chunk_count > 0:
+            yield self.buffer
+
+class FeatureAccumulator(object):
+    def __init__(self, n_features, n_samples):
+        self.n_features = n_features
+        self.n_samples = n_samples
+        self.transformer = FeatureHasher(n_features = n_features,
+                                         input_type = "pair")
+        self.features = sparse.dok_matrix((n_samples, n_features), dtype=np.float32)
+
+    def transform(self, stream):
+        for chunk in stream:
+            self.features += self.transformer.transform(chunk)
+        return self.features.toarray()
+
+def convert(vcf_flname, outbase, n_features, chunk_size, compressed_vcf, allele_min_freq_threshold):
     # dictionary of individual ids to population ids
-    if groups_flname is not None:
-        populations, population_names = read_populations(groups_flname)
-        # returns triplets of (variant_label, variant_alleles, genotype_counts)
-        stream = VCFStreamer(vcf_flname, compressed_vcf, populations.keys())
-    else:
-        population_names = None
-        stream = VCFStreamer(vcf_flname, compressed_vcf)
+    stream = VCFStreamer(vcf_flname, compressed_vcf)
+    n_samples = len(stream.individual_names)
 
     # remove SNPs with least-frequently occurring alleles less than a threshold
     variants = filter_invariants(allele_min_freq_threshold,
                                  stream)
 
     filtered_positions_counter = StreamCounter(variants)
-
-    # extract features
-    if feature_type == COUNTS_FEATURE_TYPE:
-        extractor = CountFeaturesExtractor(filtered_positions_counter)
-    elif feature_type == CATEGORIES_FEATURE_TYPE:
-        extractor = CategoricalFeaturesExtractor(filtered_positions_counter)
-    else:
-        raise Exception, "Unknown feature type: %s" % feature_type
-
-    snp_features = defaultdict(list)
-    snp_genotypes = defaultdict(dict)
-    column_idx = 0
-    feature_columns = []
-    for feature_idx, ((chrom, pos, gt), column) in enumerate(extractor):
-        snp_genotypes[(chrom, pos)][column_idx] = gt
-        snp_features[(chrom, pos)].append(column_idx)
-        feature_columns.append(column)
-        column_idx += 1
-
-    # need to transpose, otherwise we get (n_features, n_individuals) instead
-    feature_matrix = np.array(feature_columns).T
+    string_features = FeatureStringsExtractor(filtered_positions_counter)
+    chunker = Chunker(chunk_size, n_samples, string_features)
+    accumulator = FeatureAccumulator(n_features, n_samples)
+    feature_matrix = accumulator.transform(chunker)
 
     print feature_matrix.shape[0], "individuals"
     print feature_matrix.shape[1], "features"
@@ -240,17 +252,9 @@ def convert(groups_flname, vcf_flname, outbase, compress, feature_type, compress
     project_summary = ProjectSummary(original_positions = stream.positions_read,
                                      filtered_positions = filtered_positions_counter.count,
                                      n_features = feature_matrix.shape[1],
-                                     feature_encoding = feature_type,
-                                     compressed = compress,
-                                     n_samples = len(stream.rows_to_names),
-                                     population_names = population_names)
-
-    if compress:
-        np.savez_compressed(os.path.join(outbase, FEATURE_MATRIX_FLNAME + ".npz"),
-                            feature_matrix = feature_matrix)
-    else:
-        np.save(os.path.join(outbase, FEATURE_MATRIX_FLNAME), feature_matrix)
+                                     n_samples = n_samples)
+    
+    np.savez_compressed(os.path.join(outbase, FEATURE_MATRIX_FLNAME + ".npz"),
+                        feature_matrix = feature_matrix)
     serialize(os.path.join(outbase, SAMPLE_LABELS_FLNAME), stream.rows_to_names)
-    serialize(os.path.join(outbase, SNP_FEATURE_INDICES_FLNAME), snp_features)
-    serialize(os.path.join(outbase, SNP_FEATURE_GENOTYPES_FLNAME), snp_genotypes)
     serialize(os.path.join(outbase, PROJECT_SUMMARY_FLNAME), project_summary)

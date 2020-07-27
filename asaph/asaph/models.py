@@ -25,10 +25,7 @@ ProjectSummary = namedtuple("ProjectSummary",
                             ["original_positions",
                              "filtered_positions",
                              "n_features",
-                             "feature_encoding",
-                             "compressed",
-                             "n_samples",
-                             "population_names"])
+                             "n_samples"])
 
 COUNTS_FEATURE_TYPE = "counts"
 CATEGORIES_FEATURE_TYPE = "categories"
@@ -82,11 +79,9 @@ class SNPs(object):
             % (len(self), self.ranked)
 
 class Features(object):
-    def __init__(self, feature_matrix, snp_feature_map, sample_labels, genotypes):
+    def __init__(self, feature_matrix, sample_labels):
         self.feature_matrix = feature_matrix
-        self.snp_feature_map = snp_feature_map
         self.sample_labels = sample_labels
-        self.snp_feature_genotypes = genotypes
 
     def rank_snps(self, feature_importances):
         feature_importances = np.abs(feature_importances)

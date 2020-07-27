@@ -47,11 +47,10 @@ def import_vcf(args):
         flname = args.vcf_gz
         gzipped = True
         
-    convert_vcf(args.selected_samples,
-                flname,
+    convert_vcf(flname,
                 args.workdir,
-                args.compress,
-                args.feature_type,
+                args.n_features,
+                args.chunk_size,
                 gzipped,
                 args.allele_min_freq_threshold)
 
@@ -63,22 +62,23 @@ def parseargs():
                         default="AA",
                         help="Sequence type for FASTA input")
 
-    parser.add_argument("--compress", action="store_true")
+    parser.add_argument("--n-features",
+                        type=int,
+                        required=True)
 
-    parser.add_argument("--feature-type",
-                        choices=["categories", "counts"],
-                        default="categories",
-                        help="Feature representation to use")
-    
+    parser.add_argument("--chunk-size",
+                        type=int,
+                        default=10000)
+
     format_group = parser.add_mutually_exclusive_group(required=True)
     format_group.add_argument("--vcf", type=str, help="VCF file to import")
     format_group.add_argument("--fasta", type=str, help="FASTA file to import")
     format_group.add_argument("--vcf-gz", type=str, help="Gzipped VCF file to import")
-    
+
     parser.add_argument("--selected-samples",
                         type=str,
                         help="Use only these samples")
-    
+
     parser.add_argument("--workdir",
                         type=str,
                         help="Work directory",
