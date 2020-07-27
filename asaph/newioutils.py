@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import cPickle
+import pickle
 from collections import defaultdict
 from collections import OrderedDict
 import glob
@@ -57,12 +57,12 @@ def read_populations(flname):
 
 def serialize(flname, obj):
     fl = open(flname, "w")
-    cPickle.dump(obj, fl)
+    pickle.dump(obj, fl)
     fl.close()
 
 def deserialize(flname):
     fl = open(flname)
-    obj = cPickle.load(fl)
+    obj = pickle.load(fl)
     fl.close()
 
     return obj

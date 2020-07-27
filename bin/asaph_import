@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Copyright 2015 Ronald J. Nowling
 
@@ -25,7 +27,7 @@ from asaph.fasta import convert as convert_fasta
 def import_fasta(args):
     seq_type = args.seq
     if seq_type is None:
-        print "Sequence type must be specified for import"
+        print("Sequence type must be specified for import")
         sys.exit(1)
 
     if not os.path.exists(args.workdir):

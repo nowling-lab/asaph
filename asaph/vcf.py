@@ -23,10 +23,10 @@ from scipy import sparse
 
 from sklearn.feature_extraction import FeatureHasher
 
-from newioutils import *
-from models import ProjectSummary
-from models import COUNTS_FEATURE_TYPE
-from models import CATEGORIES_FEATURE_TYPE
+from .newioutils import *
+from .models import ProjectSummary
+from .models import COUNTS_FEATURE_TYPE
+from .models import CATEGORIES_FEATURE_TYPE
 
 DEFAULT_COLUMNS = {'CHROM' : 0, 'POS' : 1, 'ID' : 2, 'REF' : 3, 'ALT' : 4, 'QUAL' : 5, 'FILTER' : 6, 'INFO' : 7, 'FORMAT' : 8}
 
@@ -205,7 +205,7 @@ class Chunker(object):
         for feature_pairs in self.stream:
             if self.chunk_count >= self.chunk_size:
                 self.processed_chunks += 1
-                print "Processed chunk", self.processed_chunks
+                print("Processed chunk", self.processed_chunks)
                 yield self.buffer
                 self.buffer = [list() for i in xrange(self.n_samples)]
                 self.chunk_count = 0
@@ -246,8 +246,8 @@ def convert(vcf_flname, outbase, n_features, chunk_size, compressed_vcf, allele_
     accumulator = FeatureAccumulator(n_features, n_samples)
     feature_matrix = accumulator.transform(chunker)
 
-    print feature_matrix.shape[0], "individuals"
-    print feature_matrix.shape[1], "features"
+    print(feature_matrix.shape[0], "individuals")
+    print(feature_matrix.shape[1], "features")
 
     project_summary = ProjectSummary(original_positions = stream.positions_read,
                                      filtered_positions = filtered_positions_counter.count,
