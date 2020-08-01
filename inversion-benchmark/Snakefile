@@ -1,0 +1,208 @@
+## process 16 Anopheles genomes data
+rule extract_ag16g_zipfile:
+    input:
+        ag16g="data/raw_data/doi_10.5061_dryad.f4114__v1.zip"
+    output:
+        vcf_tar_file="data/raw_data/VCFfile4DRYAD.tar.gz"
+    threads:
+        1
+    shell:
+        "unzip -d data/raw_data {input.ag16g} VCFfile4DRYAD.tar.gz"
+
+rule extract_ag16g_tarfile:
+    input:
+        tar_file="data/raw_data/VCFfile4DRYAD.tar.gz"
+    output:
+        vcf_files=expand("data/raw_data/VCFfile4DRYAD/AGC_refHC_bialSNP_AC2_2DPGQ.{chrom}_V2.CHRcode2.DRYAD.vcf.gz", chrom=["2L", "2R", "3L"])
+    threads:
+        1
+    shell:
+        "tar -C data/raw_data -xzvf {input.tar_file}"
+
+rule filter_ag16g_vcf:
+    input:
+        vcf="data/raw_data/VCFfile4DRYAD/AGC_refHC_bialSNP_AC2_2DPGQ.{chrom}_V2.CHRcode2.DRYAD.vcf.gz"
+    output:
+        vcf="data/ag16g/ag16g_{chrom}_gambiae_coluzzii.vcf.gz"
+    threads:
+        1
+    shell:
+        "vcftools --gzvcf {input.vcf} --recode --stdout --keep sample_lists/ag16g_gambiae_coluzzii_ids.txt | gzip -c > {output.vcf}"
+
+## process Drosophila Genetics Reference Panel v2 VCFs
+rule filter_dgrp2_vcf:
+    input:
+        vcf="data/raw_data/dgrp2.vcf"
+    output:
+        filtered_vcf="data/dgrp2/dgrp2.biallelic.vcf"
+    threads:
+        1
+    shell:
+        "vcftools --vcf {input.vcf} --min-alleles 2 --max-alleles 2 --remove-indels --recode --stdout --remove-indv line_348 --remove-indv line_350 --remove-indv line_358 --remove-indv line_385 --remove-indv line_392 --remove-indv line_395 --remove-indv line_399 > {output.filtered_vcf}"
+
+rule split_dgrp2_by_chrom:
+    input:
+        vcf="data/dgrp2/dgrp2.biallelic.vcf"
+    output:
+        chrom_vcf="data/dgrp2/dgrp2_{chrom}.biallelic.vcf"
+    threads:
+        1
+    shell:
+        "vcftools --vcf {input.vcf} --chr {wildcards.chrom} --recode --stdout > {output.chrom_vcf}"
+
+rule remove_dgrp2_3L_inversions:
+    input:
+        vcf="data/dgrp2/dgrp2_3L.biallelic.vcf"
+    output:
+        vcf="data/dgrp2/dgrp3_3L_no_inversions.biallelic.vcf"
+    threads:
+        1
+    shell:
+        "vcftools --vcf {input.vcf} --recode --stdout --remove-indv line_31 --remove-indv line_69 --remove-indv line_136 --remove-indv line_426 --remove-indv line_721 --remove-indv line_913 > {output.vcf}"
+
+## Process 1000 Anopheles Genomes VCFs
+rule select_ag1000g_samples:
+    input:
+        vcf="data/raw_data/ag1000g.phase1.ar3.pass.biallelic.{chrom}.vcf.gz"
+    output:
+        vcf="data/ag1000g/ag1000g_{chrom}_bfaso.vcf.gz"
+    threads:
+        1
+    shell:
+        "vcftools --gzvcf {input.vcf} --recode --stdout --keep sample_lists/ag1000g_bfm_bfs_ids.txt | gzip -c > {output.vcf}"
+
+rule select_ag1000g_gambiae_samples:
+    input:
+        vcf="data/ag1000g/ag1000g_{chrom}_bfaso.vcf.gz"
+    output:
+        vcf="data/ag1000g/ag1000g_{chrom}_bfaso_gambiae.vcf.gz"
+    threads:
+        1
+    shell:
+        "vcftools --gzvcf {input.vcf} --recode --stdout --keep sample_lists/ag1000g_bfs_ids.txt | gzip -c > {output.vcf}"
+
+rule select_ag1000g_coluzzii_samples:
+    input:
+        vcf="data/ag1000g/ag1000g_{chrom}_bfaso.vcf.gz"
+    output:
+        vcf="data/ag1000g/ag1000g_{chrom}_bfaso_coluzzii.vcf.gz"
+    threads:
+        1
+    shell:
+        "vcftools --gzvcf {input.vcf} --recode --stdout --keep sample_lists/ag1000g_bfm_ids.txt | gzip -c > {output.vcf}"
+
+## Link everything into test case directories
+rule link_dgrp2_negative:
+    input:
+        "data/dgrp2/dgrp2_3L_no_inversions.biallelic.vcf"
+    output:
+        "data/negatives/dgrp2_3L_no_inversions.biallelic.vcf"
+    threads:
+        1
+    shell:
+        "ln -s ../../{input} {output}"
+
+rule link_ag1000g_negative:
+    input:
+        "data/ag1000g/ag1000g_3L_bfaso.vcf.gz"
+    output:
+        "data/negatives/ag1000g_3L_bfaso.vcf.gz"
+    threads:
+        1
+    shell:
+        "ln -s ../../{input} {output}"
+
+rule link_ag16g_negative:
+    input:
+        "data/ag16g/ag16g_3L_gambiae_coluzzii.vcf.gz"
+    output:
+        "data/negatives/ag16g_3L_gambiae_coluzzii.vcf.gz"
+    threads:
+        1
+    shell:
+        "ln -s ../../{input} {output}"
+        
+rule link_dgrp2_positives_single_pop:
+    input:
+        "data/dgrp2/dgrp2_{chrom}.biallelic.vcf"
+    output:
+        "data/positives_single_pop/dgrp2_{chrom}.biallelic.vcf"
+    threads:
+        1
+    shell:
+        "ln -s ../../{input} {output}"
+        
+rule link_ag1000g_positives_multiple_pops:
+    input:
+        "data/ag1000g/ag1000g_{chrom}_bfaso.vcf.gz"
+    output:
+        "data/positives_multiple_pops/ag1000g_{chrom}_bfaso.vcf.gz"
+    threads:
+        1
+    shell:
+        "ln -s ../../{input} {output}"
+
+rule link_ag1000g_gambiae_positives_multiple_pops:
+    input:
+        "data/ag1000g/ag1000g_{chrom}_bfaso_gambiae.vcf.gz"
+    output:
+        "data/positives_multiple_pops/ag1000g_{chrom}_bfaso_gambiae.vcf.gz"
+    threads:
+        1
+    shell:
+        "ln -s ../../{input} {output}"
+
+rule link_ag1000g_coluzzii_positives_multiple_pops:
+    input:
+        "data/ag1000g/ag1000g_{chrom}_bfaso_coluzzii.vcf.gz"
+    output:
+        "data/positives_multiple_pops/ag1000g_{chrom}_bfaso_coluzzii.vcf.gz"
+    threads:
+        1
+    shell:
+        "ln -s ../../{input} {output}"
+
+rule link_ag16g_positives_multiple_pops:
+    input:
+        "data/ag16g/ag16g_{chrom}_gambiae_coluzzii.vcf.gz"
+    output:
+        "data/positives_multiple_pops/ag16g_{chrom}_gambiae_coluzzii.vcf.gz"
+    threads:
+        1
+    shell:
+        "ln -s ../../{input} {output}"
+        
+## Top-level rules
+rule check_inputs:
+    input:
+        dgrp="data/raw_data/dgrp2.vcf",
+        ag1000g=expand("data/raw_data/ag1000g.phase1.ar3.pass.biallelic.{chrom}.vcf.gz", chrom=["2L", "3L", "2R"]),
+        ag16g="data/raw_data/doi_10.5061_dryad.f4114__v1.zip"
+
+rule prepare_negatives:
+    input:
+        dgrp_3L="data/negatives/dgrp2_3L_no_inversions.biallelic.vcf",
+        ag1000g_3L="data/negatives/ag1000g_3L_bfaso.vcf.gz",
+        ag16g_3L="data/negatives/ag16g_3L_gambiae_coluzzii.vcf.gz"
+
+rule prepare_positives_single_pop:
+    input:
+        dgrp=expand("data/positives_single_pop/dgrp2_{chrom}.biallelic.vcf", chrom=["2L", "2R", "3R"])
+
+rule prepare_positives_multiple_pops:
+    input:
+        ag1000g_bfaso=expand("data/positives_multiple_pops/ag1000g_{chrom}_bfaso.vcf.gz", chrom=["2L", "2R"]),
+        ag1000g_bfaso_gambiae=expand("data/positives_multiple_pops/ag1000g_{chrom}_bfaso_gambiae.vcf.gz", chrom=["2L", "2R"]),
+        ag1000g_bfaso_coluzzii=expand("data/positives_multiple_pops/ag1000g_{chrom}_bfaso_coluzzii.vcf.gz", chrom=["2L", "2R"]),
+        ag16g=expand("data/positives_multiple_pops/ag16g_{chrom}_gambiae_coluzzii.vcf.gz", chrom=["2L", "2R"])
+        
+rule prepare_vcfs:
+    input:
+        dgrp_3L="data/negatives/dgrp2_3L_no_inversions.biallelic.vcf",
+        ag1000g_3L="data/negatives/ag1000g_3L_bfaso.vcf.gz",
+        ag16g_3L="data/negatives/ag16g_3L_gambiae_coluzzii.vcf.gz",
+        dgrp=expand("data/positives_single_pop/dgrp2_{chrom}.biallelic.vcf", chrom=["2L", "2R", "3R"]),
+        ag1000g_bfaso=expand("data/positives_multiple_pops/ag1000g_{chrom}_bfaso.vcf.gz", chrom=["2L", "2R"]),
+        ag1000g_bfaso_gambiae=expand("data/positives_multiple_pops/ag1000g_{chrom}_bfaso_gambiae.vcf.gz", chrom=["2L", "2R"]),
+        ag1000g_bfaso_coluzzii=expand("data/positives_multiple_pops/ag1000g_{chrom}_bfaso_coluzzii.vcf.gz", chrom=["2L", "2R"]),
+        ag16g=expand("data/positives_multiple_pops/ag16g_{chrom}_gambiae_coluzzii.vcf.gz", chrom=["2L", "2R"])
