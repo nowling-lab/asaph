@@ -56,14 +56,12 @@ def read_populations(flname):
 
 
 def serialize(flname, obj):
-    fl = open(flname, "w")
-    pickle.dump(obj, fl)
-    fl.close()
+    with open(flname, "wb") as fl:
+        pickle.dump(obj, fl)
 
 def deserialize(flname):
-    fl = open(flname)
-    obj = pickle.load(fl)
-    fl.close()
+    with open(flname, "rb") as fl:
+        obj = pickle.load(fl)
 
     return obj
 

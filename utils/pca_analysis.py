@@ -54,7 +54,7 @@ def read_pca_coordinates(flname):
             cols = ln.split("\t")
 
             sample_name = cols[0]
-            coordinates = list(map(float, cols[3:]))
+            coordinates = list(map(float, cols[1:]))
             
             sample_names.append(sample_name)
             sample_coordinates.append(coordinates)
@@ -75,6 +75,20 @@ def read_labels(flname):
 
     return sample_indices
 
+def read_label_names(flname):
+    sample_indices = dict()
+
+    with open(flname) as fl:
+        for label_idx, ln in enumerate(fl):
+            cols = ln.strip().split(",")
+
+            label = cols[0]
+
+            for sample_name in cols[1:]:
+                sample_indices[sample_name] = label
+
+    return sample_indices
+
 def pairwise(iterable):
     iterable = iter(iterable)
     try:
@@ -85,8 +99,8 @@ def pairwise(iterable):
     except StopIteration:
         pass
     
-def plot_projections(coordinates, pairs, dirname):
-    if len(args.pairs) % 2 != 0:
+def plot_projections(coordinates, pairs, dirname, sample_names, labels=None):
+    if len(pairs) % 2 != 0:
         print("Error: PCs must be provided in pairs of 2")
         sys.exit(1)
 
@@ -94,14 +108,33 @@ def plot_projections(coordinates, pairs, dirname):
         fig_flname = os.path.join(dirname,
                                   "pca_projection_%s_%s.png" % (str(p1), str(p2)))
         plt.clf()
-        plt.scatter(coordinates[:, p1 - 1],
-                    coordinates[:, p2 - 1],
-                    color="m",
-                    marker="o",
-                    edgecolor="k",
-                    alpha=0.7)
-        plt.xlabel("Principal Component %s" % p1, fontsize=16)
-        plt.ylabel("Principal Component %s" % p2, fontsize=16)
+
+        if labels is None:        
+            plt.scatter(coordinates[:, p1 - 1],
+                        coordinates[:, p2 - 1],
+                        color="m",
+                        marker="o",
+                        edgecolor="k",
+                        alpha=0.7)
+        else:
+            label_samples = defaultdict(list)
+            for sample_name, label_name in labels.items():
+                sample_idx = sample_names.index(sample_name)
+                label_samples[label_name].append(sample_idx)
+
+            colors = ["k", "m", "c", "y"]
+            for i, (label, samples) in enumerate(label_samples.items()):
+                plt.scatter(coordinates[samples, p1 - 1],
+                            coordinates[samples, p2 - 1],
+                            color=colors[i],
+                            marker="o",
+                            edgecolor="k",
+                            alpha=0.7,
+                            label=label)
+                plt.legend()
+
+        plt.xlabel("Component %s" % p1, fontsize=16)
+        plt.ylabel("Component %s" % p2, fontsize=16)
         plt.savefig(fig_flname,
                     DPI=300)
 
@@ -217,8 +250,7 @@ def output_clusters(coordinates, components, n_clusters, sample_names, labels_fl
             for name in samples:
                 fl.write(",")
                 fl.write(name)
-            fl.write("\n")
-        
+            fl.write("\n")        
 
 def likelihood_ratio_test(features_alternate, labels, lr_model, set_intercept=True, g_scaling_factor=1.0):
     if isinstance(features_alternate, tuple) and len(features_alternate) == 2:
@@ -323,6 +355,30 @@ def test_labels(coordinates, sample_names, sample_labels):
             print(cm)
             print()
 
+        p_value = likelihood_ratio_test(coordinates,
+                                        class_labels,
+                                        lr,
+                                        set_intercept=False)
+
+        lr.fit(coordinates, class_labels)
+        pred_labels = lr.predict(coordinates)
+        acc = 100. * accuracy_score(class_labels,
+                                        pred_labels)
+
+        bal_acc = 100. * balanced_accuracy_score(class_labels,
+                                                 pred_labels)
+
+        cm = confusion_matrix(class_labels,
+                              pred_labels)
+
+        print("Component:", "all")
+        print("p-value: ", p_value)
+        print("Accuracy:", acc)
+        print("Balanced accuracy:", bal_acc)
+        print(cm)
+        print()
+
+            
 
 def parseargs():
     parser = argparse.ArgumentParser()
@@ -344,6 +400,10 @@ def parseargs():
                              nargs="+",
                              type=int,
                              required=True)
+
+    plot_parser.add_argument("--labels-fl",
+                             type=str,
+                             help="Labels file to use in coloring points")
 
     sweep_clusters_parser = subparsers.add_parser("sweep-clusters",
                                                    help="K-Means for a range of clusters")
@@ -425,9 +485,14 @@ if __name__ == "__main__":
     print(coordinates.shape)
 
     if args.mode == "plot-projections":
+        labels = None
+        if args.labels_fl:
+            labels = read_label_names(args.labels_fl)
         plot_projections(coordinates,
                          args.pairs,
-                         args.plot_dir)
+                         args.plot_dir,
+                         sample_names,
+                         labels=labels)
         
     elif args.mode == "sweep-clusters":
         sweep_clusters(coordinates,
