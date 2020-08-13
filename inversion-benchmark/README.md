@@ -7,7 +7,7 @@ You will need to download:
 
 * The `dgrp2.vcf` VCF file from the [Drosophila Genetics Reference Panel v2](http://dgrp2.gnets.ncsu.edu/data.html)
 * The data set for the Fontaine, et al. 2015 paper from the 16 Anopheles genomes project [DRYAD](https://datadryad.org/stash/dataset/doi:10.5061/dryad.f4114)
-* The biallelic 3L, 2R, and 2L VCF files from the FTP site for the 1000 Anopheles Genomes project [phase 1 AR3 data release(ftp://ngs.sanger.ac.uk/production/ag1000g/phase1/AR3/variation/main/vcf/).  These files are named: ag1000g.phase1.ar3.pass.biallelic.{chrom}.vcf.gz where chrom is 3L, 3R, or 2L.
+* The biallelic 3L, 2R, and 2L VCF files from the FTP site for the 1000 Anopheles Genomes project [phase 1 AR3 data release](ftp://ngs.sanger.ac.uk/production/ag1000g/phase1/AR3/variation/main/vcf/).  These files are named: ag1000g.phase1.ar3.pass.biallelic.{chrom}.vcf.gz where chrom is 3L, 3R, or 2L.
 
 Place this files in the directory `data/raw_data`.  The directory contains an empty file named `PLACE_INPUT_FILES_HERE`.
 
