@@ -76,11 +76,14 @@ def parseargs():
                         type=str,
                         default="hashed",
                         choices=["hashed",
-                                 "bag-of-words",
-                                 "reservoir"])
+                                 "bag-of-words"])
     
     parser.add_argument("--subsample-features",
-                        action="store_true")
+                        type=str,
+                        default=None,
+                        choices=["column-sampling",
+                                 "random-projection",
+                                 "reservoir"])
 
     parser.add_argument("--chunk-size",
                         type=int,

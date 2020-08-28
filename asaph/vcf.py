@@ -24,6 +24,7 @@ from scipy import sparse
 
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.random_projection import johnson_lindenstrauss_min_dim as jl_min_dim
+from sklearn.random_projection import SparseRandomProjection
 
 from .newioutils import *
 from .models import ProjectSummary
@@ -329,13 +330,18 @@ def convert(vcf_flname, outbase, matrix_type, feature_type, subsample_features, 
         accumulator = FullMatrixAccumulator()
         feature_matrix = accumulator.transform(extractor)
 
-        if subsample_features and feature_matrix.shape[1] > min_dim:
+        if subsample_features == "column-sampling":
             print(feature_matrix.shape[1], "features")
             print("You specified subsampling features.  Subsampling columns of feature matrix.")
             selected_idx = random.sample(range(feature_matrix.shape[1]), min_dim)
             feature_matrix = feature_matrix[:, selected_idx]
+        elif subsample_features == "random-projection":
+            print(feature_matrix.shape[1], "features")
+            print("You specified subsampling features.  Using sparse random projection.")
+            srp = SparseRandomProjection(n_components = min_dim)
+            feature_matrix = srp.fit_transform(feature_matrix)
 
-    elif matrix_type == RESERVOIR_MATRIX_TYPE:
+    elif matrix_type == BAG_OF_WORDS_MATRIX_TYPE and subsample_features == "reservoir":
         if feature_type == COUNTS_FEATURE_TYPE:
             extractor = CountFeaturesExtractor(filtered_positions_counter)
         elif feature_type == CATEGORIES_FEATURE_TYPE:
