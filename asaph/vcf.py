@@ -319,7 +319,7 @@ def convert(vcf_flname, outbase, matrix_type, feature_type, subsample_features, 
     min_dim = jl_min_dim(n_samples, eps=0.1)
     
     # extract features
-    if matrix_type == BAG_OF_WORDS_MATRIX_TYPE:
+    if matrix_type == BAG_OF_WORDS_MATRIX_TYPE and subsample_features != "reservoir":
         if feature_type == COUNTS_FEATURE_TYPE:
             extractor = CountFeaturesExtractor(filtered_positions_counter)
         elif feature_type == CATEGORIES_FEATURE_TYPE:
