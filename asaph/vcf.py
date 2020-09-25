@@ -271,7 +271,7 @@ class FeatureHashingAccumulator(object):
     def transform(self, stream):
         for chunk in stream:
             self.features += self.transformer.transform(chunk).toarray()
-        return self.features.toarray()
+        return self.features
 
 class FullMatrixAccumulator(object):
     def transform(self, stream):
