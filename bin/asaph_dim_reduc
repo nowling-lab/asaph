@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Copyright 2017 Ronald J. Nowling
 
@@ -16,11 +18,11 @@ limitations under the License.
 
 import argparse
 from collections import defaultdict
-from collections import OrderedDict
-from itertools import tee, izip
+from itertools import tee
 import os
 import sys
 
+import joblib
 import matplotlib
 matplotlib.use("PDF")
 import matplotlib.pyplot as plt
@@ -29,11 +31,12 @@ import numpy as np
 from sklearn.cluster import k_means
 from sklearn.decomposition import NMF
 from sklearn.decomposition import PCA
-from sklearn.externals import joblib
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import binarize
+
+import umap
 
 from asaph.ml import estimate_lr_iter
 from asaph.ml import likelihood_ratio_test
@@ -61,6 +64,9 @@ def train(args):
                   whiten = True)
     elif args.model_type == "NMF":
         pca = NMF(n_components = args.n_components)
+    elif args.model_type == "UMAP":
+        pca = umap.UMAP(n_components = args.n_components,
+                        n_neighbors = args.umap_n_neighbors)
     else:
         raise Exception("Unknown model type %s" % args.model_type)
         
@@ -92,11 +98,11 @@ def explained_variance_analysis(args):
     fig_flname = os.path.join(figures_dir,
                               "pca_explained_variance_ratios.png")
 
-    print explained_variance_ratios
+    print(explained_variance_ratios)
 
     plt.clf()
     plt.grid(True)
-    plt.plot(xrange(1, len(explained_variance_ratios) + 1),
+    plt.plot(range(1, len(explained_variance_ratios) + 1),
              explained_variance_ratios, "m.-")
     plt.xlabel("Principal Component", fontsize=16)
     plt.ylabel("Explained Variance Ratio", fontsize=16)
@@ -115,7 +121,7 @@ def output_coordinates(args):
                             "pca.pkl")
     model = joblib.load(model_fl)    
     projected = model[PROJECTION_KEY]
-    selected = projected[:, map(lambda idx: idx - 1, args.selected_components)]
+    selected = projected[:, list(map(lambda idx: idx - 1, args.selected_components))]
 
     features = read_features(workdir)
 
@@ -125,7 +131,7 @@ def output_coordinates(args):
         fl.write("\t".join(headers))
         fl.write("\n")
 
-        for i in xrange(len(features.sample_labels)):
+        for i in range(len(features.sample_labels)):
             sample = features.sample_labels[i]
             line = [sample]
             line.extend(map(str, selected[i, :]))
@@ -181,7 +187,7 @@ def output_loading_factors(args):
     model = joblib.load(model_fl)    
     pca = model[MODEL_KEY]
     components = pca.components_
-    selected = components[map(lambda idx: idx - 1, args.components), :]
+    selected = components[list(map(lambda idx: idx - 1, args.components)), :]
 
     output_fl = os.path.join(analysis_dir, "pca_loading_factors.tsv")
     with open(output_fl, "w") as fl:
@@ -216,13 +222,13 @@ def generate_training_set(features, projections):
     N_COPIES = 3
     class_labels = np.zeros(N_COPIES * n_samples)
     imputed_projections = np.zeros(N_COPIES * n_samples)
-    for i in xrange(n_samples):
+    for i in range(n_samples):
         gt = None
-        for j in xrange(N_GENOTYPES):
+        for j in range(N_GENOTYPES):
             if features[i, j] == 1.0:
                 gt = j
         
-        for j in xrange(N_COPIES):
+        for j in range(N_COPIES):
             idx = N_COPIES * i + j
             imputed_projections[idx] = projections[i]
 
@@ -288,7 +294,7 @@ def snp_logreg_association_tests(args):
                     p_value = 1.0
 
                 if i == next_output:
-                    print i, "SNP", snp_label, "and PC", pc, "has p-value", p_value
+                    print(i, "SNP", snp_label, "and PC", pc, "has p-value", p_value)
                     next_output *= 2
 
                 fl.write("\t".join([chrom, pos, str(p_value)]))
@@ -331,11 +337,11 @@ def snp_linreg_association_tests(args):
                 snp_p_value, gt_ttest_pvalues, gt_normality_pvalues, gt_pred_ys = triplet
 
                 if i == next_output:
-                    print i, "SNP", snp_label, "and PC", pc, "has p-value", snp_p_value
+                    print(i, "SNP", snp_label, "and PC", pc, "has p-value", snp_p_value)
                     next_output *= 2
 
                 fl.write("\t".join([chrom, pos, str(snp_p_value)]))
-                for j in xrange(3):
+                for j in range(3):
                     fl.write("\t")
                     fl.write(str(gt_ttest_pvalues[j]))
                     fl.write("\t")
@@ -346,7 +352,7 @@ def snp_linreg_association_tests(args):
 
     
 def parseargs():
-    parser = argparse.ArgumentParser(description="Asaph - PCA")
+    parser = argparse.ArgumentParser(description="Asaph - Dimensionality Reduction")
 
     parser.add_argument("--workdir",
                         type=str,
@@ -356,17 +362,23 @@ def parseargs():
     subparsers = parser.add_subparsers(dest="mode")
     
     train_parser = subparsers.add_parser("train",
-                                         help="Train PCA model")
+                                         help="Train dimensionality reduction model")
     
     train_parser.add_argument("--n-components",
                               type=int,
                               required=True,
                               help="Number of PCs to compute")
 
+    train_parser.add_argument("--umap-n-neighbors",
+                              type=int,
+                              default=5,
+                              help="Number of neighbors to use for UMAP")
+    
     train_parser.add_argument("--model-type",
                               type=str,
                               choices=["PCA",
-                                       "NMF"],
+                                       "NMF",
+                                       "UMAP"],
                               default="PCA")
 
     
@@ -440,5 +452,5 @@ if __name__ == "__main__":
         elif args.model_type == "logistic":
             snp_logreg_association_tests(args)
     else:
-        print "Unknown mode '%s'" % args.mode
+        print("Unknown mode '%s'" % args.mode)
         sys.exit(1)

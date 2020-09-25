@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Copyright 2015 Ronald J. Nowling
 
@@ -25,7 +27,7 @@ from asaph.fasta import convert as convert_fasta
 def import_fasta(args):
     seq_type = args.seq
     if seq_type is None:
-        print "Sequence type must be specified for import"
+        print("Sequence type must be specified for import")
         sys.exit(1)
 
     if not os.path.exists(args.workdir):
@@ -47,11 +49,12 @@ def import_vcf(args):
         flname = args.vcf_gz
         gzipped = True
         
-    convert_vcf(args.selected_samples,
-                flname,
+    convert_vcf(flname,
                 args.workdir,
-                args.compress,
+                args.matrix_type,
                 args.feature_type,
+                args.subsample_features,
+                args.chunk_size,
                 gzipped,
                 args.allele_min_freq_threshold)
 
@@ -63,22 +66,38 @@ def parseargs():
                         default="AA",
                         help="Sequence type for FASTA input")
 
-    parser.add_argument("--compress", action="store_true")
-
     parser.add_argument("--feature-type",
-                        choices=["categories", "counts"],
+                        type=str,
                         default="categories",
-                        help="Feature representation to use")
+                        choices=["counts",
+                                 "categories"])
+
+    parser.add_argument("--matrix-type",
+                        type=str,
+                        default="hashed",
+                        choices=["hashed",
+                                 "bag-of-words"])
     
+    parser.add_argument("--subsample-features",
+                        type=str,
+                        default=None,
+                        choices=["column-sampling",
+                                 "random-projection",
+                                 "reservoir"])
+
+    parser.add_argument("--chunk-size",
+                        type=int,
+                        default=10000)
+
     format_group = parser.add_mutually_exclusive_group(required=True)
     format_group.add_argument("--vcf", type=str, help="VCF file to import")
     format_group.add_argument("--fasta", type=str, help="FASTA file to import")
     format_group.add_argument("--vcf-gz", type=str, help="Gzipped VCF file to import")
-    
+
     parser.add_argument("--selected-samples",
                         type=str,
                         help="Use only these samples")
-    
+
     parser.add_argument("--workdir",
                         type=str,
                         help="Work directory",

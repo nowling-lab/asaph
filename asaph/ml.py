@@ -274,7 +274,7 @@ class LogisticRegressionEnsemble(object):
         elif self.method == "asgd-l2":
             return SGDClassifier(loss="log", penalty="l2", average=True, n_iter = self.n_iter)
         else:
-            raise Exception, "Unknown logistic regression method '%s'" % self.method
+            raise Exception("Unknown logistic regression method '%s'" % self.method)
 
     def feature_importances(self, X, y):
         y = np.array(y)
@@ -289,7 +289,7 @@ class LogisticRegressionEnsemble(object):
             for model in ensemble.estimators_:
                 feature_importances += model.coef_[0] / la.norm(model.coef_)
             trained_models += to_train
-            print "Trained %s of %s models" % (trained_models, self.n_models)
+            print("Trained %s of %s models" % (trained_models, self.n_models))
 
         return np.abs(feature_importances / self.n_models)
 
@@ -347,7 +347,7 @@ class ConstrainedBaggingRandomForest(object):
                         if interactions:
                             used_feature_sets[frozenset(used_features)] += 1
                 completed_trees += n_classifiers
-                print "Trained", completed_trees, "of", self.n_trees, "trees"
+                print("Trained", completed_trees, "of", self.n_trees, "trees")
         else:
             for i in xrange(self.n_trees):
                 dt = DecisionTreeClassifier(max_features="sqrt")

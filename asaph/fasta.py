@@ -14,14 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from exceptions import NotImplementedError
 import os
 
 import numpy as np
 from scipy import sparse
 
-from newioutils import *
-from vcf import UNKNOWN_GENOTYPE
+from .newioutils import *
+from .vcf import UNKNOWN_GENOTYPE
 
 DNA_MAP = {"A" : 0,
            "T" : 1,
@@ -87,7 +86,7 @@ def convert(groups_flname, fasta_flname, seq_type, outbase):
     elif seq_type == "AA":
         char_map = AA_MAP
     else:
-        raise NotImplementedError, "Unknown sequence type (%s)" % seq_type
+        raise NotImplementedError("Unknown sequence type (%s)" % seq_type)
 
     if groups_flname:
         groups = read_populations(groups_flname)
@@ -112,7 +111,7 @@ def convert(groups_flname, fasta_flname, seq_type, outbase):
 
     feature_matrix = sparse.coo_matrix((values, (rows, cols))).tocsr()
 
-    print feature_matrix.shape[0], "individuals", feature_matrix.shape[1], "features"
+    print(feature_matrix.shape[0], "individuals", feature_matrix.shape[1], "features")
 
     np.savez(os.path.join(outbase, FEATURE_MATRIX_FLNAME),
              data = feature_matrix.data,

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Copyright 2017 Ronald J. Nowling
 
@@ -86,7 +88,7 @@ def run_lrtest_gt_dep(data_model, project_summary, args, stats_dir, class_labels
                                                 g_scaling_factor = 1.0 / N_COPIES)
             
             if i == next_output:
-                print i, "Position", pos_label, "has p-value", p_value
+                print(i, "Position", pos_label, "has p-value", p_value)
                 next_output *= 2
 
             fl.write("\t".join([chrom, pos, "%.2E" % p_value]))
@@ -149,7 +151,7 @@ def run_lrtest_pop_dep(features, project_summary, args, stats_dir, class_labels)
                                             g_scaling_factor=scaling_factor)
 
             if i == next_output:
-                print i, "SNP", snp_label, "has p-value", p_value
+                print(i, "SNP", snp_label, "has p-value", p_value)
                 next_output *= 2
 
             fl.write("\t".join([chrom, pos, "%.2E" % p_value]))
@@ -197,7 +199,7 @@ if __name__ == "__main__":
         raise Exception("Need at least 2 populations!")
     
     if not os.path.exists(args.workdir):
-        print "Work directory '%s' does not exist." % args.workdir
+        print("Work directory '%s' does not exist." % args.workdir)
         sys.exit(1)
 
     stats_dir = os.path.join(args.workdir, "statistics")
