@@ -306,7 +306,7 @@ class ReservoirMatrixAccumulator(object):
 
         return feature_matrix
 
-def convert(vcf_flname, outbase, matrix_type, feature_type, subsample_features, chunk_size, compressed_vcf, allele_min_freq_threshold):
+def convert(vcf_flname, outbase, matrix_type, feature_type, subsample_features, chunk_size, compressed_vcf, allele_min_freq_threshold, n_dim=None):
     # dictionary of individual ids to population ids
     stream = VCFStreamer(vcf_flname, compressed_vcf)
     n_samples = len(stream.individual_names)
@@ -316,7 +316,12 @@ def convert(vcf_flname, outbase, matrix_type, feature_type, subsample_features, 
                                  stream)
     filtered_positions_counter = StreamCounter(variants)
 
-    min_dim = jl_min_dim(n_samples, eps=0.1)
+    if n_dim is None:
+        min_dim = jl_min_dim(n_samples, eps=0.1)
+    else:
+        min_dim = n_dim
+
+    print("using", min_dim, "dimensions if not using full matrix")
     
     # extract features
     if matrix_type == BAG_OF_WORDS_MATRIX_TYPE and subsample_features != "reservoir":

@@ -56,7 +56,8 @@ def import_vcf(args):
                 args.subsample_features,
                 args.chunk_size,
                 gzipped,
-                args.allele_min_freq_threshold)
+                args.allele_min_freq_threshold,
+                args.num_dimensions)
 
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph")
@@ -88,6 +89,10 @@ def parseargs():
     parser.add_argument("--chunk-size",
                         type=int,
                         default=10000)
+
+    parser.add_argument("--num-dimensions",
+                        type=int,
+                        default=None)
 
     format_group = parser.add_mutually_exclusive_group(required=True)
     format_group.add_argument("--vcf", type=str, help="VCF file to import")
