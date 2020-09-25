@@ -266,11 +266,11 @@ class FeatureHashingAccumulator(object):
         self.n_samples = n_samples
         self.transformer = FeatureHasher(n_features = n_features,
                                          input_type = "pair")
-        self.features = sparse.dok_matrix((n_samples, n_features), dtype=np.float32)
+        self.features = np.zeros((n_samples, n_features), dtype=np.float32)
 
     def transform(self, stream):
         for chunk in stream:
-            self.features += self.transformer.transform(chunk)
+            self.features += self.transformer.transform(chunk).toarray()
         return self.features.toarray()
 
 class FullMatrixAccumulator(object):
