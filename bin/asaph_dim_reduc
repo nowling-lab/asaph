@@ -36,8 +36,6 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import binarize
 
-import umap
-
 from asaph.ml import estimate_lr_iter
 from asaph.ml import likelihood_ratio_test
 from asaph.ml import snp_linreg_pvalues
@@ -64,9 +62,6 @@ def train(args):
                   whiten = True)
     elif args.model_type == "NMF":
         pca = NMF(n_components = args.n_components)
-    elif args.model_type == "UMAP":
-        pca = umap.UMAP(n_components = args.n_components,
-                        n_neighbors = args.umap_n_neighbors)
     else:
         raise Exception("Unknown model type %s" % args.model_type)
         
