@@ -27,7 +27,8 @@ ProjectSummary = namedtuple("ProjectSummary",
                              "n_features",
                              "n_samples",
                              "feature_type",
-                             "subsampling_method"])
+                             "subsampling_method",
+                             "sample_names"])
 
 class SNPs(object):
     def __init__(self, labels, importances, ranked):

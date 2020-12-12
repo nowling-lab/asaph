@@ -70,7 +70,8 @@ def import_vcf(args):
                                      n_features = feature_matrix.shape[1],
                                      n_samples = feature_matrix.shape[0],
                                      feature_type = args.feature_type,
-                                     subsampling_method = args.subsampling_method)
+                                     subsampling_method = args.subsampling_method,
+                                     sample_names = individual_names)
 
     np.savez_compressed(os.path.join(args.workdir, FEATURE_MATRIX_FLNAME + ".npz"),
                         feature_matrix = feature_matrix)
