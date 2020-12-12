@@ -21,22 +21,19 @@ from collections import defaultdict
 import os
 import sys
 
-from asaph.vcf import convert as convert_vcf
-from asaph.fasta import convert as convert_fasta
+import numpy as np
+from sklearn.random_projection import johnson_lindenstrauss_min_dim as jl_min_dim
 
-def import_fasta(args):
-    seq_type = args.seq
-    if seq_type is None:
-        print("Sequence type must be specified for import")
-        sys.exit(1)
-
-    if not os.path.exists(args.workdir):
-        os.makedirs(args.workdir)
-
-    convert_fasta(args.selected_samples,
-                  args.fasta,
-                  seq_type,
-                  args.workdir)
+from asaph.feature_matrix_construction import construct_feature_matrix
+from asaph.feature_matrix_construction import COUNTS_FEATURE_TYPE
+from asaph.feature_matrix_construction import CATEGORIES_FEATURE_TYPE
+from asaph.feature_matrix_construction import HASHED_FEATURE_TYPE
+from asaph.models import ProjectSummary
+from asaph.newioutils import FEATURE_MATRIX_FLNAME
+from asaph.newioutils import PROJECT_SUMMARY_FLNAME
+from asaph.newioutils import SAMPLE_LABELS_FLNAME
+from asaph.newioutils import serialize
+from asaph.vcf import stream_vcf_variants
 
 def import_vcf(args):
     if not os.path.exists(args.workdir):
@@ -48,16 +45,37 @@ def import_vcf(args):
     else:
         flname = args.vcf_gz
         gzipped = True
-        
-    convert_vcf(flname,
-                args.workdir,
-                args.matrix_type,
-                args.feature_type,
-                args.subsample_features,
-                args.chunk_size,
-                gzipped,
-                args.allele_min_freq_threshold,
-                args.num_dimensions)
+
+    variant_stream, individual_names = stream_vcf_variants(flname,
+                                                           gzipped,
+                                                           args.allele_min_freq_threshold)
+    n_samples = len(individual_names)
+    if args.num_dimensions is None:
+        n_dim = jl_min_dim(n_samples, eps=0.1)
+    else:
+        n_dim = args.num_dimensions
+
+    feature_matrix = construct_feature_matrix(variant_stream,
+                                              n_samples,
+                                              args.feature_type,
+                                              args.subsampling_method,
+                                              args.chunk_size,
+                                              n_dim)
+
+    print(feature_matrix.shape[0], "individuals")
+    print(feature_matrix.shape[1], "features")
+
+    project_summary = ProjectSummary(original_positions = None,
+                                     filtered_positions = None,
+                                     n_features = feature_matrix.shape[1],
+                                     n_samples = feature_matrix.shape[0],
+                                     feature_type = args.feature_type,
+                                     subsampling_method = args.subsampling_method)
+
+    np.savez_compressed(os.path.join(args.workdir, FEATURE_MATRIX_FLNAME + ".npz"),
+                        feature_matrix = feature_matrix)
+    serialize(os.path.join(args.workdir, SAMPLE_LABELS_FLNAME), individual_names)
+    serialize(os.path.join(args.workdir, PROJECT_SUMMARY_FLNAME), project_summary)
 
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph")
@@ -71,20 +89,16 @@ def parseargs():
                         type=str,
                         default="categories",
                         choices=["counts",
-                                 "categories"])
+                                 "categories",
+                                 "hashed"])
 
-    parser.add_argument("--matrix-type",
-                        type=str,
-                        default="hashed",
-                        choices=["hashed",
-                                 "bag-of-words"])
-    
-    parser.add_argument("--subsample-features",
+    parser.add_argument("--subsampling-method",
                         type=str,
                         default=None,
                         choices=["column-sampling",
                                  "random-projection",
-                                 "reservoir"])
+                                 "reservoir",
+                                 "hashing"])
 
     parser.add_argument("--chunk-size",
                         type=int,
@@ -96,7 +110,6 @@ def parseargs():
 
     format_group = parser.add_mutually_exclusive_group(required=True)
     format_group.add_argument("--vcf", type=str, help="VCF file to import")
-    format_group.add_argument("--fasta", type=str, help="FASTA file to import")
     format_group.add_argument("--vcf-gz", type=str, help="Gzipped VCF file to import")
 
     parser.add_argument("--selected-samples",
@@ -118,7 +131,4 @@ def parseargs():
 if __name__ == "__main__":
     args = parseargs()
 
-    if args.vcf or args.vcf_gz:
-        import_vcf(args)
-    elif args.fasta:
-        import_fasta(args)
+    import_vcf(args)

@@ -15,26 +15,14 @@ limitations under the License.
 """
 
 import gzip
-import os
-import random
-import sys
 
 import numpy as np
-from scipy import sparse
-
-from sklearn.feature_extraction import FeatureHasher
-from sklearn.random_projection import johnson_lindenstrauss_min_dim as jl_min_dim
-from sklearn.random_projection import SparseRandomProjection
 
 from .newioutils import *
 from .models import ProjectSummary
-from .models import COUNTS_FEATURE_TYPE
-from .models import CATEGORIES_FEATURE_TYPE
 
 DEFAULT_COLUMNS = {'CHROM' : 0, 'POS' : 1, 'ID' : 2, 'REF' : 3, 'ALT' : 4, 'QUAL' : 5, 'FILTER' : 6, 'INFO' : 7, 'FORMAT' : 8}
-
 GENOTYPE_OFFSET = 9
-
 UNKNOWN_GENOTYPE = (0, 0)
 
 ## Parsing
@@ -75,7 +63,7 @@ def parse_vcf_line(ln, kept_pairs):
         elif col[2] == "1":
             alt_count += 1
 
-        individual_genotypes[i] = (ref_count, alt_count)
+        individual_genotypes[i] = (name, (ref_count, alt_count))
 
     variant_label = (cols[DEFAULT_COLUMNS["CHROM"]], cols[DEFAULT_COLUMNS["POS"]])
     return (variant_label, alleles, tuple(individual_genotypes))
@@ -133,7 +121,7 @@ def filter_invariants(min_percentage, stream):
     for label, alleles, genotypes in stream:
         total_ref_count = 0
         total_alt_count = 0
-        for sample_ref_count, sample_alt_count in genotypes:
+        for sample_name, (sample_ref_count, sample_alt_count) in genotypes:
             total_ref_count += sample_ref_count
             total_alt_count += sample_alt_count
 
@@ -149,81 +137,6 @@ def filter_invariants(min_percentage, stream):
         if fraction >= min_percentage:
             yield (label, alleles, genotypes)
 
-## Feature extraction
-class CountFeaturesExtractor(object):
-    def __init__(self, stream):
-        self.stream = stream
-
-    def __iter__(self):
-        for variant_label, alleles, genotypes in self.stream:
-            chrom, pos = variant_label
-            ref_column = [0.] * len(genotypes)
-            alt_column = [0.] * len(genotypes)
-
-            for row_idx, allele_counts in enumerate(genotypes):
-                ref_column[row_idx] = allele_counts[0]
-                alt_column[row_idx] = allele_counts[1]
-
-            yield (chrom, pos, alleles[0]), tuple(ref_column)
-            yield (chrom, pos, alleles[1]), tuple(alt_column)
-
-class CategoricalFeaturesExtractor(object):
-    def __init__(self, stream):
-        self.stream = stream
-
-    def __iter__(self):
-        for variant_label, alleles, genotypes in self.stream:
-            chrom, pos = variant_label
-            homo1_column = [0.] * len(genotypes)
-            homo2_column = [0.] * len(genotypes)
-            het_column = [0.] * len(genotypes)
-
-            for row_idx, allele_counts in enumerate(genotypes):
-                if allele_counts == (2, 0):
-                    homo1_column[row_idx] = 1
-                elif allele_counts == (0, 2):
-                    homo2_column[row_idx] = 1
-                elif allele_counts == (1, 1):
-                    het_column[row_idx] = 1
-
-            yield (chrom, pos, (alleles[0] + "/" + alleles[0])), tuple(homo1_column)
-            yield (chrom, pos, (alleles[1] + "/" + alleles[1])), tuple(homo2_column)
-            yield (chrom, pos, (alleles[0] + "/" + alleles[1])), tuple(het_column)
-
-class FeatureStringsExtractor(object):
-    def __init__(self, stream):
-        self.stream = stream
-
-    def __iter__(self):
-        for variant_label, alleles, genotypes in self.stream:
-            string_features = [None] * len(genotypes)
-
-            homo_ref = ("%s_%s_het_%s" % (variant_label[0],
-                                          variant_label[1],
-                                          alleles[0]),
-                        1)
-
-            homo_alt = ("%s_%s_het_%s" % (variant_label[0],
-                                          variant_label[1],
-                                          alleles[1]),
-                        1)
-
-            het = ("%s_%s_%s_%s" % (variant_label[0],
-                                    variant_label[1],
-                                    alleles[0],
-                                    alleles[1]),
-                   1)
-
-            for i, allele_counts in enumerate(genotypes):
-                if allele_counts == (2, 0):
-                    string_features[i] = homo_ref
-                elif allele_counts == (0, 2):
-                    string_features[i] = homo_alt
-                elif allele_counts == (1, 1):
-                    string_features[i] = het
-
-            yield string_features
-
 class StreamCounter(object):
     def __init__(self, stream):
         self.count = 0
@@ -234,150 +147,12 @@ class StreamCounter(object):
             self.count += 1
             yield item
 
-class Chunker(object):
-    def __init__(self, chunk_size, n_samples, stream):
-        self.chunk_size = chunk_size
-        self.n_samples = n_samples
-        self.buffer = [list() for i in range(n_samples)]
-        self.chunk_count = 0
-        self.processed_chunks = 0
-        self.stream = stream
-
-    def __iter__(self):
-        for feature_pairs in self.stream:
-            if self.chunk_count >= self.chunk_size:
-                self.processed_chunks += 1
-                print("Processed chunk", self.processed_chunks)
-                yield self.buffer
-                self.buffer = [list() for i in range(self.n_samples)]
-                self.chunk_count = 0
-
-            self.chunk_count += 1
-            for i, pair in enumerate(feature_pairs):
-                if pair != None:
-                    self.buffer[i].append(pair)
-
-        if self.chunk_count > 0:
-            yield self.buffer
-
-class FeatureHashingAccumulator(object):
-    def __init__(self, n_features, n_samples):
-        self.n_features = n_features
-        self.n_samples = n_samples
-        self.transformer = FeatureHasher(n_features = n_features,
-                                         input_type = "pair")
-        self.features = np.zeros((n_samples, n_features), dtype=np.float32)
-
-    def transform(self, stream):
-        for chunk in stream:
-            self.features += self.transformer.transform(chunk).toarray()
-        return self.features
-
-class FullMatrixAccumulator(object):
-    def transform(self, stream):
-        feature_columns = []
-        for (chrom, pos, gt), column in stream:
-            feature_columns.append(column)
-
-        # need to transpose, otherwise we get (n_features, n_individuals) instead
-        feature_matrix = np.array(feature_columns).T
-
-        return feature_matrix
-
-class ReservoirMatrixAccumulator(object):
-    """
-    Online sampling of columns using reservoir sampling.
-    """
-    def __init__(self, n_features):
-        self.n_features = n_features
-
-    def transform(self, stream):
-        feature_columns = []
-        for feature_idx, ((chrom, pos, gt), column) in enumerate(stream):
-            if feature_idx < self.n_features:
-                feature_columns.append(column)
-            else:
-                j = random.randint(0, feature_idx + 1)
-                if j < self.n_features:
-                    feature_columns[j] = column
-
-        # need to transpose, otherwise we get (n_features, n_individuals) instead
-        feature_matrix = np.array(feature_columns).T
-
-        return feature_matrix
-
-def convert(vcf_flname, outbase, matrix_type, feature_type, subsample_features, chunk_size, compressed_vcf, allele_min_freq_threshold, n_dim=None):
+def stream_vcf_variants(vcf_flname, compressed_vcf, allele_min_freq_threshold):
     # dictionary of individual ids to population ids
     stream = VCFStreamer(vcf_flname, compressed_vcf)
-    n_samples = len(stream.individual_names)
 
     # remove SNPs with least-frequently occurring alleles less than a threshold
     variants = filter_invariants(allele_min_freq_threshold,
                                  stream)
-    filtered_positions_counter = StreamCounter(variants)
 
-    if n_dim is None:
-        min_dim = jl_min_dim(n_samples, eps=0.1)
-    else:
-        min_dim = n_dim
-
-    print("using", min_dim, "dimensions if not using full matrix")
-    
-    # extract features
-    if matrix_type == BAG_OF_WORDS_MATRIX_TYPE and subsample_features != "reservoir":
-        if feature_type == COUNTS_FEATURE_TYPE:
-            extractor = CountFeaturesExtractor(filtered_positions_counter)
-        elif feature_type == CATEGORIES_FEATURE_TYPE:
-            extractor = CategoricalFeaturesExtractor(filtered_positions_counter)
-        else:
-            raise Exception("Unknown feature type: %s" % feature_type)
-
-        accumulator = FullMatrixAccumulator()
-        feature_matrix = accumulator.transform(extractor)
-
-        if subsample_features == "column-sampling":
-            print(feature_matrix.shape[1], "features")
-            print("You specified subsampling features.  Subsampling columns of feature matrix.")
-            selected_idx = random.sample(range(feature_matrix.shape[1]), min_dim)
-            feature_matrix = feature_matrix[:, selected_idx]
-        elif subsample_features == "random-projection":
-            print(feature_matrix.shape[1], "features")
-            print("You specified subsampling features.  Using sparse random projection.")
-            srp = SparseRandomProjection(n_components = min_dim)
-            feature_matrix = srp.fit_transform(feature_matrix)
-
-    elif matrix_type == BAG_OF_WORDS_MATRIX_TYPE and subsample_features == "reservoir":
-        if feature_type == COUNTS_FEATURE_TYPE:
-            extractor = CountFeaturesExtractor(filtered_positions_counter)
-        elif feature_type == CATEGORIES_FEATURE_TYPE:
-            extractor = CategoricalFeaturesExtractor(filtered_positions_counter)
-        else:
-            raise Exception("Unknown feature type: %s" % feature_type)
-
-        accumulator = ReservoirMatrixAccumulator(min_dim)
-        feature_matrix = accumulator.transform(extractor)
-            
-    elif matrix_type == HASHED_MATRIX_TYPE:
-        string_features = FeatureStringsExtractor(filtered_positions_counter)
-        chunker = Chunker(chunk_size, n_samples, string_features)
-        accumulator = FeatureHashingAccumulator(min_dim, n_samples)
-        feature_matrix = accumulator.transform(chunker)
-    else:
-        raise Exception("Unknown matrix type: %s" % matrix_type)
-
-    print(feature_matrix.shape[0], "individuals")
-    print(stream.positions_read, "variants read")
-    print(filtered_positions_counter.count, "variants kept")
-    print(feature_matrix.shape[1], "features")
-
-    project_summary = ProjectSummary(original_positions = stream.positions_read,
-                                     filtered_positions = filtered_positions_counter.count,
-                                     n_features = feature_matrix.shape[1],
-                                     n_samples = n_samples,
-                                     matrix_type = matrix_type,
-                                     feature_type = feature_type)
-
-    np.savez_compressed(os.path.join(outbase, FEATURE_MATRIX_FLNAME + ".npz"),
-                        feature_matrix = feature_matrix)
-    serialize(os.path.join(outbase, SAMPLE_LABELS_FLNAME), stream.rows_to_names)
-    serialize(os.path.join(outbase, PROJECT_SUMMARY_FLNAME), project_summary)
+    return variants, stream.rows_to_names

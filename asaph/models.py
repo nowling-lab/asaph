@@ -26,14 +26,8 @@ ProjectSummary = namedtuple("ProjectSummary",
                              "filtered_positions",
                              "n_features",
                              "n_samples",
-                             "matrix_type",
-                             "feature_type"])
-
-COUNTS_FEATURE_TYPE = "counts"
-CATEGORIES_FEATURE_TYPE = "categories"
-BAG_OF_WORDS_MATRIX_TYPE = "bag-of-words"
-HASHED_MATRIX_TYPE = "hashed"
-RESERVOIR_MATRIX_TYPE = "reservoir"
+                             "feature_type",
+                             "subsampling_method"])
 
 class SNPs(object):
     def __init__(self, labels, importances, ranked):
