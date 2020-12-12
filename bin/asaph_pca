@@ -29,7 +29,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from sklearn.cluster import k_means
-from sklearn.decomposition import NMF
 from sklearn.decomposition import PCA
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import accuracy_score
@@ -57,13 +56,8 @@ def train(args):
 
     features = read_features(workdir)
 
-    if args.model_type == "PCA":
-        pca = PCA(n_components = args.n_components,
-                  whiten = True)
-    elif args.model_type == "NMF":
-        pca = NMF(n_components = args.n_components)
-    else:
-        raise Exception("Unknown model type %s" % args.model_type)
+    pca = PCA(n_components = args.n_components,
+              whiten = True)
         
     projections = pca.fit_transform(features.feature_matrix)
 
@@ -364,19 +358,6 @@ def parseargs():
                               required=True,
                               help="Number of PCs to compute")
 
-    train_parser.add_argument("--umap-n-neighbors",
-                              type=int,
-                              default=5,
-                              help="Number of neighbors to use for UMAP")
-    
-    train_parser.add_argument("--model-type",
-                              type=str,
-                              choices=["PCA",
-                                       "NMF",
-                                       "UMAP"],
-                              default="PCA")
-
-    
     eva_parser = subparsers.add_parser("explained-variance-analysis",
                                        help="Compute explained variances of PCs")
 
