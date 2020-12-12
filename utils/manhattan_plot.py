@@ -30,6 +30,7 @@ SAMPLE_START_COLUMN = 9
 
 def read_snp_probs(flname):
     with open(flname) as fl:
+        next(fl)
         for ln in fl:
             cols = ln.strip().split()
 
@@ -67,6 +68,9 @@ if __name__ == "__main__":
         xs.append(pos)
         ys.append(-np.log10(pvalue))
 
+    fig = plt.gcf()
+    fig.set_dpi(200)
+        
     plt.scatter(xs,
                 ys,
                 marker=".",
@@ -88,8 +92,7 @@ if __name__ == "__main__":
 
     plt.xlim([0.0, max(xs)])
 
-    plt.savefig(args.plot_fl,
-                DPI=300)
+    plt.savefig(args.plot_fl)
                 
 
         
