@@ -27,7 +27,7 @@ def query_project(workdir):
 
     project_summary = deserialize(os.path.join(workdir, PROJECT_SUMMARY_FLNAME))
 
-    for field, value in project_summary._asdict().iteritems():
+    for field, value in project_summary._asdict().items():
         print(field, value)
 
 def parseargs():
