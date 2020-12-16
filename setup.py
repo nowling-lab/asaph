@@ -25,5 +25,6 @@ setup(name="asaph",
       zip_safe=False,
       packages=["asaph"],
       install_requires = ["numpy", "scipy", "matplotlib", "seaborn", "sklearn", "joblib"],
-      scripts=["bin/asaph_import", "bin/asaph_pca", "bin/asaph_association_tests", "bin/asaph_query", "bin/asaph_pca_association_tests"])
+      scripts=["bin/asaph_import", "bin/asaph_pca", "bin/asaph_association_tests", "bin/asaph_query", "bin/asaph_pca_association_tests",
+               "bin/manhattan_plot", "bin/asaph_pca_analysis"])
 
