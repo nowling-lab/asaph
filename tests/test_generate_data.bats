@@ -4,13 +4,14 @@ setup() {
     N_INDIVIDUALS=20
     N_SNPS=10000
     
-    export TEST_TEMP_DIR=`dirname $(mktemp -u)`
+    export TEST_TEMP_DIR=`mktemp -u --tmpdir asaph-tests.XXXX`
+    mkdir -p ${TEST_TEMP_DIR}
     
     export VCF_PATH="${TEST_TEMP_DIR}/test.vcf"
     export POPS_PATH="${TEST_TEMP_DIR}/populations.txt"
     export PHENO_PATH="${TEST_TEMP_DIR}/phenotypes.txt"
     
-    export CMD="${BATS_TEST_DIRNAME}/../bin/generate_data"
+    export CMD="asaph_generate_data"
 }
 
 @test "Run generate_data with no arguments" {
@@ -25,10 +26,10 @@ setup() {
 @test "Test VCF data generation" {
     run ${CMD} \
         --n-populations 2 \
-	    --output-vcf ${VCF_PATH} \
-	    --output-populations ${POPS_PATH} \
-	    --individuals ${N_INDIVIDUALS} \
-	    --snps ${N_SNPS} \
+	--output-vcf ${VCF_PATH} \
+	--output-populations ${POPS_PATH} \
+	--individuals ${N_INDIVIDUALS} \
+	--snps ${N_SNPS} \
         --n-phenotypes 3 \
         --output-phenotypes ${PHENO_PATH}
 
@@ -45,10 +46,10 @@ setup() {
 @test "Test VCF.gz data generation" {
     run ${CMD} \
         --n-populations 2 \
-	    --output-vcf-gz ${VCF_PATH}.gz \
-	    --output-populations ${POPS_PATH} \
-	    --individuals ${N_INDIVIDUALS} \
-	    --snps ${N_SNPS} \
+	--output-vcf-gz ${VCF_PATH}.gz \
+	--output-populations ${POPS_PATH} \
+	--individuals ${N_INDIVIDUALS} \
+	--snps ${N_SNPS} \
         --n-phenotypes 3 \
         --output-phenotypes ${PHENO_PATH}
 
