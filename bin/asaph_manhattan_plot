@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Copyright 2018 Ronald J. Nowling
 
@@ -28,16 +29,18 @@ import seaborn as sns
 
 SAMPLE_START_COLUMN = 9
 
-def read_snp_probs(flname):
+def read_snp_probs(flname, component):
     with open(flname) as fl:
         next(fl)
         for ln in fl:
             cols = ln.strip().split()
 
-            pos = int(cols[1])
-            pvalue = float(cols[2])
-            
-            yield pos, pvalue
+            comp = int(cols[0])
+            if comp == component:
+                pos = int(cols[2])
+                pvalue = float(cols[3])
+
+                yield pos, pvalue
             
 
 def parseargs():
@@ -50,6 +53,10 @@ def parseargs():
     parser.add_argument("--plot-fl",
                         required=True,
                         type=str)
+
+    parser.add_argument("--component",
+                        required=True,
+                        type=int)
 
     parser.add_argument("--y-limit",
                         type=float)
@@ -64,7 +71,7 @@ if __name__ == "__main__":
 
     xs = []
     ys = []
-    for pos, pvalue in read_snp_probs(args.input_tsv):
+    for pos, pvalue in read_snp_probs(args.input_tsv, args.component):
         xs.append(pos)
         ys.append(-np.log10(pvalue))
 
