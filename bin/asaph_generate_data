@@ -23,14 +23,14 @@ import random
 header_left = "#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT"
 
 def snp_generator(n_individuals, n_snps):
-    for i in xrange(n_snps):
+    for i in range(n_snps):
         yield [(random.randint(0, 1),
                 random.randint(0, 1))
-               for j in xrange(n_individuals)]
+               for j in range(n_individuals)]
 
 def generate_lines(n_individuals, n_snps):
     header = [header_left]
-    for i in xrange(n_individuals):
+    for i in range(n_individuals):
         header.append(str(i))
     header = "\t".join(header)
 
@@ -57,16 +57,16 @@ def vcf_gz_writer(flname, stream):
 
 def pops_writer(flname, n_individuals, n_populations):
     pops = dict()
-    for i in xrange(n_populations):
+    for i in range(n_populations):
         name = "population%s" % (i+1)
         pops[name ] = []
         
-    for i in xrange(n_individuals):
+    for i in range(n_individuals):
         pop = random.sample(pops.keys(), 1)[0]
         pops[pop].append(str(i))
 
     with open(flname, "w") as fl:
-        for key, value in pops.iteritems():
+        for key, value in pops.items():
             fl.write(key)
             fl.write(",")
             fl.write(",".join(value))
@@ -77,7 +77,7 @@ def phenotype_labels_writer(flname, n_individuals, n_phenotypes):
         # specify first column is sample id,
         # second is categorical
         fl.write("id\tc\n")
-        for i in xrange(n_individuals):
+        for i in range(n_individuals):
             l = i % n_phenotypes
             fl.write("%s\t%s\n" % (i, l))
 
