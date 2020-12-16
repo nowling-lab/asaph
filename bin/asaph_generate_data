@@ -50,7 +50,7 @@ def vcf_writer(flname, stream):
             fl.write("\n")
 
 def vcf_gz_writer(flname, stream):
-    with gzip.open(flname, "w") as fl:
+    with gzip.open(flname, "wt") as fl:
         for ln in stream:
             fl.write(ln)
             fl.write("\n")
