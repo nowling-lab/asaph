@@ -8,21 +8,22 @@ file_contains() {
 }
 
 @test "Run query_project with no arguments" {
-    run ${BATS_TEST_DIRNAME}/../bin/query_project
+    run asaph_query
     [ "$status" -eq 2 ]
 }
 
 @test "Run query_project with --help option" {
-    run ${BATS_TEST_DIRNAME}/../bin/query_project --help
+    run asaph_query --help
     [ "$status" -eq 0 ]
 }
 
 @test "Run query_project on test data" {
     RESULTS_FILE="${TEST_TEMP_DIR}/query_results.txt"
-    run bash -c "${BATS_TEST_DIRNAME}/../bin/query_project \
-    --workdir ${WORKDIR_PATH} > ${RESULTS_FILE}"
+    run bash -c "asaph_query --workdir ${WORKDIR_PATH} > ${RESULTS_FILE}"
+
+    N_FEATURES=$((N_SNPS * 3))
 
     [ "$status" -eq 0 ]
     [ $(file_contains ${RESULTS_FILE} ${N_INDIVIDUALS}) -eq 0 ]
-    [ $(file_contains ${RESULTS_FILE} ${N_SNPS}) -eq 0 ]
+    [ $(file_contains ${RESULTS_FILE} ${N_FEATURES}) -eq 0 ]
 }
