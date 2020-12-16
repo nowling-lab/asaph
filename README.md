@@ -1,7 +1,7 @@
 # Asaph
 Asaph is a toolbox for developing and evaluating algorithms for population genetics analysis of SNPs from insect species.  Asaph is developed primarily by [RJ Nowling](http://rnowling.github.io/).
 
-Build status: [![build status](https://travis-ci.org/rnowling/asaph.svg?branch=master)](https://travis-ci.org/rnowling/asaph)
+Build status: [![build status](https://travis-ci.com/rnowling/asaph.svg?branch=main)](https://travis-ci.org/rnowling/asaph)
 
 ## Getting Asaph
 To download Asaph, all you need to do is clone the git repository:
