@@ -5,9 +5,10 @@ python:
   - "3.8"
 
 install:
+  - apt install bats
   - pip install -U pip
   - pip install -U numpy scipy Cython
   - python setup.py install
 
 script:
-  - true
+  - bats bats_tests/*.bats
