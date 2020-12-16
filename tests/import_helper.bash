@@ -1,18 +1,9 @@
-count_snps() {
-    local counts=`python -c "import cPickle; data=cPickle.load(open('${1}/snp_feature_indices')); print len(data)"`
+count_features() {
+    local counts=`asaph_query --workdir ${1} | grep n_features | cut -d ' ' -f 2`
     echo "$counts"
 }
 
 count_samples() {
-    local counts=`python -c "import cPickle; data=cPickle.load(open('${1}/sample_labels')); print len(data)"`
+    local counts=`asaph_query --workdir ${1} | grep n_samples | cut -d ' ' -f 2`
     echo "$counts"
-}
-
-count_snp_feature_indices() {
-    local count=`python -c "import cPickle; data=cPickle.load(open('${1}/snp_feature_indices')); print sum([len(idx) for idx in data.itervalues()])"`
-    echo "$count"
-}
-
-teardown() {
-    rm -rf ${TEST_TEMP_DIR}
 }
