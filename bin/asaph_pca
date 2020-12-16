@@ -18,26 +18,12 @@ limitations under the License.
 
 import argparse
 from collections import defaultdict
-from itertools import tee
 import os
 import sys
 
 import joblib
-import matplotlib
-matplotlib.use("PDF")
-import matplotlib.pyplot as plt
 import numpy as np
-
-from sklearn.cluster import k_means
 from sklearn.decomposition import PCA
-from sklearn.linear_model import SGDClassifier
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import confusion_matrix
-from sklearn.preprocessing import binarize
-
-from asaph.ml import estimate_lr_iter
-from asaph.ml import likelihood_ratio_test
-from asaph.ml import snp_linreg_pvalues
 
 from asaph.newioutils import read_features
 from asaph.newioutils import deserialize
@@ -194,151 +180,6 @@ def output_loading_factors(args):
                 fl.write("%s\t%s\t%s\t" % (chrom, pos, j))
                 fl.write("\t".join(map(str, features)))
                 fl.write("\n")
-
-def generate_training_set(features, projections):
-    """
-    Converts genotype categories to class labels and imputed unknown genotypes.
-    Imputation involves duplicating samples, so we create copies of projection
-    coordinates to align.
-    """
-
-    n_samples = features.shape[0]
-    n_features = features.shape[1]
-    N_GENOTYPES = 3
-    if n_features != N_GENOTYPES:
-        raise Exception("Must be using genotype categories!")
-
-    N_COPIES = 3
-    class_labels = np.zeros(N_COPIES * n_samples)
-    imputed_projections = np.zeros(N_COPIES * n_samples)
-    for i in range(n_samples):
-        gt = None
-        for j in range(N_GENOTYPES):
-            if features[i, j] == 1.0:
-                gt = j
-        
-        for j in range(N_COPIES):
-            idx = N_COPIES * i + j
-            imputed_projections[idx] = projections[i]
-
-            if gt is None:
-                class_labels[idx] = j
-            else:
-                class_labels[idx] = gt
-
-    return N_COPIES, class_labels, imputed_projections
-
-
-def snp_logreg_association_tests(args):
-    workdir = args.workdir
-
-    analysis_dir = os.path.join(workdir, "analysis")
-    if not os.path.exists(analysis_dir):
-        os.makedirs(analysis_dir)
-
-    project_summary = deserialize(os.path.join(workdir,
-                                               PROJECT_SUMMARY_FLNAME))
-    
-    model_fl = os.path.join(workdir,
-                            "models",
-                            "pca.pkl")
-    model = joblib.load(model_fl)    
-    projections = model[PROJECTION_KEY]
-
-    data_model = read_features(workdir)
-
-    n_iter = estimate_lr_iter(len(data_model.sample_labels))
-    # we set the intercept to the class ratios in the lr test function
-    lr = SGDClassifier(penalty="l2",
-                       loss="log",
-                       n_iter = n_iter,
-                       fit_intercept=False)
-    
-    n_pcs = projections.shape[0]
-    for pc in args.components:
-        flname = os.path.join(analysis_dir, "snp_pc_%s_logreg_assoc_tests.tsv" % pc)
-        with open(flname, "w") as fl:
-            next_output = 1
-            for i, pair in enumerate(data_model.snp_feature_map.iteritems()):
-                snp_label, feature_idx = pair
-                chrom, pos = snp_label
-
-                snp_features = data_model.feature_matrix[:, feature_idx]
-                triplet = generate_training_set(snp_features,
-                                                projections[:, pc - 1])
-                n_copies, class_labels, imputed_projections = triplet
-
-                imputed_projections = imputed_projections.reshape(-1, 1)
-
-                # since we make multiple copies of the original samples,
-                # we need to scale the log loss so that it is correct for
-                # the original sample size
-                try:
-                    p_value = likelihood_ratio_test(imputed_projections,
-                                                    class_labels,
-                                                    lr,
-                                                    g_scaling_factor = 1.0 / n_copies)
-                # in case of underflow or overflow in a badly-behaving model
-                except ValueError:
-                    p_value = 1.0
-
-                if i == next_output:
-                    print(i, "SNP", snp_label, "and PC", pc, "has p-value", p_value)
-                    next_output *= 2
-
-                fl.write("\t".join([chrom, pos, str(p_value)]))
-                fl.write("\n")
-
-def snp_linreg_association_tests(args):
-    workdir = args.workdir
-
-    analysis_dir = os.path.join(workdir, "analysis")
-    if not os.path.exists(analysis_dir):
-        os.makedirs(analysis_dir)
-
-    project_summary = deserialize(os.path.join(workdir,
-                                               PROJECT_SUMMARY_FLNAME))
-    
-    model_fl = os.path.join(workdir,
-                            "models",
-                            "pca.pkl")
-    model = joblib.load(model_fl)    
-    projections = model[PROJECTION_KEY]
-
-    data_model = read_features(workdir)
-
-    n_pcs = projections.shape[0]
-    for pc in args.components:
-        flname = os.path.join(analysis_dir, "snp_pc_%s_linreg_assoc_tests.tsv" % pc)
-        with open(flname, "w") as fl:
-            next_output = 1
-            for i, pair in enumerate(data_model.snp_feature_map.iteritems()):
-                snp_label, feature_idx = pair
-                chrom, pos = snp_label
-
-                snp_features = data_model.feature_matrix[:, feature_idx]
-
-                # since we make multiple copies of the original samples,
-                # we need to scale the log loss so that it is correct for
-                # the original sample size
-                triplet = snp_linreg_pvalues(snp_features,
-                                             projections[:, pc - 1])
-                snp_p_value, gt_ttest_pvalues, gt_normality_pvalues, gt_pred_ys = triplet
-
-                if i == next_output:
-                    print(i, "SNP", snp_label, "and PC", pc, "has p-value", snp_p_value)
-                    next_output *= 2
-
-                fl.write("\t".join([chrom, pos, str(snp_p_value)]))
-                for j in range(3):
-                    fl.write("\t")
-                    fl.write(str(gt_ttest_pvalues[j]))
-                    fl.write("\t")
-                    fl.write(str(gt_normality_pvalues[j]))
-                    fl.write("\t")
-                    fl.write(str(gt_pred_ys[j]))
-                fl.write("\n")
-
     
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - Dimensionality Reduction")
@@ -374,21 +215,6 @@ def parseargs():
                                required=True,
                                help="Output file")
     
-    snp_association_parser = subparsers.add_parser("snp-association-tests",
-                                                   help="Run association tests on PCs vs SNPs")
-    snp_association_parser.add_argument("--components",
-                                        type=int,
-                                        nargs="+",
-                                        required=True,
-                                        help="Components to perform testing on")
-    
-    snp_association_parser.add_argument("--model-type",
-                                        type=str,
-                                        choices=["logistic",
-                                                 "linear"],
-                                        default="logistic",
-                                        help="Type of model")
-
     loading_magnitudes_parser = subparsers.add_parser("output-loading-magnitudes",
                                                       help="Output loading magnitudes")
 
@@ -422,11 +248,6 @@ if __name__ == "__main__":
         output_loading_magnitudes(args)
     elif args.mode == "output-loading-factors":
         output_loading_factors(args)
-    elif args.mode == "snp-association-tests":
-        if args.model_type == "linear":
-            snp_linreg_association_tests(args)
-        elif args.model_type == "logistic":
-            snp_logreg_association_tests(args)
     else:
         print("Unknown mode '%s'" % args.mode)
         sys.exit(1)
