@@ -1,15 +1,15 @@
-sudo: required
-
 language: python
 
 services:
   - docker
 
 python:
-  - "2.7"
+  - "3.6"
+  - "3.7"
+  - "3.8"
 
-before_install:
-  - docker build -t rnowling/asaph .
+install:
+  - python setup.py install
 
 script:
-  - docker run -t rnowling/asaph bats tests/*.bats
+  - true
