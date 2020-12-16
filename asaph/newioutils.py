@@ -15,9 +15,7 @@ limitations under the License.
 """
 
 import pickle
-from collections import defaultdict
 from collections import OrderedDict
-import glob
 import os
 import struct
 
@@ -81,32 +79,3 @@ def read_features(basename):
 
     return Features(feature_matrix,
                     sample_labels)
-
-def write_rf_snps(basedir, snps, n_trees, model_id):
-    model_dir = os.path.join(basedir, "models", "rf", str(n_trees))
-    if not os.path.exists(model_dir):
-        os.makedirs(model_dir)
-
-    flname = os.path.join(model_dir, model_id)
-    serialize(flname, snps)
-
-
-def read_rf_snps(basedir):
-    model_base_dir = os.path.join(basedir, "models", "rf")
-    if not os.path.exists(model_base_dir):
-        return dict()
-
-    model_tree_dirs = glob.glob(os.path.join(model_base_dir, "*"))
-
-    models = defaultdict(list)
-    for model_dir in model_tree_dirs:
-        model_flnames = glob.glob(os.path.join(model_dir, "*"))
-
-        for flname in model_flnames:
-            if not os.path.basename(flname).startswith("model"):
-                continue
-            snps = deserialize(flname)
-            n_trees = int(os.path.basename(os.path.dirname(flname)))
-            models[n_trees].append(snps)
-
-    return models

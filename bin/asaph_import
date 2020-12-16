@@ -81,11 +81,6 @@ def import_vcf(args):
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph")
 
-    parser.add_argument("--seq",
-                        choices=["DNA", "AA"],
-                        default="AA",
-                        help="Sequence type for FASTA input")
-
     parser.add_argument("--feature-type",
                         type=str,
                         default="categories",
