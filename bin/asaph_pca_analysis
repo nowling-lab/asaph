@@ -105,6 +105,9 @@ def plot_projections(coordinates, pairs, dirname, sample_names, labels=None):
         print("Error: PCs must be provided in pairs of 2")
         sys.exit(1)
 
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+
     for p1, p2 in pairwise(pairs):
         fig_flname = os.path.join(dirname,
                                   "pca_projection_%s_%s.png" % (str(p1), str(p2)))
