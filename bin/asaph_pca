@@ -105,7 +105,7 @@ def output_coordinates(args):
     features = read_features(workdir)
 
     with open(args.output_fl, "w") as fl:
-        headers = ["sample", "population_name"]
+        headers = ["sample"]
         headers.extend(map(str, args.selected_components))
         fl.write("\t".join(headers))
         fl.write("\n")
