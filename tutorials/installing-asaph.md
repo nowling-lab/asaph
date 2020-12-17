@@ -17,7 +17,7 @@ $ cd asaph
 $ python3 setup.py install
 ```
 
-Asaph requires Python 3 and the [numpy and scipy](http://www.numpy.org/), [matplotlib](http://matplotlib.org/), [scikit-learn](http://scikit-learn.org/stable/), and [seaborn](https://seaborn.pydata.org/index.html) libraries.  If, for some reason, the installation of Asaph failed, you can manually update these libraries and try again:
+Asaph requires Python 3.6 and above and the [numpy and scipy](http://www.numpy.org/), [matplotlib](http://matplotlib.org/), [scikit-learn](http://scikit-learn.org/stable/), and [seaborn](https://seaborn.pydata.org/index.html) libraries.  If, for some reason, the installation of Asaph failed, you can manually update these libraries and try again:
 
 ```bash
 $ pip3 install -U numpy scipy sklearn matplotlib seaborn
