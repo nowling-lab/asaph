@@ -6,3 +6,4 @@ The [Asaph](https://github.com/rnowling/asaph) software implements methods for a
 * [Installing Asaph](installing-asaph.md)
 * [Testing Changes to Asaph](testing-asaph.md) (mostly for developers)
 * [Detecting Inversions](detecting-inversions-with-pca.md)
+* [Preparing the Inversion Benchmark Data Set](../inversion-benchmark/README.md)

@@ -5,11 +5,12 @@ Build status: [![Build Status](https://travis-ci.com/rnowling/asaph.svg?branch=m
 
 ## Using Asaph
 
-Tutorials for using Asaph for analyses described in our papers are located in the `tutorials` directory.  A few quick links:
+Tutorials for using Asaph for analyses described in our papers are located in the [`tutorials`](tutorials/README.md) directory.  A few quick links:
 
 * [Installing Asaph](tutorials/installing-asaph.md)
 * [Testing Changes to Asaph](tutorials/testing-asaph.md) (mostly for developers)
 * [Detecting Inversions](tutorials/detecting-inversions-with-pca.md)
+* [Preparing the Inversion Benchmark Data Set](inversion-benchmark/README.md)
 
 ## Citing Asaph
 Please cite the following papers if you are using Asaph in your work:
