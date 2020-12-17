@@ -112,6 +112,8 @@ def plot_projections(coordinates, pairs, dirname, sample_names, labels=None):
         fig_flname = os.path.join(dirname,
                                   "pca_projection_%s_%s.png" % (str(p1), str(p2)))
         plt.clf()
+        fig = plt.gcf()
+        fig.set_dpi(150)
 
         if labels is None:        
             plt.scatter(coordinates[:, p1 - 1],
@@ -139,8 +141,7 @@ def plot_projections(coordinates, pairs, dirname, sample_names, labels=None):
 
         plt.xlabel("Component %s" % p1, fontsize=16)
         plt.ylabel("Component %s" % p2, fontsize=16)
-        plt.savefig(fig_flname,
-                    DPI=300)
+        plt.savefig(fig_flname)
 
 def sweep_clusters(coordinates, components, n_clusters, plot_flname):
     components = list(map(lambda idx: idx - 1, components))
@@ -155,14 +156,15 @@ def sweep_clusters(coordinates, components, n_clusters, plot_flname):
         print("Clustering with %s clusters: %s" % (k, inertia))
         inertia_values.append(inertia)
 
+    fig = plt.gcf()
+    fig.set_dpi(150)
     plt.plot(n_clusters,
              inertia_values,
              "k.-")
     plt.xlabel("Number of Clusters", fontsize=16)
     plt.ylabel("Inertia", fontsize=16)
 
-    plt.savefig(plot_flname,
-                DPI=300)
+    plt.savefig(plot_flname)
 
 def test_clusters(coordinates, components, n_clusters, sample_names, labels):
     components = list(map(lambda idx: idx - 1, components))
