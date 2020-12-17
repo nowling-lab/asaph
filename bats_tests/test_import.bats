@@ -39,6 +39,19 @@ setup() {
     [ "$status" -eq 0 ]
 }
 
+@test "Import data: vcf, default" {
+    run ${IMPORT_CMD} \
+	    --workdir ${WORKDIR_PATH} \
+	    --vcf ${VCF_PATH}
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}" ]
+    [ -d "${WORKDIR_PATH}" ]
+    [ -e "${WORKDIR_PATH}/project_summary" ]
+    [ -e "${WORKDIR_PATH}/feature_matrix.npy.npz" ]
+    [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
+}
+
 @test "Import data: vcf, counts" {
     run ${IMPORT_CMD} \
 	    --workdir ${WORKDIR_PATH} \
@@ -70,6 +83,20 @@ setup() {
     [ -e "${WORKDIR_PATH}/project_summary" ]
     [ -e "${WORKDIR_PATH}/feature_matrix.npy.npz" ]
     [ $(count_features ${WORKDIR_PATH}) -eq ${N_FEATURES} ]
+    [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
+}
+
+@test "Import data: vcf, hashed" {
+    run ${IMPORT_CMD} \
+	    --workdir ${WORKDIR_PATH} \
+	    --vcf ${VCF_PATH} \
+	    --feature-type hashed
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}" ]
+    [ -d "${WORKDIR_PATH}" ]
+    [ -e "${WORKDIR_PATH}/project_summary" ]
+    [ -e "${WORKDIR_PATH}/feature_matrix.npy.npz" ]
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
 

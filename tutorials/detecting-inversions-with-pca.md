@@ -3,12 +3,19 @@
 In our 2018 ACM-BCB paper [Detecting Chromosomal Inversions from Dense SNPs by Combining PCA and Association Tests](https://dl.acm.org/citation.cfm?id=3233571), we described an approach for detecting large chromosomal inversions from SNPs.  In this tutorial, we describe how to use Asaph to run PCA, the association tests, and interpret the results.  We assume that you already followed the instructions in the tutorial for [installing Asaph](installing-asaph.md).
 
 ## Importing Data
-To create an Asaph project, we first need to import the data.  We will use feature hashing to construct a very small feature matrix.  A minimal command for importing biallelic SNPs from a VCF file would look like so:
+To create an Asaph project, we first need to import the data.  Feature hashing (the default setting) is used to construct a very small feature matrix.  A minimal command for importing biallelic SNPs from a VCF file would look like so:
 
 ```bash
 $ asaph_import --workdir <workdir> \
-	--feature-type hashed \
 	--vcf <path/to/vcf>
+```
+
+If your inversion is not detected in the later stages, you can adjust the minimum inversion size (as a fraction of SNPs) to change the number of dimensions.  The default is 10%.
+
+```bash
+$ asaph_import --workdir <workdir> \
+	--vcf <path/to/vcf> \
+	--min-inversion-fraction 0.05
 ```
 
 If you only wish to use a subset of the samples in the VCF file, you can provide a populations file using the `--selected-samples` flag.  The populations file contains one group per line, with the first column indicating the population name, and the sample names separated by commas like so:

@@ -88,7 +88,7 @@ def parseargs():
 
     parser.add_argument("--feature-type",
                         type=str,
-                        default="categories",
+                        default="hashed",
                         choices=["counts",
                                  "categories",
                                  "hashed"])
