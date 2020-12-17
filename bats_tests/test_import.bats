@@ -106,3 +106,104 @@ setup() {
     [ $(count_features ${WORKDIR_PATH}) -eq ${N_FEATURES} ]
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
+
+@test "Import data: vcf.gz, hashed, reduced by size" {
+    run ${IMPORT_CMD} \
+	    --workdir ${WORKDIR_PATH} \
+	    --vcf-gz ${VCF_PATH}.gz \
+	    --feature-type hashed \
+	    --min-inversion-fraction 0.05
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}" ]
+    [ -d "${WORKDIR_PATH}" ]
+    [ -e "${WORKDIR_PATH}/project_summary" ]
+    [ -e "${WORKDIR_PATH}/feature_matrix.npy.npz" ]
+    [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
+}
+
+@test "Import data: vcf.gz, hashed, reduced by dimensions" {
+    run ${IMPORT_CMD} \
+	    --workdir ${WORKDIR_PATH} \
+	    --vcf-gz ${VCF_PATH}.gz \
+	    --feature-type hashed \
+	    --num-dimensions 10
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}" ]
+    [ -d "${WORKDIR_PATH}" ]
+    [ -e "${WORKDIR_PATH}/project_summary" ]
+    [ -e "${WORKDIR_PATH}/feature_matrix.npy.npz" ]
+    [ $(count_features ${WORKDIR_PATH}) -eq 10 ]
+    [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
+}
+
+@test "Import data: vcf.gz, categories, reservoir, reduced by size" {
+    run ${IMPORT_CMD} \
+	    --workdir ${WORKDIR_PATH} \
+	    --vcf-gz ${VCF_PATH}.gz \
+	    --feature-type categories \
+	    --subsampling-method reservoir \
+	    --min-inversion-fraction 0.05
+
+    N_FEATURES=$((N_SNPS * 3))
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}" ]
+    [ -d "${WORKDIR_PATH}" ]
+    [ -e "${WORKDIR_PATH}/project_summary" ]
+    [ -e "${WORKDIR_PATH}/feature_matrix.npy.npz" ]
+    [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
+}
+
+@test "Import data: vcf.gz, categories, reservoir, reduced by dimensions" {
+    run ${IMPORT_CMD} \
+	    --workdir ${WORKDIR_PATH} \
+	    --vcf-gz ${VCF_PATH}.gz \
+	    --feature-type categories \
+	    --subsampling-method reservoir \
+	    --num-dimensions 10
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}" ]
+    [ -d "${WORKDIR_PATH}" ]
+    [ -e "${WORKDIR_PATH}/project_summary" ]
+    [ -e "${WORKDIR_PATH}/feature_matrix.npy.npz" ]
+    [ $(count_features ${WORKDIR_PATH}) -eq 10 ]
+    [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
+}
+
+@test "Import data: vcf.gz, hashed, random projection, reduced by size" {
+    run ${IMPORT_CMD} \
+	    --workdir ${WORKDIR_PATH} \
+	    --vcf-gz ${VCF_PATH}.gz \
+	    --feature-type hashed \
+	    --subsampling-method random-projection \
+	    --min-inversion-fraction 0.2 \
+	    --inner-dim 4096
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}" ]
+    [ -d "${WORKDIR_PATH}" ]
+    [ -e "${WORKDIR_PATH}/project_summary" ]
+    [ -e "${WORKDIR_PATH}/feature_matrix.npy.npz" ]
+    [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
+}
+
+@test "Import data: vcf.gz, hashed, random-projection, reduced by dimensions" {
+    run ${IMPORT_CMD} \
+	    --workdir ${WORKDIR_PATH} \
+	    --vcf-gz ${VCF_PATH}.gz \
+	    --feature-type hashed \
+	    --subsampling-method random-projection \
+	    --num-dimensions 10 \
+	    --inner-dim 1024
+
+    [ "$status" -eq 0 ]
+    [ -e "${WORKDIR_PATH}" ]
+    [ -d "${WORKDIR_PATH}" ]
+    [ -e "${WORKDIR_PATH}/project_summary" ]
+    [ -e "${WORKDIR_PATH}/feature_matrix.npy.npz" ]
+    [ $(count_features ${WORKDIR_PATH}) -eq 10 ]
+    [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
+}

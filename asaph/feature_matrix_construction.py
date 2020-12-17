@@ -24,8 +24,6 @@ from sklearn.random_projection import SparseRandomProjection
 
 from .feature_extraction import *
 
-DEFAULT_HASHED_FEATURES = 2 ** 28
-
 COUNTS_FEATURE_TYPE = "counts"
 CATEGORIES_FEATURE_TYPE = "categories"
 HASHED_FEATURE_TYPE = "hashed"
@@ -70,10 +68,9 @@ class FeatureHashingAccumulator(object):
         return self.features.todense()
 
 class FeatureHashingRandomProjectionAccumulator(object):
-    def __init__(self, n_features, n_samples):
+    def __init__(self, n_features, n_hashed_features, n_samples):
         self.n_features = n_features
         self.n_samples = n_samples
-        n_hashed_features = DEFAULT_HASHED_FEATURES
         
         self.hasher = FeatureHasher(n_features = n_hashed_features,
                                          input_type = "pair")
@@ -125,12 +122,14 @@ class ReservoirMatrixAccumulator(object):
 
         return feature_matrix
 
-def construct_feature_matrix(variant_stream, n_samples, feature_type, subsampling_method, chunk_size, n_dim):
+def construct_feature_matrix(variant_stream, n_samples, feature_type, subsampling_method, chunk_size, n_dim, n_inner_dim=None):
     print("Using feature type:", feature_type)
     print("Using subsampling method:", subsampling_method)
+    if subsampling_method is not None or feature_type == HASHED_FEATURE_TYPE:
+        print("Using", n_dim, "dimensions")
     
     # extract features
-    if feature_type != HASHED_FEATURE_TYPE and subsampling_method != "reservoir":
+    if feature_type != HASHED_FEATURE_TYPE:
         if feature_type == COUNTS_FEATURE_TYPE:
             extractor = CountFeaturesExtractor(variant_stream)
         elif feature_type == CATEGORIES_FEATURE_TYPE:
@@ -138,48 +137,27 @@ def construct_feature_matrix(variant_stream, n_samples, feature_type, subsamplin
         else:
             raise Exception("Unknown feature type: %s" % feature_type)
 
-        accumulator = FullMatrixAccumulator()
-        feature_matrix = accumulator.transform(extractor)
-
-        if subsampling_method == "column-sampling":
-            print(feature_matrix.shape[1], "features")
-            print("You specified subsampling features.  Subsampling columns of feature matrix.")
-            selected_idx = random.sample(range(feature_matrix.shape[1]),
-                                         n_dim)
-            feature_matrix = feature_matrix[:, selected_idx]
-        elif subsampling_method == "random-projection":
-            print(feature_matrix.shape[1], "features")
-            print("You specified subsampling features.  Using sparse random projection.")
-            srp = SparseRandomProjection(n_components = n_dim)
-            feature_matrix = srp.fit_transform(feature_matrix)
-
-    elif feature_type != HASHED_FEATURE_TYPE and subsampling_method == "reservoir":
-        if feature_type == COUNTS_FEATURE_TYPE:
-            extractor = CountFeaturesExtractor(variant_stream)
-        elif feature_type == CATEGORIES_FEATURE_TYPE:
-            extractor = CategoricalFeaturesExtractor(variant_stream)
+        if subsampling_method is None:
+            accumulator = FullMatrixAccumulator()
+            feature_matrix = accumulator.transform(extractor)
+        elif subsampling_method == "reservoir":
+            accumulator = ReservoirMatrixAccumulator(n_dim)
+            feature_matrix = accumulator.transform(extractor)
         else:
-            raise Exception("Unknown feature type: %s" % feature_type)
-
-        accumulator = ReservoirMatrixAccumulator(n_dim)
-        feature_matrix = accumulator.transform(extractor)
-
+            raise Exception("Only reservoir sampling is supported with count or categorical features.")
     elif feature_type == HASHED_FEATURE_TYPE:
         string_features = FeatureStringsExtractor(variant_stream)
         chunker = Chunker(chunk_size, n_samples, string_features)
 
-        if subsampling_method == "hashing":
+        if subsampling_method is None:
             accumulator = FeatureHashingAccumulator(n_dim, n_samples)
-        elif subsampling_method is None:
-            accumulator = FeatureHashingAccumulator(DEFAULT_HASHED_FEATURES, n_samples)
         elif subsampling_method == "random-projection":
-            accumulator = FeatureHashingRandomProjectionAccumulator(n_dim, n_samples)
+            accumulator = FeatureHashingRandomProjectionAccumulator(n_dim, n_inner_dim, n_samples)
         else:
             raise Exception("Subsampling method '%s' not implemented for hashed features" % \
                             subsampling_method)
         
-        feature_matrix = accumulator.transform(chunker)
-        
+        feature_matrix = accumulator.transform(chunker)        
     else:
         s = "Combination of feature and subsampling types '%s' and '%s' not implemented" % \
             (feature_type, subsampling_method)

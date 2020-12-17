@@ -6,7 +6,9 @@ In our 2018 ACM-BCB paper [Detecting Chromosomal Inversions from Dense SNPs by C
 To create an Asaph project, we first need to import the data.  We will use feature hashing to construct a very small feature matrix.  A minimal command for importing biallelic SNPs from a VCF file would look like so:
 
 ```bash
-$ asaph_import --workdir <path/to/workdir> --feature-type hashed --subsampling-method hashing --vcf <path/to/vcf>
+$ asaph_import --workdir <workdir> \
+	--feature-type hashed \
+	--vcf <path/to/vcf>
 ```
 
 If you only wish to use a subset of the samples in the VCF file, you can provide a populations file using the `--selected-samples` flag.  The populations file contains one group per line, with the first column indicating the population name, and the sample names separated by commas like so:

@@ -50,9 +50,13 @@ def import_vcf(args):
                                                            gzipped,
                                                            args.allele_min_freq_threshold)
     n_samples = len(individual_names)
-    if args.num_dimensions is None:
+    if args.num_dimensions is None and args.min_inversion_fraction is None:
         n_dim = jl_min_dim(n_samples, eps=0.1)
-    else:
+    elif args.min_inversion_fraction is not None:
+        if not (0.0 < args.min_inversion_fraction < 1.0):
+            raise Exception("Minimum inversion fraction must be a number between 0 and 1 (exclusive).")
+        n_dim = jl_min_dim(n_samples, eps=args.min_inversion_fraction)
+    elif args.num_dimensions is not None:
         n_dim = args.num_dimensions
 
     feature_matrix = construct_feature_matrix(variant_stream,
@@ -60,7 +64,8 @@ def import_vcf(args):
                                               args.feature_type,
                                               args.subsampling_method,
                                               args.chunk_size,
-                                              n_dim)
+                                              n_dim,
+                                              n_inner_dim=args.inner_dim)
 
     print(feature_matrix.shape[0], "individuals")
     print(feature_matrix.shape[1], "features")
@@ -91,19 +96,28 @@ def parseargs():
     parser.add_argument("--subsampling-method",
                         type=str,
                         default=None,
-                        choices=["column-sampling",
-                                 "random-projection",
-                                 "reservoir",
-                                 "hashing"])
+                        choices=["random-projection",
+                                 "reservoir"])
 
     parser.add_argument("--chunk-size",
                         type=int,
                         default=10000)
 
-    parser.add_argument("--num-dimensions",
-                        type=int,
-                        default=None)
+    dimensions_group = parser.add_mutually_exclusive_group()
+    dimensions_group.add_argument("--num-dimensions",
+                                  type=int,
+                                  default=None,
+                                  help="Set number of dimensions to use for reduced space." )
 
+    dimensions_group.add_argument("--min-inversion-fraction",
+                                  type=float,
+                                  help="Use minimum inversion size (in terms of fraction of SNPs) to estimate number of dimensions needed.")
+
+    parser.add_argument("--inner-dim",
+                        type=int,
+                        default=2**20,
+                        help="Number of hashed features to use as an inner dimension with random projection.")
+    
     format_group = parser.add_mutually_exclusive_group(required=True)
     format_group.add_argument("--vcf", type=str, help="VCF file to import")
     format_group.add_argument("--vcf-gz", type=str, help="Gzipped VCF file to import")
