@@ -149,7 +149,7 @@ def cluster_samples_kmeans(coordinates_fl, components, n_clusters, output_fl):
                 fl.write(name)
             fl.write("\n")        
 
-def cluster_samples_dbscan(coordinates_fl, components, epsilon, output_fl):
+def cluster_samples_dbscan(coordinates_fl, components, epsilon, min_samples, output_fl):
     if not os.path.exists(coordinates_fl):
         print("Coordinates file path is invalid")
         sys.exit(1)
@@ -160,7 +160,7 @@ def cluster_samples_dbscan(coordinates_fl, components, epsilon, output_fl):
     
     selected = coordinates[:, components]
 
-    _, cluster_idx = dbscan(selected, eps=epsilon)
+    _, cluster_idx = dbscan(selected, eps=epsilon, min_samples=min_samples)
 
     # group samples by cluster
     populations = defaultdict(set)
@@ -245,6 +245,11 @@ def parseargs():
                                default=0.5,
                                help="Maximum distance between two points in the same neighborhood")
 
+    dbscan_parser.add_argument("--min-samples",
+                               type=int,
+                               default=5,
+                               help="Minimum samples per cluster core")
+    
     dbscan_parser.add_argument("--output-labels-fl",
                                type=str,
                                required=True,
@@ -269,6 +274,7 @@ if __name__ == "__main__":
         cluster_samples_dbscan(args.coordinates,
                                args.components,
                                args.epsilon,
+                               args.min_samples,
                                args.output_labels_fl)
 
     else:
