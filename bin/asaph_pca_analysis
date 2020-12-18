@@ -143,29 +143,6 @@ def plot_projections(coordinates, pairs, dirname, sample_names, labels=None):
         plt.ylabel("Component %s" % p2, fontsize=16)
         plt.savefig(fig_flname)
 
-def sweep_clusters(coordinates, components, n_clusters, plot_flname):
-    components = list(map(lambda idx: idx - 1, components))
-    
-    selected = coordinates[:, components]
-
-    inertia_values = []
-    for k in n_clusters:
-        _, _, inertia = k_means(selected,
-                                k,
-                                n_jobs=-2)
-        print("Clustering with %s clusters: %s" % (k, inertia))
-        inertia_values.append(inertia)
-
-    fig = plt.gcf()
-    fig.set_dpi(150)
-    plt.plot(n_clusters,
-             inertia_values,
-             "k.-")
-    plt.xlabel("Number of Clusters", fontsize=16)
-    plt.ylabel("Inertia", fontsize=16)
-
-    plt.savefig(plot_flname)
-
 def test_clusters(coordinates, components, n_clusters, sample_names, labels):
     components = list(map(lambda idx: idx - 1, components))
     
@@ -411,26 +388,6 @@ def parseargs():
                              type=str,
                              help="Labels file to use in coloring points")
 
-    sweep_clusters_parser = subparsers.add_parser("sweep-clusters",
-                                                   help="K-Means for a range of clusters")
-    
-    sweep_clusters_parser.add_argument("--components",
-                                       type=int,
-                                       nargs="+",
-                                       required=True,
-                                       help="Components to use in projection")
-
-    sweep_clusters_parser.add_argument("--n-clusters",
-                                       type=int,
-                                       nargs="+",
-                                       required=True,
-                                       help="Cluster counts to try")
-
-    sweep_clusters_parser.add_argument("--plot-fl",
-                                       type=str,
-                                       required=True,
-                                       help="Plot filename")
-
     test_clusters_parser = subparsers.add_parser("test-clusters",
                                                    help="Association tests against clusters")
     
@@ -499,12 +456,6 @@ if __name__ == "__main__":
                          args.plot_dir,
                          sample_names,
                          labels=labels)
-        
-    elif args.mode == "sweep-clusters":
-        sweep_clusters(coordinates,
-                       args.components,
-                       args.n_clusters,
-                       args.plot_fl)
         
     elif args.mode == "test-clusters":
         labels = read_labels(args.labels_fl)
