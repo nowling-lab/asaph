@@ -81,12 +81,12 @@ def lin_reg_log_likelihood(lr, X, y):
     return log_likelihood
 
 def lin_reg_lrtest(X, y, n_iter, g_scaling_factor=1.0):
-    null_lr = SGDRegressor(fit_intercept = True, n_iter=n_iter)
+    null_lr = SGDRegressor(fit_intercept = True, max_iter=n_iter)
     null_X = np.zeros((X.shape[0], 1))
     null_lr.fit(null_X,
                 y)
 
-    alt_lr = SGDRegressor(fit_intercept = False, n_iter=n_iter)
+    alt_lr = SGDRegressor(fit_intercept = False, max_iter=n_iter)
     alt_lr.fit(X,
                y)
 
@@ -171,7 +171,7 @@ def likelihood_ratio_test(features_alternate, labels, lr_model, set_intercept=Tr
     # null model
     null_lr = SGDClassifier(loss = "log",
                             fit_intercept = False,
-                            n_iter = n_iter)
+                            max_iter = n_iter)
     null_training_X = np.ones((n_training_samples, 1))
     null_testing_X = np.ones((n_testing_samples, 1))
     null_lr.fit(null_training_X,

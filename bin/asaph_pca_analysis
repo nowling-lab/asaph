@@ -24,8 +24,6 @@ import warnings
 
 import numpy as np
 
-from sklearn.cluster import k_means
-
 from scipy.stats import chi2
 from scipy.stats import chisquare
 
@@ -44,6 +42,9 @@ import seaborn as sns
 
 # apply seaborn style config
 sns.set()
+
+from asaph.ml import estimate_lr_iter
+from asaph.ml import likelihood_ratio_test
 
 def read_pca_coordinates(flname):
     sample_coordinates = []
@@ -143,153 +144,6 @@ def plot_projections(coordinates, pairs, dirname, sample_names, labels=None):
         plt.ylabel("Component %s" % p2, fontsize=16)
         plt.savefig(fig_flname)
 
-def test_clusters(coordinates, components, n_clusters, sample_names, labels):
-    components = list(map(lambda idx: idx - 1, components))
-    
-    selected = coordinates[:, components]
-
-    _, cluster_idx, inertia = k_means(selected,
-                                      n_clusters,
-                                      n_jobs=-2)
-
-    # calculate observation table
-    n_labels = len(set(labels.values()))
-    sample_labels = []
-    obs_table = np.zeros((n_clusters, n_labels))
-    for idx, sample_name in zip(cluster_idx, sample_names):
-        label_idx = labels[sample_name]
-        obs_table[idx, label_idx] += 1
-        sample_labels.append(label_idx)
-    sample_labels = np.array(sample_labels)
-
-    # calculate table of expectations
-    # that assumes that variables are independent
-    exp_table = np.zeros((n_clusters, n_labels))
-    obs_row_sums = obs_table.sum(axis=1)
-    obs_col_sums = obs_table.sum(axis=0)
-    n_samples = np.sum(obs_table)
-    for r in range(obs_table.shape[0]):
-        for c in range(obs_table.shape[1]):
-            exp_table[r, c] = obs_row_sums[r] * obs_col_sums[c] / n_samples
-
-    # scipy's dof
-    k = obs_table.shape[0] * obs_table.shape[1] - 1
-
-    # true dof
-    dof = (obs_table.shape[0] - 1) * (obs_table.shape[1] - 1)
-    ddof = k - dof
-    
-
-    _, pvalue = chisquare(obs_table.ravel(),
-                          exp_table.ravel(),
-                          ddof=ddof)
-
-    print(obs_table)
-    print()
-    print(exp_table)
-    
-    print("Chi2 p-value:", pvalue)
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-
-        feature_encoder = OneHotEncoder(sparse=False)
-        features = feature_encoder.fit_transform(sample_labels.reshape(-1, 1))
-
-        label_encoder = LabelEncoder()
-        sample_labels = label_encoder.fit_transform(cluster_idx)
-    
-        lr = SGDClassifier(loss="log", penalty="l2", max_iter=1000, tol=1e-4)
-        lr.fit(features, sample_labels)
-        pred_labels = lr.predict(features)
-        acc = accuracy_score(sample_labels, pred_labels)
-        bal_acc = balanced_accuracy_score(sample_labels, pred_labels)
-
-        print(pred_labels)
-        print()
-        print(sample_labels)
-
-        print("Classifier accuracy:", acc)
-        print("Balanced accuracy:", bal_acc)
-
-def output_clusters(coordinates, components, n_clusters, sample_names, labels_fl):
-    components = list(map(lambda idx: idx - 1, components))
-    
-    selected = coordinates[:, components]
-
-    _, cluster_idx, inertia = k_means(selected,
-                                      n_clusters,
-                                      n_jobs=-2)
-
-    # group samples by cluster
-    populations = defaultdict(set)
-    for i, sample_name in enumerate(sample_names):
-        cluster_assignment = cluster_idx[i]
-        populations[cluster_assignment].add(sample_name)
-
-    with open(labels_fl, "w") as fl:
-        for pop_name, samples in populations.items():
-            fl.write(str(pop_name))
-            for name in samples:
-                fl.write(",")
-                fl.write(name)
-            fl.write("\n")        
-
-def likelihood_ratio_test(features_alternate, labels, lr_model, set_intercept=True, g_scaling_factor=1.0):
-    if isinstance(features_alternate, tuple) and len(features_alternate) == 2:
-        training_features, testing_features = features_alternate
-        training_labels, testing_labels = labels
-    else:
-        training_features = features_alternate
-        testing_features = features_alternate
-        training_labels = labels
-        testing_labels = labels
-
-    n_training_samples = training_features.shape[0]
-    n_testing_samples = testing_features.shape[0]
-    n_iter = estimate_lr_iter(n_testing_samples)
-
-    # null model
-    null_lr = SGDClassifier(penalty="l2",
-                            loss = "log",
-                            max_iter = n_iter * 10.,
-                            fit_intercept = False,
-                            tol=1e-8)
-    
-    null_training_X = np.ones((n_training_samples, 1))
-    null_testing_X = np.ones((n_testing_samples, 1))
-    null_lr.fit(null_training_X,
-                training_labels)
-    null_prob = null_lr.predict_proba(null_testing_X)
-
-    intercept_init = None
-    if set_intercept:
-        intercept_init = null_lr.coef_[:, 0]
-
-    lr_model.fit(training_features,
-                 training_labels,
-                 intercept_init = intercept_init)
-    alt_prob = lr_model.predict_proba(testing_features)
-        
-    alt_log_likelihood = -log_loss(testing_labels,
-                                   alt_prob,
-                                   normalize=False)
-    null_log_likelihood = -log_loss(testing_labels,
-                                    null_prob,
-                                    normalize=False)
-
-    G = g_scaling_factor * 2.0 * (alt_log_likelihood - null_log_likelihood)
-    
-    # both models have intercepts so the intercepts cancel out
-    df = training_features.shape[1]
-    p_value = chi2.sf(G, df)
-
-    return p_value
-
-def estimate_lr_iter(n_samples):
-    return max(20,
-               int(np.ceil(1000000. / n_samples)))
-
 def create_class_labels(sample_names, sample_labels):
     str_labels = [sample_labels[name] for name in sample_names]
 
@@ -370,7 +224,7 @@ def parseargs():
                         type=str,
                         required=True)
 
-    subparsers = parser.add_subparsers(dest="mode")
+    subparsers = parser.add_subparsers(dest="mode", required=True)
 
     plot_parser = subparsers.add_parser("plot-projections",
                                         help="Plot PCA projections")
@@ -388,44 +242,6 @@ def parseargs():
                              type=str,
                              help="Labels file to use in coloring points")
 
-    test_clusters_parser = subparsers.add_parser("test-clusters",
-                                                   help="Association tests against clusters")
-    
-    test_clusters_parser.add_argument("--components",
-                                       type=int,
-                                       nargs="+",
-                                       required=True,
-                                       help="Components to use in projection")
-
-    test_clusters_parser.add_argument("--n-clusters",
-                                       type=int,
-                                       required=True,
-                                       help="Number of clusters")
-    
-    test_clusters_parser.add_argument("--labels-fl",
-                                       type=str,
-                                       required=True,
-                                       help="Labels file")
-
-    out_clusters_parser = subparsers.add_parser("output-clusters",
-                                                help="Output cluster labels")
-
-    out_clusters_parser.add_argument("--components",
-                                     type=int,
-                                     nargs="+",
-                                     required=True,
-                                     help="Components to use in projection")
-
-    out_clusters_parser.add_argument("--n-clusters",
-                                     type=int,
-                                     required=True,
-                                     help="Number of clusters")
-    
-    out_clusters_parser.add_argument("--labels-fl",
-                                     type=str,
-                                     required=True,
-                                     help="Labels file to output")
-    
     label_test_parser = subparsers.add_parser("test-labels",
                                               help="Run association tests on PCs vs labels")
 
@@ -456,21 +272,6 @@ if __name__ == "__main__":
                          args.plot_dir,
                          sample_names,
                          labels=labels)
-        
-    elif args.mode == "test-clusters":
-        labels = read_labels(args.labels_fl)
-        test_clusters(coordinates,
-                      args.components,
-                      args.n_clusters,
-                      sample_names,
-                      labels)
-
-    elif args.mode == "output-clusters":
-        output_clusters(coordinates,
-                        args.components,
-                        args.n_clusters,
-                        sample_names,
-                        args.labels_fl)
 
     elif args.mode == "test-labels":
         labels = read_labels(args.labels_fl)
