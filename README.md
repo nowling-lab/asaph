@@ -3,14 +3,20 @@ Asaph enables analysis of large inversions from SNP data.  Asaph employs streami
 
 Build status: [![Build Status](https://travis-ci.com/rnowling/asaph.svg?branch=main)](https://travis-ci.com/rnowling/asaph)
 
-## Using Asaph
+## Documentation
+Tutorials describing how to use Asaph and associated resources  are located in the [`tutorials`](tutorials/README.md) directory.
 
-Tutorials for using Asaph for analyses described in our papers are located in the [`tutorials`](tutorials/README.md) directory.  A few quick links:
+To get started:
 
 * [Installing Asaph](tutorials/installing-asaph.md)
 * [Testing Changes to Asaph](tutorials/testing-asaph.md) (mostly for developers)
-* [Detecting Inversions](tutorials/detecting-inversions-with-pca.md)
 * [Preparing the Inversion Benchmark Data Set](inversion-benchmark/README.md)
+
+These tutorials show how to use Asaph to analyze inversions:
+
+* [Preparing, Importing, and PCA of SNPs](tutorials/pca.md)
+* [Detecting and Localizing Inversions](tutorials/localizing-inversions.md)
+* [Genotyping Inversions](tutorials/genotyping-inversions.md)
 
 ## Citing Asaph
 Please cite the following papers if you are using Asaph in your work:
