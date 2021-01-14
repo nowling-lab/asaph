@@ -6,17 +6,15 @@ Build status: [![Build Status](https://travis-ci.com/rnowling/asaph.svg?branch=m
 ## Documentation
 Tutorials describing how to use Asaph and associated resources  are located in the [`tutorials`](tutorials/README.md) directory.
 
-To get started:
+1. [Installing Asaph](tutorials/installing-asaph.md)
+1. [Preparing, Importing, and PCA of SNPs](tutorials/pca.md)
+1. [Detecting and Localizing Inversions](tutorials/localizing-inversions.md)
+1. [Genotyping Inversions](tutorials/genotyping-inversions.md)
 
-* [Installing Asaph](tutorials/installing-asaph.md)
+Other tutorials related to Asaph:
+
 * [Testing Changes to Asaph](tutorials/testing-asaph.md) (mostly for developers)
-* [Preparing the Inversion Benchmark Data Set](inversion-benchmark/README.md)
-
-These tutorials show how to use Asaph to analyze inversions:
-
-* [Preparing, Importing, and PCA of SNPs](tutorials/pca.md)
-* [Detecting and Localizing Inversions](tutorials/localizing-inversions.md)
-* [Genotyping Inversions](tutorials/genotyping-inversions.md)
+* [Preparing the Inversion Benchmark Data Set](inversion-benchmark/README.md) (optional, only if you don't have your own data)
 
 ## Citing Asaph
 Please cite the following papers if you are using Asaph in your work:
