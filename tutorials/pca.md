@@ -38,7 +38,7 @@ We will output the PCA coordinates for each sample.  To output the coordinates:
 $ asaph_pca --workdir <workdir> \
 	output-coordinates \
 	--components 1 2 3 4 \
-	--output-fl pca_coordinates.tsv
+	--output-fl <workdir>/pca_coordinates.tsv
 ```
 
 The file will look like so:
@@ -52,6 +52,8 @@ line_31	-0.36233433754549305	-0.4606695545925513	-1.0556892238848392	-0.21483260
 line_32	2.4899268824159315	-2.177898665769419	-0.15243794901799274	-0.13712827848692657
 line_38	-0.5689557880617656	-0.34942765856267216	-0.2130572294672218	-0.5187670246143677
 ```
+
+In this example, the resulting `pca_coordinates.tsv` file will be located in the working directory that you specified.
 
 ## What Next?
 Now that the data has been prepared, imported, and PCA was performed, you can move on to [detecting and localizing inversions](localizing-inversions.md).
