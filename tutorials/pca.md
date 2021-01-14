@@ -21,15 +21,6 @@ $ asaph_import --workdir <workdir> \
 	--min-inversion-fraction 0.05
 ```
 
-If you only wish to use a subset of the samples in the VCF file, you can provide a populations file using the `--selected-samples` flag.  The populations file contains one group per line, with the first column indicating the population name, and the sample names separated by commas like so:
-
-```
-Population 1,Sample1,Sample2
-Population 2,Sample3,Sample4
-```
-
-The sample ids have to match the ids in the VCF file.  If a sample name from the VCF file is not present in the populations file, that sample is ignored.
-
 The work directory will be created and contain the resulting Asaph data structures such as a feature matrix.
 
 ## Principal Component Analysis (PCA)
