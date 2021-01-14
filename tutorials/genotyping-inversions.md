@@ -10,6 +10,7 @@ For example, if an inversion is captured by PC 1, we can cluster the samples as 
 ```bash
 $ asaph_clustering \
 	cluster-samples-dbscan \
+	--coordinates <workdir>/pca_coordinates.tsv \
 	--components 1 \
 	--output-labels-fl cluster_labels.pops
 ```
@@ -18,6 +19,7 @@ If an inversion is captured by PCs 1 and 2, we can cluster the samples using bot
 
 ```bash
 $ asaph_clustering \
+	--coordinates <workdir>/pca_coordinates.tsv \
 	cluster-samples-dbscan \
 	--components 1 2 \
 	--output-labels-fl cluster_labels.pops
@@ -45,5 +47,5 @@ If you happen to know the genotypes for your samples, you can test the cluster a
 $ asaph_clustering \
 	test-clusters \
 	--clusters-labels-fl cluster_labels.pops \
-	--output-labels-fl other_labels.pops
+	--output-labels-fl known_labels.pops
 ```
