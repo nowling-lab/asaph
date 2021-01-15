@@ -16,32 +16,79 @@ limitations under the License.
 """
 
 import argparse
-from collections import defaultdict
-import gzip
 
 import matplotlib
 matplotlib.use("PDF")
 import matplotlib.pyplot as plt
-
 import numpy as np
+import pandas as pd
+import scipy.stats as stats
 
-import seaborn as sns
+ALPHA = 0.01
 
-SAMPLE_START_COLUMN = 9
-
-def read_snp_probs(flname, component):
+def read_snp_table(flname, component, chromosome):
     with open(flname) as fl:
-        next(fl)
-        for ln in fl:
-            cols = ln.strip().split()
+        df = pd.read_csv(fl, delim_whitespace=True)
+        mask = (df["chrom"] == chromosome) & (df["component"] == component)
 
-            comp = int(cols[0])
-            if comp == component:
-                pos = int(cols[2])
-                pvalue = float(cols[3])
+        df = df[mask]
+        df = df.sort_values(by="pos")
+        
+    return df
 
-                yield pos, pvalue
-            
+def mark_significant_snps(df, threshold=None):
+    if threshold is None:
+        threshold = ALPHA / len(df)
+
+    df["is_significant"] = 0.0
+    mask = df["pvalue"] < threshold
+    df.loc[mask, "is_significant"] = 1.0    
+
+    return df
+
+def find_inversion_boundaries(df, n_windows, threshold=None):
+    min_pos = min(df["pos"])
+    max_pos = max(df["pos"])
+    windows = np.linspace(min_pos, max_pos, num=n_windows)
+    left_boundary = None
+    right_boundary = None
+    if threshold is None:
+        threshold = 0.0001 / len(windows)
+
+    # expected probability of a SNP being
+    # significant assuming uniform distribution
+    n_sig_snps = len(df[df["is_significant"] == 1])
+    exp_prob = n_sig_snps / len(df)
+
+    print(n_windows, n_sig_snps, len(df), threshold, exp_prob)
+
+    n_sig_wins = 0
+    for i in range(n_windows - 1):
+        mask = (df["pos"] >= windows[i]) & (df["pos"] < windows[i+1])
+        df_window = df[mask]
+
+        # number of trials (SNPs per window)
+        win_snps = len(df_window)
+        
+        # number of successes (sig SNPs per window)
+        win_sig_snps = len(df_window[df_window["is_significant"] == 1])
+        
+        #if len(sign_snp_marks) >= 2 and np.mean(sign_snp_marks) != 0.0:
+        #    _, win_pvalue = stats.ttest_1samp(sign_snp_marks, 0.0)
+        win_pvalue = stats.binom_test(win_sig_snps,
+                                      win_snps,
+                                      exp_prob,
+                                      alternative="greater")
+                                      
+        if win_pvalue < threshold:
+            n_sig_wins += 1
+            right_boundary = max(df_window["pos"])
+            if left_boundary is None:
+                left_boundary = min(df_window["pos"])
+
+    print(n_sig_wins, "of", n_windows, "were significant")
+
+    return left_boundary, right_boundary
 
 def parseargs():
     parser = argparse.ArgumentParser()
@@ -58,46 +105,83 @@ def parseargs():
                         required=True,
                         type=int)
 
+    parser.add_argument("--chromosome",
+                        required=True,
+                        type=str)
+    
     parser.add_argument("--y-limit",
                         type=float)
 
-    parser.add_argument("--sig-line",
-                        type=float)
+    parser.add_argument("--n-windows",
+                        type=int,
+                        required=True)
     
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = parseargs()
 
-    xs = []
-    ys = []
-    for pos, pvalue in read_snp_probs(args.input_tsv, args.component):
-        xs.append(pos)
-        ys.append(-np.log10(pvalue))
+    print("Reading SNP association p-values")
+    df = read_snp_table(args.input_tsv,
+                        args.component,
+                        args.chromosome)
 
+    print("Identifying SNPs with stat sig associations")
+    df = mark_significant_snps(df)
+
+    print("Identifying inversion boundaries")
+    left_boundary, right_boundary = find_inversion_boundaries(df,
+                                                              args.n_windows)
+
+    print("Left boundary:", left_boundary)
+    print("Right_boundary:", right_boundary)
+
+    print("Plotting")
     fig = plt.gcf()
     fig.set_dpi(200)
-        
-    plt.scatter(xs,
-                ys,
-                marker=".",
-                color="c")
 
-    if args.sig_line:
-        plt.plot([0, max(xs)],
-                 [-np.log10(args.sig_line),
-                  -np.log10(args.sig_line)],
+    max_value = 0
+    
+    df_insign = df[df["is_significant"] == 0]
+    if len(df_insign) != 0:
+        log10pvalues = -np.log10(df_insign["pvalue"])
+        plt.scatter(df_insign["pos"],
+                    log10pvalues,
+                    marker=".")
+
+        max_value = max(max_value,
+                        max(log10pvalues))
+
+    df_sig = df[df["is_significant"] == 1]
+    if len(df_sig) != 0:
+        log10pvalues = -np.log10(df_sig["pvalue"])
+        plt.scatter(df_sig["pos"],
+                    log10pvalues,
+                    marker=".",
+                    label="Significant")
+
+        max_value = max(max_value,
+                        max(log10pvalues))
+
+    if left_boundary != None:
+        plt.plot([left_boundary, left_boundary],
+                 [0, max_value],
+                 "r-",
+                 label="Boundary")
+
+        plt.plot([right_boundary, right_boundary],
+                 [0, max_value],
                  "r-")
 
+    plt.legend()
+
     plt.xlabel("Position (bp)", fontsize=16)
-    plt.ylabel("p-value (-log10)", fontsize=16)
+    plt.ylabel("SNP p-value (-log10)", fontsize=16)
 
     if args.y_limit:
         plt.ylim([0, args.y_limit])
     else:
-        plt.ylim([0.0, max(ys)])
-
-    plt.xlim([0.0, max(xs)])
+        plt.ylim([0.0, max_value])
 
     plt.savefig(args.plot_fl)
                 
