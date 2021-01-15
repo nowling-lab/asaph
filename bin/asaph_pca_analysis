@@ -40,9 +40,6 @@ matplotlib.use("PDF")
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# apply seaborn style config
-sns.set()
-
 from asaph.ml import estimate_lr_iter
 from asaph.ml import likelihood_ratio_test
 
@@ -118,25 +115,16 @@ def plot_projections(coordinates, pairs, dirname, sample_names, labels=None):
 
         if labels is None:        
             plt.scatter(coordinates[:, p1 - 1],
-                        coordinates[:, p2 - 1],
-                        color="m",
-                        marker="o",
-                        edgecolor="k",
-                        alpha=0.7)
+                        coordinates[:, p2 - 1])
         else:
             label_samples = defaultdict(list)
             for sample_name, label_name in labels.items():
                 sample_idx = sample_names.index(sample_name)
                 label_samples[label_name].append(sample_idx)
 
-            colors = ["k", "m", "c", "y"]
             for i, (label, samples) in enumerate(label_samples.items()):
                 plt.scatter(coordinates[samples, p1 - 1],
                             coordinates[samples, p2 - 1],
-                            color=colors[i],
-                            marker="o",
-                            edgecolor="k",
-                            alpha=0.7,
                             label=label)
                 plt.legend()
 
