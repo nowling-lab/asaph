@@ -1,0 +1,362 @@
+#!/usr/bin/env python3
+"""
+Copyright 2019 Ronald J. Nowling
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
+
+import argparse
+from collections import defaultdict
+import os
+import sys
+import warnings
+
+import numpy as np
+from scipy import stats
+from sklearn.cluster import dbscan
+
+import matplotlib
+matplotlib.use("PDF")
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import LabelEncoder
+
+def read_pca_coordinates(flname):
+    sample_coordinates = []
+    sample_names = []
+    with open(flname) as fl:
+        # skip header
+        next(fl)
+        for ln in fl:
+            cols = ln.split("\t")
+
+            sample_name = cols[0]
+            coordinates = list(map(float, cols[1:]))
+            
+            sample_names.append(sample_name)
+            sample_coordinates.append(coordinates)
+
+    coordinates = np.array(sample_coordinates)
+    print(coordinates.shape)
+
+    return sample_names, coordinates
+
+def read_labels(flname):
+    sample_indices = dict()
+
+    with open(flname) as fl:
+        for label_idx, ln in enumerate(fl):
+            cols = ln.strip().split(",")
+
+            label = cols[0]
+
+            for sample_name in cols[1:]:
+                sample_indices[sample_name] = label_idx
+
+    return sample_indices
+
+def read_label_names(flname):
+    sample_indices = dict()
+
+    with open(flname) as fl:
+        for label_idx, ln in enumerate(fl):
+            cols = ln.strip().split(",")
+
+            label = cols[0]
+
+            for sample_name in cols[1:]:
+                sample_indices[sample_name] = label
+
+    return sample_indices
+
+def pairwise(iterable):
+    iterable = iter(iterable)
+    try:
+        while True:
+            a = next(iterable)
+            b = next(iterable)
+            yield a, b
+    except StopIteration:
+        pass
+    
+def plot_projections(coordinates_fl, pairs, dirname, labels=None):
+    sample_names, coordinates = read_pca_coordinates(coordinates_fl)
+
+    if len(pairs) % 2 != 0:
+        print("Error: PCs must be provided in pairs of 2")
+        sys.exit(1)
+
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+
+    for p1, p2 in pairwise(pairs):
+        fig_flname = os.path.join(dirname,
+                                  "pca_projection_%s_%s.png" % (str(p1), str(p2)))
+        plt.clf()
+        fig = plt.gcf()
+        fig.set_dpi(150)
+
+        if labels is None:
+            plt.scatter(coordinates[:, p1 - 1],
+                        coordinates[:, p2 - 1])
+        else:
+            label_samples = defaultdict(list)
+            for idx, sample_name in enumerate(sample_names):
+                label_name = labels[sample_name]
+                label_samples[label_name].append(idx)
+
+            for i, (label, samples) in enumerate(label_samples.items()):
+                if label != "-1":
+                    plt.scatter(coordinates[samples, p1 - 1],
+                                coordinates[samples, p2 - 1],
+                                label=label)
+
+            if "-1" in label_samples:
+                samples = label_samples["-1"]
+                plt.scatter(coordinates[samples, p1 - 1],
+                            coordinates[samples, p2 - 1],
+                            color="k")
+
+            plt.legend()
+
+        plt.xlabel("Component %s" % p1, fontsize=16)
+        plt.ylabel("Component %s" % p2, fontsize=16)
+        plt.savefig(fig_flname)
+
+def test_pcs(coordinates_fl, sample_names, sample_labels):
+    sample_names, coordinates = read_pca_coordinates(coordinates_fl)
+
+    for i in range(pc_coordinates.shape[1]):
+        feature_to_coords = defaultdict(list)
+        for j, name in enumerate(sample_names):
+            label = sample_labels[name]
+            feature_to_coords[label].append(pc_coordinates[j, i])
+
+        if len(feature_to_coords) < 2:
+            pvalue = 1.0
+        else:
+            _, pvalue = stats.f_oneway(*feature_to_coords.values())
+
+            if np.isnan(pvalue) or np.isinf(pvalue):
+                pvalue = 1.0
+
+        print("Component:", (i+1))
+        print("p-value: ", pvalue)
+        print()    
+
+def cluster_samples_dbscan(coordinates_fl, components, epsilon, min_samples, output_fl):
+    if not os.path.exists(coordinates_fl):
+        print("Coordinates file path is invalid")
+        sys.exit(1)
+
+    sample_names, coordinates = read_pca_coordinates(coordinates_fl)
+    
+    components = list(map(lambda idx: idx - 1, components))
+    
+    selected = coordinates[:, components]
+
+    _, cluster_idx = dbscan(selected, eps=epsilon, min_samples=min_samples)
+
+    # group samples by cluster
+    populations = defaultdict(set)
+    outliers = []
+    for i, sample_name in enumerate(sample_names):
+        cluster_assignment = cluster_idx[i]
+        populations[cluster_assignment].add(sample_name)
+
+        # find outliers
+        if cluster_idx[i] == -1:
+            outliers.append(sample_name)
+
+    if len(outliers) > 0:
+        print("The following samples were marked as outliers:", ",".join(outliers))
+
+    if len(populations) == 0:
+        warnings.warn("All samples were marked as outliers!", UserWarning)
+    else:
+        print("Found", len(populations), "clusters (including outliers)")
+
+    with open(output_fl, "w") as fl:
+        for pop_name, samples in populations.items():
+            fl.write(str(pop_name))
+            for name in samples:
+                fl.write(",")
+                fl.write(name)
+            fl.write("\n")
+
+def evaluate_clusters(cluster_labels_fl, other_labels_fl):
+    orig_cluster_labels = read_label_names(cluster_labels_fl)
+    known_labels = read_label_names(other_labels_fl)
+
+    common_names = set(orig_cluster_labels.keys()) & set(known_labels.keys())
+
+    print(len(orig_cluster_labels), len(known_labels), len(common_names))
+
+    cluster_labels = { name : label for name, label in orig_cluster_labels.items() if name in common_names and label != "-1" }
+    cluster_outlier_labels = { name : label for name, label in orig_cluster_labels.items() if name in common_names and label == "-1" }
+    other_labels = { name : label for name, label in known_labels.items() if name in cluster_labels }
+    other_outlier_labels = { name : known_labels[name] for name in cluster_outlier_labels }
+
+    feature_encoder = OneHotEncoder(sparse=False)
+    cluster_features = np.array(list(cluster_labels.values())).reshape(-1, 1)
+    features = feature_encoder.fit_transform(cluster_features)
+
+    label_encoder = LabelEncoder()
+    sample_labels = label_encoder.fit_transform(list(other_labels.values()))
+
+    dt = DecisionTreeClassifier()
+    dt.fit(features, sample_labels)
+
+    pred_labels = dt.predict(features)
+
+    if len(cluster_outlier_labels) != 0:
+        outlier_pred_labels = -1 * np.ones(len(cluster_outlier_labels), dtype=np.int)
+        sample_outlier_labels = label_encoder.transform(np.array(list(other_outlier_labels.values())))
+
+        pred_labels = np.concatenate([pred_labels,
+                                      outlier_pred_labels])
+
+        sample_labels = np.concatenate([sample_labels,
+                                        sample_outlier_labels])
+    
+    acc = accuracy_score(sample_labels, pred_labels)
+
+    print(pred_labels)
+    print()
+    print(sample_labels)
+
+    print("Classifier accuracy:", "%.01f%%" % (100. * acc))
+    print("Confusion matrix:")
+
+    all_labels = list(set(pred_labels) | set(sample_labels))
+    all_labels.sort()
+
+    print("Labels:", all_labels)
+    print(confusion_matrix(pred_labels, sample_labels))
+        
+def parseargs():
+    parser = argparse.ArgumentParser()
+
+    subparsers = parser.add_subparsers(dest="mode", required=True)
+
+    plot_parser = subparsers.add_parser("plot-projections",
+                                        help="Plot PCA projections")
+    
+    plot_parser.add_argument("--plot-dir",
+                             type=str,
+                             required=True)
+
+    plot_parser.add_argument("--pairs",
+                             nargs="+",
+                             type=int,
+                             required=True)
+
+    plot_parser.add_argument("--labels-fl",
+                             type=str,
+                             help="Labels file to use in coloring points")
+
+    plot_parser.add_argument("--coordinates",
+                             type=str,
+                             required=True)
+
+    label_test_parser = subparsers.add_parser("test-pcs",
+                                              help="Run association tests on PCs vs labels")
+
+    label_test_parser.add_argument("--coordinates",
+                                   type=str,
+                                   required=True)
+    
+    label_test_parser.add_argument("--labels-fl",
+                                   type=str,
+                                   required=True,
+                                   help="Labels file")
+
+    dbscan_parser = subparsers.add_parser("cluster-samples",
+                                          help="Cluster samples with dbscan")
+
+    dbscan_parser.add_argument("--coordinates",
+                               type=str,
+                               required=True)
+    
+    dbscan_parser.add_argument("--components",
+                               type=int,
+                               nargs="+",
+                               required=True,
+                               help="Components to use in projection")
+
+    dbscan_parser.add_argument("--epsilon",
+                               type=float,
+                               default=0.5,
+                               help="Maximum distance between two points in the same neighborhood")
+
+    dbscan_parser.add_argument("--min-samples",
+                               type=int,
+                               default=5,
+                               help="Minimum samples per cluster core")
+    
+    dbscan_parser.add_argument("--output-labels-fl",
+                               type=str,
+                               required=True,
+                               help="Labels file to output")
+
+    test_clusters_parser = subparsers.add_parser("evaluate-clusters",
+                                                 help="Evaluate cluster and known labels")
+    
+    test_clusters_parser.add_argument("--cluster-labels-fl",
+                                      type=str,
+                                      required=True)
+
+    test_clusters_parser.add_argument("--other-labels-fl",
+                                       type=str,
+                                       required=True)
+
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    args = parseargs()
+
+    if args.mode == "plot-projections":
+        labels = None
+        if args.labels_fl:
+            labels = read_label_names(args.labels_fl)
+        plot_projections(args.coordinates,
+                         args.pairs,
+                         args.plot_dir,
+                         labels=labels)
+
+    elif args.mode == "test-pcs":
+        labels = read_labels(args.labels_fl)
+        test_pcs(args.coordinates,
+                 sample_names,
+                 labels)
+
+    elif args.mode == "cluster-samples":
+        cluster_samples_dbscan(args.coordinates,
+                               args.components,
+                               args.epsilon,
+                               args.min_samples,
+                               args.output_labels_fl)
+
+    elif args.mode == "evaluate-clusters":
+        evaluate_clusters(args.cluster_labels_fl,
+                          args.other_labels_fl)
+
+    else:
+        print("Unknown mode '%s'" % args.mode)
+        sys.exit(1)

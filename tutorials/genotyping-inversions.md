@@ -8,8 +8,8 @@ For each inversion, we can cluster the samples using the coordinates along the P
 For example, if an inversion is captured by PC 1, we can cluster the samples as so:
 
 ```bash
-$ asaph_clustering \
-	cluster-samples-dbscan \
+$ asaph_genotype \
+	cluster-samples \
 	--coordinates <workdir>/pca_coordinates.tsv \
 	--components 1 \
 	--output-labels-fl cluster_labels.pops
@@ -18,21 +18,31 @@ $ asaph_clustering \
 If an inversion is captured by PCs 1 and 2, we can cluster the samples using both PCs:
 
 ```bash
-$ asaph_clustering \
+$ asaph-genotype \
+	cluster-samples \
 	--coordinates <workdir>/pca_coordinates.tsv \
-	cluster-samples-dbscan \
 	--components 1 2 \
 	--output-labels-fl cluster_labels.pops
 ```
 
-Samples determined to be outliers will not be assigned a cluster label in the output file.
+Samples determined to be outliers will be assigned a cluster label of -1 in the output file.
+
+If you happen to know the genotypes for your samples, you can test the cluster and other labels for agreement:
+
+```bash
+$ asaph_genotype \
+	evaluate-clusters \
+	--clusters-labels-fl cluster_labels.pops \
+	--output-labels-fl known_labels.pops
+```
 
 # PCA Projection Plots
 We can then generate scatter plots for the PCA:
 
 ```bash
-$ asaph_pca_analysis --coordinates pca_coordinates.tsv \
+$ asaph_genotype \
 	plot-projections \
+	--coordinates pca_coordinates.tsv \
 	--pairs 1 2 3 4 \
 	--labels-fl cluster_labels.pops \
 	--plot-dir pca_plots
@@ -40,12 +50,12 @@ $ asaph_pca_analysis --coordinates pca_coordinates.tsv \
 
 The two plot files `pca_projection_1_2.png` and `pca_projection_3_4.png` will be created.  The samples will be colored according to their cluster assignment.
 
-# Comparing Cluster Labels to Known Labels
-If you happen to know the genotypes for your samples, you can test the cluster and other labels for agreement:
+You can also plot the projections without cluster labels:
 
 ```bash
-$ asaph_clustering \
-	test-clusters \
-	--clusters-labels-fl cluster_labels.pops \
-	--output-labels-fl known_labels.pops
+$ asaph_genotype \
+	plot-projections \
+	--coordinates pca_coordinates.tsv \
+	--pairs 1 2 3 4 \
+	--plot-dir pca_plots
 ```
