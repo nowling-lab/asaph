@@ -3,9 +3,14 @@ The [Asaph](https://github.com/rnowling/asaph) software implements methods for a
 
 ## Currently Available Tutorials
 
-* [Preparing the Inversion Benchmark Data Set](../inversion-benchmark/README.md)
-* [Installing Asaph](installing-asaph.md)
+Using Asaph:
+
+1. [Installing Asaph](installing-asaph.md)
+1. [Preparing, Importing, and PCA of SNPs](pca.md)
+1. [Detecting and Localizing Inversions](localizing-inversions.md)
+1. [Genotyping Inversions](genotyping-inversions.md)
+
+Other tutorials related to Asaph:
+
 * [Testing Changes to Asaph](testing-asaph.md) (mostly for developers)
-* [Preparing, Importing, and PCA of SNPs](pca.md)
-* [Detecting and Localizing Inversions](localizing-inversions.md)
-* [Genotyping Inversions](genotyping-inversions.md)
+* [Preparing the Inversion Benchmark Data Set](../inversion-benchmark/README.md) (optional, only if you don't have your own data)

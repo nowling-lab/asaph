@@ -21,15 +21,6 @@ $ asaph_import --workdir <workdir> \
 	--min-inversion-fraction 0.05
 ```
 
-If you only wish to use a subset of the samples in the VCF file, you can provide a populations file using the `--selected-samples` flag.  The populations file contains one group per line, with the first column indicating the population name, and the sample names separated by commas like so:
-
-```
-Population 1,Sample1,Sample2
-Population 2,Sample3,Sample4
-```
-
-The sample ids have to match the ids in the VCF file.  If a sample name from the VCF file is not present in the populations file, that sample is ignored.
-
 The work directory will be created and contain the resulting Asaph data structures such as a feature matrix.
 
 ## Principal Component Analysis (PCA)
@@ -47,7 +38,7 @@ We will output the PCA coordinates for each sample.  To output the coordinates:
 $ asaph_pca --workdir <workdir> \
 	output-coordinates \
 	--components 1 2 3 4 \
-	--output-fl pca_coordinates.tsv
+	--output-fl <workdir>/pca_coordinates.tsv
 ```
 
 The file will look like so:
@@ -61,6 +52,8 @@ line_31	-0.36233433754549305	-0.4606695545925513	-1.0556892238848392	-0.21483260
 line_32	2.4899268824159315	-2.177898665769419	-0.15243794901799274	-0.13712827848692657
 line_38	-0.5689557880617656	-0.34942765856267216	-0.2130572294672218	-0.5187670246143677
 ```
+
+In this example, the resulting `pca_coordinates.tsv` file will be located in the working directory that you specified.
 
 ## What Next?
 Now that the data has been prepared, imported, and PCA was performed, you can move on to [detecting and localizing inversions](localizing-inversions.md).

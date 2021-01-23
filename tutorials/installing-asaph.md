@@ -41,4 +41,4 @@ $ pip3 install numpy scipy sklearn matplotlib seaborn pandas
 
 
 ## What Next?
-Now that Asaph is installed, check out some of our other [tutorials](README.md).
+Now that Asaph is installed, check out the [next tutorial](pca.md) on how to prepare, import, and perform PCA on SNP data.
