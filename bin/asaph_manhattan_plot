@@ -29,6 +29,7 @@ ALPHA = 0.01
 def read_snp_table(flname, component, chromosome):
     with open(flname) as fl:
         df = pd.read_csv(fl, delim_whitespace=True)
+        df["chrom"] = df["chrom"].astype(str)
         mask = (df["chrom"] == chromosome) & (df["component"] == component)
 
         df = df[mask]
@@ -114,7 +115,7 @@ def parseargs():
 
     parser.add_argument("--n-windows",
                         type=int,
-                        required=True)
+                        default=10000)
     
     return parser.parse_args()
 
@@ -130,11 +131,23 @@ if __name__ == "__main__":
     df = mark_significant_snps(df)
 
     print("Identifying inversion boundaries")
-    left_boundary, right_boundary = find_inversion_boundaries(df,
-                                                              args.n_windows)
+    if args.n_windows != -1:
+        left_boundary, right_boundary = find_inversion_boundaries(df,
+                                                                  args.n_windows)
 
-    print("Left boundary:", left_boundary)
-    print("Right_boundary:", right_boundary)
+        print("Left boundary:", left_boundary)
+        print("Right_boundary:", right_boundary)
+
+        plt.plot([left_boundary, left_boundary],
+                 [0, max_value],
+                 "k-",
+                 label="Boundary")
+
+        plt.plot([right_boundary, right_boundary],
+                 [0, max_value],
+                 "k-")
+
+        plt.legend()
 
     print("Plotting")
     fig = plt.gcf()
@@ -163,17 +176,6 @@ if __name__ == "__main__":
         max_value = max(max_value,
                         max(log10pvalues))
 
-    if left_boundary != None:
-        plt.plot([left_boundary, left_boundary],
-                 [0, max_value],
-                 "r-",
-                 label="Boundary")
-
-        plt.plot([right_boundary, right_boundary],
-                 [0, max_value],
-                 "r-")
-
-    plt.legend()
 
     plt.xlabel("Position (bp)", fontsize=16)
     plt.ylabel("SNP p-value (-log10)", fontsize=16)
