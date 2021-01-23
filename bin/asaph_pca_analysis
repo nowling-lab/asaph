@@ -23,25 +23,12 @@ import sys
 import warnings
 
 import numpy as np
-
-from scipy.stats import chi2
-from scipy.stats import chisquare
-
-from sklearn.linear_model import SGDClassifier
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import balanced_accuracy_score
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import log_loss
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.preprocessing import LabelEncoder
+from scipy import stats
 
 import matplotlib
 matplotlib.use("PDF")
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-from asaph.ml import estimate_lr_iter
-from asaph.ml import likelihood_ratio_test
 
 def read_pca_coordinates(flname):
     sample_coordinates = []
@@ -132,78 +119,24 @@ def plot_projections(coordinates, pairs, dirname, sample_names, labels=None):
         plt.ylabel("Component %s" % p2, fontsize=16)
         plt.savefig(fig_flname)
 
-def create_class_labels(sample_names, sample_labels):
-    str_labels = [sample_labels[name] for name in sample_names]
+def test_pcs(pc_coordinates, sample_names, sample_labels):
+    for i in range(pc_coordinates.shape[1]):
+        feature_to_coords = defaultdict(list)
+        for j, name in enumerate(sample_names):
+            label = sample_labels[name]
+            feature_to_coords[label].append(pc_coordinates[j, i])
 
-    encoder = LabelEncoder()
-    labels = encoder.fit_transform(str_labels)
+        if len(feature_to_coords) < 2:
+            pvalue = 1.0
+        else:
+            _, pvalue = stats.f_oneway(*feature_to_coords.values())
 
-    return labels, encoder.classes_
-    
+            if np.isnan(pvalue) or np.isinf(pvalue):
+                pvalue = 1.0
 
-def test_labels(coordinates, sample_names, sample_labels):
-    class_labels, class_names = create_class_labels(sample_names, sample_labels)
-
-    n_iter = estimate_lr_iter(len(coordinates))
-    # we set the intercept to the class ratios in the lr test function
-    lr = SGDClassifier(penalty="l2",
-                       loss="log",
-                       max_iter = n_iter * 10.,
-                       tol=1e-8,
-                       fit_intercept=True)
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        for i in range(coordinates.shape[1]):
-            features = coordinates[:, i].reshape(-1, 1)
-        
-            p_value = likelihood_ratio_test(features,
-                                            class_labels,
-                                            lr,
-                                            set_intercept=False)
-
-            lr.fit(features, class_labels)
-            pred_labels = lr.predict(features)
-            acc = 100. * accuracy_score(class_labels,
-                                        pred_labels)
-
-            bal_acc = 100. * balanced_accuracy_score(class_labels,
-                                                     pred_labels)
-
-            cm = confusion_matrix(class_labels,
-                                  pred_labels)
-
-            print("Component:", (i+1))
-            print("p-value: ", p_value)
-            print("Accuracy:", acc)
-            print("Balanced accuracy:", bal_acc)
-            print(cm)
-            print()
-
-        p_value = likelihood_ratio_test(coordinates,
-                                        class_labels,
-                                        lr,
-                                        set_intercept=False)
-
-        lr.fit(coordinates, class_labels)
-        pred_labels = lr.predict(coordinates)
-        acc = 100. * accuracy_score(class_labels,
-                                        pred_labels)
-
-        bal_acc = 100. * balanced_accuracy_score(class_labels,
-                                                 pred_labels)
-
-        cm = confusion_matrix(class_labels,
-                              pred_labels)
-
-        print("Component:", "all")
-        print("p-value: ", p_value)
-        print("Accuracy:", acc)
-        print("Balanced accuracy:", bal_acc)
-        print(cm)
-        print()
-
-            
+        print("Component:", (i+1))
+        print("p-value: ", pvalue)
+        print()    
 
 def parseargs():
     parser = argparse.ArgumentParser()
@@ -230,7 +163,7 @@ def parseargs():
                              type=str,
                              help="Labels file to use in coloring points")
 
-    label_test_parser = subparsers.add_parser("test-labels",
+    label_test_parser = subparsers.add_parser("test-pcs",
                                               help="Run association tests on PCs vs labels")
 
     label_test_parser.add_argument("--labels-fl",
@@ -261,11 +194,11 @@ if __name__ == "__main__":
                          sample_names,
                          labels=labels)
 
-    elif args.mode == "test-labels":
+    elif args.mode == "test-pcs":
         labels = read_labels(args.labels_fl)
-        test_labels(coordinates,
-                    sample_names,
-                    labels)
+        test_pcs(coordinates,
+                 sample_names,
+                 labels)
         
     else:
         print("Unknown mode '%s'" % args.mode)
