@@ -24,9 +24,3 @@ ProjectSummary = namedtuple("ProjectSummary",
                              "feature_type",
                              "subsampling_method",
                              "sample_names"])
-
-class Features(object):
-    def __init__(self, feature_matrix, sample_labels):
-        self.feature_matrix = feature_matrix
-        self.sample_labels = sample_labels
-

@@ -24,18 +24,19 @@ import warnings
 
 import numpy as np
 from scipy import stats
-from sklearn.cluster import dbscan
 
 import matplotlib
 matplotlib.use("PDF")
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.cluster import k_means
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import balanced_accuracy_score
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
+from sklearn.tree import DecisionTreeClassifier
 
 def read_pca_coordinates(flname):
     sample_coordinates = []
@@ -160,7 +161,7 @@ def test_pcs(coordinates_fl, sample_names, sample_labels):
         print("p-value: ", pvalue)
         print()    
 
-def cluster_samples_dbscan(coordinates_fl, components, epsilon, min_samples, output_fl):
+def cluster_samples(coordinates_fl, components, n_clusters, output_fl):
     if not os.path.exists(coordinates_fl):
         print("Coordinates file path is invalid")
         sys.exit(1)
@@ -171,7 +172,7 @@ def cluster_samples_dbscan(coordinates_fl, components, epsilon, min_samples, out
     
     selected = coordinates[:, components]
 
-    _, cluster_idx = dbscan(selected, eps=epsilon, min_samples=min_samples)
+    _, cluster_idx, _ = k_means(selected, n_clusters)
 
     # group samples by cluster
     populations = defaultdict(set)
@@ -208,17 +209,22 @@ def evaluate_clusters(cluster_labels_fl, other_labels_fl):
 
     print(len(orig_cluster_labels), len(known_labels), len(common_names))
 
-    cluster_labels = { name : label for name, label in orig_cluster_labels.items() if name in common_names and label != "-1" }
-    cluster_outlier_labels = { name : label for name, label in orig_cluster_labels.items() if name in common_names and label == "-1" }
-    other_labels = { name : label for name, label in known_labels.items() if name in cluster_labels }
+    cluster_labels = { name : orig_cluster_labels[name] for name in common_names if orig_cluster_labels[name] != "-1" }
+    cluster_outlier_labels = { name : orig_cluster_labels[name] for name in common_names if orig_cluster_labels[name] == "-1" }
+    other_labels = { name : known_labels[name] for name in cluster_labels }
     other_outlier_labels = { name : known_labels[name] for name in cluster_outlier_labels }
 
     feature_encoder = OneHotEncoder(sparse=False)
     cluster_features = np.array(list(cluster_labels.values())).reshape(-1, 1)
     features = feature_encoder.fit_transform(cluster_features)
 
+    print(features)
+
     label_encoder = LabelEncoder()
-    sample_labels = label_encoder.fit_transform(list(other_labels.values()))
+    label_encoder.fit(list(other_labels.values()) + list(other_outlier_labels.values()))
+    sample_labels = label_encoder.transform(list(other_labels.values()))
+
+    print(sample_labels)
 
     dt = DecisionTreeClassifier()
     dt.fit(features, sample_labels)
@@ -236,12 +242,14 @@ def evaluate_clusters(cluster_labels_fl, other_labels_fl):
                                         sample_outlier_labels])
     
     acc = accuracy_score(sample_labels, pred_labels)
-
+    balanced = balanced_accuracy_score(sample_labels, pred_labels)
+    
     print(pred_labels)
     print()
     print(sample_labels)
 
     print("Classifier accuracy:", "%.01f%%" % (100. * acc))
+    print("Classifier balanced accuracy:", "%.01f%%" % (100. * balanced))
     print("Confusion matrix:")
 
     all_labels = list(set(pred_labels) | set(sample_labels))
@@ -300,15 +308,10 @@ def parseargs():
                                required=True,
                                help="Components to use in projection")
 
-    dbscan_parser.add_argument("--epsilon",
-                               type=float,
-                               default=0.5,
-                               help="Maximum distance between two points in the same neighborhood")
-
-    dbscan_parser.add_argument("--min-samples",
+    dbscan_parser.add_argument("--n-clusters",
                                type=int,
-                               default=5,
-                               help="Minimum samples per cluster core")
+                               required=True,
+                               help="Maximum distance between two points in the same neighborhood")
     
     dbscan_parser.add_argument("--output-labels-fl",
                                type=str,
@@ -347,11 +350,10 @@ if __name__ == "__main__":
                  labels)
 
     elif args.mode == "cluster-samples":
-        cluster_samples_dbscan(args.coordinates,
-                               args.components,
-                               args.epsilon,
-                               args.min_samples,
-                               args.output_labels_fl)
+        cluster_samples(args.coordinates,
+                        args.components,
+                        args.n_clusters,
+                        args.output_labels_fl)
 
     elif args.mode == "evaluate-clusters":
         evaluate_clusters(args.cluster_labels_fl,

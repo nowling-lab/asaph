@@ -5,37 +5,34 @@ In this tutorial, we describe how to use Asaph to perform principal component an
 ## Data Preparation
 Asaph assumes that the input VCF only contains biallelic SNPs.  Further, inversion detection works best when samples are all drawn from a single population and SNPs are all from a single chromosome (or chromosome arm).  This avoids confounding factors.  You can use [VCFTools](https://vcftools.github.io/) to filter the SNPs and samples accordingly.
 
-## Importing Data
-To create an Asaph project, we first need to import the data.  Feature hashing (the default setting) is used to construct a very small feature matrix.  A minimal command for importing biallelic SNPs from a VCF file would look like so:
+## Importing Data and Perform PCA (Principal Component Analysis)
+The Asaph analysis pipeline begins with importing data and performing PCA.  Feature hashing (the default setting) is used to construct a very small feature matrix.  A minimal command for importing biallelic SNPs from a VCF file would look like so:
 
 ```bash
-$ asaph_import --workdir <workdir> \
+$ asaph_pca \
+	--workdir <workdir> \
+    train \
 	--vcf <path/to/vcf>
 ```
+
+The work directory will be created and contain the resulting Asaph data structures such as the sample PC coordinates and names.
 
 If your inversion is not detected in the later stages, you can adjust the minimum inversion size (as a fraction of SNPs) to change the number of dimensions.  The default is 10%.
 
 ```bash
-$ asaph_import --workdir <workdir> \
-	--vcf <path/to/vcf> \
-	--min-inversion-fraction 0.05
-```
-
-The work directory will be created and contain the resulting Asaph data structures such as a feature matrix.
-
-## Principal Component Analysis (PCA)
-In the next step, we perform PCA on the feature matrix. The `asaph_pca` script facilitates this:
-
-```bash
-$ asaph_pca --workdir <workdir> \
+$ asaph_pca \
+	--workdir <workdir> \
     train \
-    --n-components 10
+	--vcf <path/to/vcf> \
+	--min-inversion-fraction 0.01
 ```
 
-We will output the PCA coordinates for each sample.  To output the coordinates:
+## Outputing PCA Coordiantes
+We will output the PCA coordinates for each sample to make scatter plots.  To output the coordinates:
 
 ```bash
-$ asaph_pca --workdir <workdir> \
+$ asaph_pca \
+	--workdir <workdir> \
 	output-coordinates \
 	--components 1 2 3 4 \
 	--output-fl <workdir>/pca_coordinates.tsv

@@ -13,13 +13,7 @@ load model_setup_helper
 }
 
 @test "pca (categories)" {
-    run asaph_pca \
-        --workdir ${WORKDIR_PATH} \
-        train \
-        --n-components 6
-
-    [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/models/pca.pkl" ]
+    [ -e "${WORKDIR_PATH}/models/model" ]
 
     run asaph_pca \
 	    --workdir ${WORKDIR_PATH} \
@@ -68,13 +62,7 @@ load model_setup_helper
 }
 
 @test "pca (counts)" {
-    run asaph_pca \
-        --workdir ${COUNTS_WORKDIR_PATH} \
-        train \
-        --n-components 6
-
-    [ "$status" -eq 0 ]
-    [ -e "${COUNTS_WORKDIR_PATH}/models/pca.pkl" ]
+    [ -e "${COUNTS_WORKDIR_PATH}/models/model" ]
 
     run asaph_pca \
 	    --workdir ${COUNTS_WORKDIR_PATH} \

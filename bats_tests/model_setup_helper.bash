@@ -21,13 +21,15 @@ setup() {
         --n-phenotypes 3 \
         --output-phenotypes ${PHENO_PATH}
 
-    asaph_import \
+    asaph_pca \
 	--workdir ${WORKDIR_PATH} \
+	train \
 	--vcf ${VCF_PATH} \
 	--feature-type categories
     
-    asaph_import \
+    asaph_pca \
 	--workdir ${COUNTS_WORKDIR_PATH} \
+	train \
 	--vcf ${VCF_PATH} \
 	--feature-type counts
 }

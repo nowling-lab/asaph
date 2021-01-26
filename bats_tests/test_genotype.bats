@@ -60,11 +60,12 @@ load pca_setup_helper
     [ -e "${HASHED_WORKDIR_PATH}/pca_proj_plots/pca_projection_1_2.png" ]
 }
 
-@test "dbscan clustering (categories)" {
+@test "clustering (categories)" {
     run asaph_genotype \
     	cluster-samples \
 	--coordinates ${FULL_WORKDIR_PATH}/pca_coordinates.txt \
 	--components 1 \
+	--n-clusters 3 \
 	--output-labels-fl ${FULL_WORKDIR_PATH}/dbscan.labels
 
     [ "$status" -eq 0 ]
@@ -78,12 +79,12 @@ load pca_setup_helper
     [ "$status" -eq 0 ]
 }
 
-@test "dbscan clustering (hashed)" {
+@test "clustering (hashed)" {
     run asaph_genotype \
     	cluster-samples \
 	--coordinates ${HASHED_WORKDIR_PATH}/pca_coordinates.txt \
 	--components 1 \
-	--epsilon 0.8 \
+	--n-clusters 3 \
 	--output-labels-fl ${HASHED_WORKDIR_PATH}/dbscan.labels
 
     [ "$status" -eq 0 ]

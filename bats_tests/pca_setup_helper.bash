@@ -21,14 +21,11 @@ setup() {
         --n-phenotypes 3 \
         --output-phenotypes ${PHENO_PATH}
 
-    asaph_import \
-	--workdir ${FULL_WORKDIR_PATH} \
-	--vcf ${VCF_PATH} \
-	--feature-type categories
-
     asaph_pca \
-        --workdir ${FULL_WORKDIR_PATH} \
-        train \
+	--workdir ${FULL_WORKDIR_PATH} \
+	train \
+	--vcf ${VCF_PATH} \
+	--feature-type categories \
         --n-components 6
 
     asaph_pca \
@@ -37,14 +34,11 @@ setup() {
         --selected-components 1 2 3 4 \
         --output-fl ${FULL_WORKDIR_PATH}/pca_coordinates.txt
 
-    asaph_import \
-	--workdir ${HASHED_WORKDIR_PATH} \
-	--vcf ${VCF_PATH} \
-	--feature-type hashed
-
     asaph_pca \
-        --workdir ${HASHED_WORKDIR_PATH} \
-        train \
+	--workdir ${HASHED_WORKDIR_PATH} \
+	train \
+	--vcf ${VCF_PATH} \
+	--feature-type hashed \
         --n-components 6
 
     asaph_pca \

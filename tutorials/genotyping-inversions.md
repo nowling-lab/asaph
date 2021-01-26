@@ -12,6 +12,7 @@ $ asaph_genotype \
 	cluster-samples \
 	--coordinates <workdir>/pca_coordinates.tsv \
 	--components 1 \
+	--n-clusters 3 \
 	--output-labels-fl cluster_labels.pops
 ```
 
@@ -22,6 +23,7 @@ $ asaph-genotype \
 	cluster-samples \
 	--coordinates <workdir>/pca_coordinates.tsv \
 	--components 1 2 \
+	--n-clusters 3 \
 	--output-labels-fl cluster_labels.pops
 ```
 

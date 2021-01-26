@@ -24,9 +24,12 @@ from scipy import sparse
 
 from .models import *
 
+
 SAMPLE_LABELS_FLNAME = "sample_labels"
-FEATURE_MATRIX_FLNAME = "feature_matrix.npy"
+MODEL_FLNAME = "model"
+MODEL_KEY = "pca"
 PROJECT_SUMMARY_FLNAME = "project_summary"
+PROJECTION_KEY = "projected-coordinates"
 
 def read_populations(flname):
     """
@@ -63,19 +66,6 @@ def deserialize(flname):
 
     return obj
 
-def read_features(basename):
-    sample_labels = deserialize(os.path.join(basename, SAMPLE_LABELS_FLNAME))
-    if os.path.exists(os.path.join(basename, FEATURE_MATRIX_FLNAME + ".npz")):
-        with np.load(os.path.join(basename, FEATURE_MATRIX_FLNAME + ".npz")) as loader:
-            if "feature_matrix" in loader:
-                feature_matrix = loader["feature_matrix"]
-            else:
-                feature_matrix = sparse.csr_matrix((loader["data"],
-                                                    loader["indices"],
-                                                    loader["indptr"]),
-                                                   shape = loader["shape"])
-    else:
-        feature_matrix = np.load(os.path.join(basename, FEATURE_MATRIX_FLNAME))
-
-    return Features(feature_matrix,
-                    sample_labels)
+def read_sample_names(workdir):
+    sample_labels = deserialize(os.path.join(workdir, SAMPLE_LABELS_FLNAME))
+    return sample_labels

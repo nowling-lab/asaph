@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Copyright 2017 Ronald J. Nowling
+Copyright 2015 Ronald J. Nowling
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ limitations under the License.
 """
 
 import argparse
-from collections import defaultdict
 import os
 import sys
 
@@ -27,34 +26,95 @@ matplotlib.use("PDF")
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.decomposition import PCA
+from sklearn.random_projection import johnson_lindenstrauss_min_dim as jl_min_dim
 
-from asaph.newioutils import read_features
+from asaph.feature_matrix_construction import construct_feature_matrix
+from asaph.feature_matrix_construction import COUNTS_FEATURE_TYPE
+from asaph.feature_matrix_construction import CATEGORIES_FEATURE_TYPE
+from asaph.feature_matrix_construction import HASHED_FEATURE_TYPE
+from asaph.models import ProjectSummary
 from asaph.newioutils import deserialize
+from asaph.newioutils import MODEL_FLNAME
+from asaph.newioutils import MODEL_KEY
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
+from asaph.newioutils import PROJECTION_KEY
+from asaph.newioutils import read_sample_names
+from asaph.newioutils import SAMPLE_LABELS_FLNAME
+from asaph.newioutils import serialize
+from asaph.vcf import stream_vcf_variants
 
-MODEL_KEY = "model"
-PROJECTION_KEY = "projected-coordinates"
+def calculate_dimensions(n_samples, args):
+    if args.num_dimensions is None and args.min_inversion_fraction is None:
+        n_dim = jl_min_dim(n_samples, eps=0.1)
+    elif args.min_inversion_fraction is not None:
+        if not (0.0 < args.min_inversion_fraction < 1.0):
+            raise Exception("Minimum inversion fraction must be a number between 0 and 1 (exclusive).")
+        n_dim = jl_min_dim(n_samples, eps=args.min_inversion_fraction)
+    elif args.num_dimensions is not None:
+        n_dim = args.num_dimensions
 
-def train(args):
-    workdir = args.workdir
+    return n_dim
 
-    models_dir = os.path.join(workdir,
-                              "models")
+def import_vcf(args):
+    if not os.path.exists(args.workdir):
+        os.makedirs(args.workdir)
+
+    if args.vcf is not None:
+        flname = args.vcf
+        gzipped = False
+    else:
+        flname = args.vcf_gz
+        gzipped = True
+
+    variant_stream, individual_names = stream_vcf_variants(flname,
+                                                           gzipped,
+                                                           args.allele_min_freq_threshold)
+
+    n_samples = len(individual_names)
+    n_dim = calculate_dimensions(n_samples, args)
+    
+    feature_matrix = construct_feature_matrix(variant_stream,
+                                              n_samples,
+                                              args.feature_type,
+                                              args.subsampling_method,
+                                              args.chunk_size,
+                                              n_dim,
+                                              n_inner_dim=args.inner_dim)
+
+    print(feature_matrix.shape[0], "individuals")
+    print(feature_matrix.shape[1], "features")
+
+    project_summary = ProjectSummary(original_positions = None,
+                                     filtered_positions = None,
+                                     n_features = feature_matrix.shape[1],
+                                     n_samples = feature_matrix.shape[0],
+                                     feature_type = args.feature_type,
+                                     subsampling_method = args.subsampling_method,
+                                     sample_names = individual_names)
+
+    serialize(os.path.join(args.workdir, SAMPLE_LABELS_FLNAME), individual_names)
+    serialize(os.path.join(args.workdir, PROJECT_SUMMARY_FLNAME), project_summary)
+
+    print("Variants imported")
+
+    return feature_matrix
+
+def train_pca(feature_matrix, args):
+    models_dir = os.path.join(args.workdir, "models")
     if not os.path.exists(models_dir):
         os.makedirs(models_dir)
-
-    features = read_features(workdir)
-
+    
+    print("Training PCA model with %s components" % args.n_components)
     pca = PCA(n_components = args.n_components,
               whiten = True)
-        
-    projections = pca.fit_transform(features.feature_matrix)
+
+    projections = pca.fit_transform(feature_matrix)
 
     model = { MODEL_KEY : pca,
               PROJECTION_KEY : projections}
 
     model_fl = os.path.join(models_dir,
-                            "pca.pkl")
+                            MODEL_FLNAME)
     joblib.dump(model,
                 model_fl)
 
@@ -67,7 +127,7 @@ def explained_variance_analysis(args):
 
     model_fl = os.path.join(workdir,
                             "models",
-                            "pca.pkl")
+                            MODEL_FLNAME)
 
     model = joblib.load(model_fl)
 
@@ -97,12 +157,12 @@ def output_coordinates(args):
 
     model_fl = os.path.join(workdir,
                             "models",
-                            "pca.pkl")
+                            MODEL_FLNAME)
     model = joblib.load(model_fl)    
     projected = model[PROJECTION_KEY]
     selected = projected[:, list(map(lambda idx: idx - 1, args.selected_components))]
 
-    features = read_features(workdir)
+    sample_names = read_sample_names(workdir)
 
     with open(args.output_fl, "w") as fl:
         headers = ["sample"]
@@ -110,15 +170,14 @@ def output_coordinates(args):
         fl.write("\t".join(headers))
         fl.write("\n")
 
-        for i in range(len(features.sample_labels)):
-            sample = features.sample_labels[i]
-            line = [sample]
+        for i, sample_name in enumerate(sample_names):
+            line = [sample_name]
             line.extend(map(str, selected[i, :]))
             fl.write("\t".join(line))
             fl.write("\n")
 
 def parseargs():
-    parser = argparse.ArgumentParser(description="Asaph - Dimensionality Reduction")
+    parser = argparse.ArgumentParser(description="Asaph")
 
     parser.add_argument("--workdir",
                         type=str,
@@ -126,14 +185,59 @@ def parseargs():
                         help="Work directory")
 
     subparsers = parser.add_subparsers(dest="mode")
-    
+
     train_parser = subparsers.add_parser("train",
                                          help="Train dimensionality reduction model")
     
     train_parser.add_argument("--n-components",
                               type=int,
-                              required=True,
+                              default=10,
                               help="Number of PCs to compute")
+
+    train_parser.add_argument("--feature-type",
+                              type=str,
+                              default="hashed",
+                              choices=["counts",
+                                       "categories",
+                                       "hashed"])
+
+    train_parser.add_argument("--subsampling-method",
+                              type=str,
+                              default=None,
+                              choices=["random-projection",
+                                       "reservoir"])
+
+    train_parser.add_argument("--chunk-size",
+                              type=int,
+                              default=10000)
+
+    dimensions_group = train_parser.add_mutually_exclusive_group()
+    dimensions_group.add_argument("--num-dimensions",
+                                  type=int,
+                                  default=None,
+                                  help="Set number of dimensions to use for reduced space." )
+
+    dimensions_group.add_argument("--min-inversion-fraction",
+                                  type=float,
+                                  help="Use minimum inversion size (in terms of fraction of SNPs) to estimate number of dimensions needed.")
+
+    train_parser.add_argument("--inner-dim",
+                              type=int,
+                              default=2**20,
+                              help="Number of hashed features to use as an inner dimension with random projection.")
+    
+    format_group = train_parser.add_mutually_exclusive_group(required=True)
+    format_group.add_argument("--vcf", type=str, help="VCF file to import")
+    format_group.add_argument("--vcf-gz", type=str, help="Gzipped VCF file to import")
+
+    train_parser.add_argument("--selected-samples",
+                              type=str,
+                              help="Use only these samples")
+
+    train_parser.add_argument("--allele-min-freq-threshold",
+                              type=float,
+                              help="Minimum allele frequency allowed",
+                              default=0.000001)
 
     eva_parser = subparsers.add_parser("explained-variance-analysis",
                                        help="Compute explained variances of PCs")
@@ -150,14 +254,16 @@ def parseargs():
                                type=str,
                                required=True,
                                help="Output file")
-    
+
+
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = parseargs()
 
     if args.mode == "train":
-       train(args) 
+       features = import_vcf(args)
+       train_pca(features, args)
     elif args.mode == "explained-variance-analysis":
         explained_variance_analysis(args)
     elif args.mode == "output-coordinates":
