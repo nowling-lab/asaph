@@ -27,5 +27,5 @@ setup(name="asaph",
       python_requires=">=3.6",
       install_requires = ["numpy>=0.19.1", "scipy>=0.19.1", "matplotlib", "seaborn", "sklearn", "joblib"],
       scripts=["bin/asaph_pca", "bin/asaph_query", "bin/asaph_pca_association_tests",
-               "bin/asaph_manhattan_plot", "bin/asaph_genotype", "bin/asaph_generate_data"])
+               "bin/asaph_detect_and_localize", "bin/asaph_genotype", "bin/asaph_generate_data"])
 

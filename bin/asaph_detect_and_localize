@@ -127,6 +127,9 @@ if __name__ == "__main__":
                         args.component,
                         args.chromosome)
 
+    log10pvalues = -np.log10(df["pvalue"])
+    max_value = max(log10pvalues)
+    
     print("Identifying SNPs with stat sig associations")
     df = mark_significant_snps(df)
 
@@ -153,8 +156,6 @@ if __name__ == "__main__":
     fig = plt.gcf()
     fig.set_dpi(200)
 
-    max_value = 0
-    
     df_insign = df[df["is_significant"] == 0]
     if len(df_insign) != 0:
         log10pvalues = -np.log10(df_insign["pvalue"])
@@ -162,8 +163,6 @@ if __name__ == "__main__":
                     log10pvalues,
                     marker=".")
 
-        max_value = max(max_value,
-                        max(log10pvalues))
 
     df_sig = df[df["is_significant"] == 1]
     if len(df_sig) != 0:
@@ -172,10 +171,6 @@ if __name__ == "__main__":
                     log10pvalues,
                     marker=".",
                     label="Significant")
-
-        max_value = max(max_value,
-                        max(log10pvalues))
-
 
     plt.xlabel("Position (bp)", fontsize=16)
     plt.ylabel("SNP p-value (-log10)", fontsize=16)
