@@ -16,7 +16,7 @@ $ asaph_pca_association_tests \
 Secondly, we will use manhattan plots to show the p-values of the SNPs across the chromosome.  Spatial correlation can indicate structural variations such as inversions.  To generate a plot for the association tests against component 1, run the following:
 
 ```bash
-$ asaph_manhattan_plot \
+$ asaph_detect_and_localize \
     --input-tsv pca_snp_tests.tsv \
 	--component 1 \
     --plot-fl manhattan_pc_1.png
