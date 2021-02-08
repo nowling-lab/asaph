@@ -41,6 +41,7 @@ load model_setup_helper
     [ -e "${TEST_TEMP_DIR}/pca_tests.tsv" ]
 
     run asaph_detect_and_localize \
+        plot \
         --input-tsv "${TEST_TEMP_DIR}/pca_tests.tsv" \
 	    --plot-fl "${TEST_TEMP_DIR}/manhattan_plot_comp1.png" \
 	    --component 1 \
@@ -51,6 +52,7 @@ load model_setup_helper
    [ -e "${TEST_TEMP_DIR}/manhattan_plot_comp1.png" ]
 
     run asaph_detect_and_localize \
+        plot \
         --input-tsv "${TEST_TEMP_DIR}/pca_tests.tsv" \
         --plot-fl "${TEST_TEMP_DIR}/manhattan_plot_comp2.png" \
 	    --component 2 \
@@ -90,6 +92,7 @@ load model_setup_helper
     [ -e "${TEST_TEMP_DIR}/pca_tests_counts.tsv" ]
 
     run asaph_detect_and_localize \
+        plot \
         --input-tsv "${TEST_TEMP_DIR}/pca_tests_counts.tsv" \
 	    --plot-fl "${TEST_TEMP_DIR}/manhattan_plot_comp1.png" \
 	    --component 1 \
@@ -100,6 +103,7 @@ load model_setup_helper
    [ -e "${TEST_TEMP_DIR}/manhattan_plot_comp1.png" ]
 
     run asaph_detect_and_localize \
+        plot \
         --input-tsv "${TEST_TEMP_DIR}/pca_tests_counts.tsv" \
 	    --plot-fl "${TEST_TEMP_DIR}/manhattan_plot_comp2.png" \
 	    --component 2 \

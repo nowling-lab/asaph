@@ -16,6 +16,7 @@ limitations under the License.
 """
 
 import argparse
+import sys
 
 import matplotlib
 matplotlib.use("PDF")
@@ -91,56 +92,13 @@ def find_inversion_boundaries(df, n_windows, threshold=None):
 
     return left_boundary, right_boundary
 
-def parseargs():
-    parser = argparse.ArgumentParser()
-            
-    parser.add_argument("--input-tsv",
-                        required=True,
-                        type=str)
-
-    parser.add_argument("--plot-fl",
-                        required=True,
-                        type=str)
-
-    parser.add_argument("--component",
-                        required=True,
-                        type=int)
-
-    parser.add_argument("--chromosome",
-                        required=True,
-                        type=str)
-    
-    parser.add_argument("--y-limit",
-                        type=float)
-
-    parser.add_argument("--n-windows",
-                        type=int,
-                        default=10000)
-    
-    return parser.parse_args()
-
-if __name__ == "__main__":
-    args = parseargs()
-
-    print("Reading SNP association p-values")
-    df = read_snp_table(args.input_tsv,
-                        args.component,
-                        args.chromosome)
-
+def plot_associations(plot_fl, snp_pvalues, boundaries=None, y_limit=None):
     log10pvalues = -np.log10(df["pvalue"])
-    max_value = max(log10pvalues)
-    
-    print("Identifying SNPs with stat sig associations")
-    df = mark_significant_snps(df)
+    max_value = max(log10pvalues)                
 
-    print("Identifying inversion boundaries")
-    if args.n_windows != -1:
-        left_boundary, right_boundary = find_inversion_boundaries(df,
-                                                                  args.n_windows)
-
-        print("Left boundary:", left_boundary)
-        print("Right_boundary:", right_boundary)
-
+    if boundaries != None:
+        left_boundary, right_boundary = boundaries
+        
         plt.plot([left_boundary, left_boundary],
                  [0, max_value],
                  "k-",
@@ -152,7 +110,6 @@ if __name__ == "__main__":
 
         plt.legend()
 
-    print("Plotting")
     fig = plt.gcf()
     fig.set_dpi(200)
 
@@ -162,7 +119,6 @@ if __name__ == "__main__":
         plt.scatter(df_insign["pos"],
                     log10pvalues,
                     marker=".")
-
 
     df_sig = df[df["is_significant"] == 1]
     if len(df_sig) != 0:
@@ -175,13 +131,68 @@ if __name__ == "__main__":
     plt.xlabel("Position (bp)", fontsize=16)
     plt.ylabel("SNP p-value (-log10)", fontsize=16)
 
-    if args.y_limit:
-        plt.ylim([0, args.y_limit])
+    if y_limit:
+        plt.ylim([0, y_limit])
     else:
         plt.ylim([0.0, max_value])
 
-    plt.savefig(args.plot_fl)
-                
+    plt.savefig(plot_fl)
+
+def parseargs():
+    parser = argparse.ArgumentParser()
+
+    subparsers = parser.add_subparsers(dest="mode")
+
+    plot_parser = subparsers.add_parser("plot",
+                                        help="Create Manhattan plot")
+    
+    plot_parser.add_argument("--input-tsv",
+                             required=True,
+                             type=str)
+
+    plot_parser.add_argument("--plot-fl",
+                             required=True,
+                             type=str)
+
+    plot_parser.add_argument("--component",
+                             required=True,
+                             type=int)
+
+    plot_parser.add_argument("--chromosome",
+                             required=True,
+                             type=str)
+    
+    plot_parser.add_argument("--y-limit",
+                             type=float)
+
+    plot_parser.add_argument("--n-windows",
+                             type=int,
+                             default=10000)
+    
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    args = parseargs()
+
+    if args.mode == "plot":
+        df = read_snp_table(args.input_tsv,
+                            args.component,
+                            args.chromosome)
+    
+        df = mark_significant_snps(df)
+
+        boundaries = None
+        if args.n_windows != -1:
+            boundaries = find_inversion_boundaries(df,
+                                                   args.n_windows)
+
+        plot_associations(args.plot_fl,
+                          df,
+                          boundaries=boundaries,
+                          y_limit = args.y_limit)
+    else:
+        print("Unknown mode '{}'".format(args.mode))
+        sys.exit(1)
 
         
 
