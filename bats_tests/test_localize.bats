@@ -31,7 +31,8 @@ load model_setup_helper
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/pca_coordinates.txt" ]
 
-    run asaph_pca_association_tests \
+    run asaph_detect_and_localize \
+        association-tests \
         --workdir ${WORKDIR_PATH} \
 	    --vcf ${VCF_PATH} \
 	    --components 1 2 \
@@ -82,7 +83,8 @@ load model_setup_helper
     [ "$status" -eq 0 ]
     [ -e "${COUNTS_WORKDIR_PATH}/pca_coordinates.txt" ]
 
-    run asaph_pca_association_tests \
+    run asaph_detect_and_localize \
+        association-tests \
         --workdir ${COUNTS_WORKDIR_PATH} \
 	    --vcf ${VCF_PATH} \
 	    --components 1 2 \
