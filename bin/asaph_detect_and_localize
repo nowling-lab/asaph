@@ -16,14 +16,25 @@ limitations under the License.
 """
 
 import argparse
+from collections import defaultdict
+import os
 import sys
 
+import joblib
 import matplotlib
 matplotlib.use("PDF")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
+
+from asaph.feature_extraction import FeatureStringsExtractor
+from asaph.newioutils import deserialize
+from asaph.newioutils import MODEL_FLNAME
+from asaph.newioutils import PROJECTION_KEY
+from asaph.newioutils import PROJECT_SUMMARY_FLNAME
+from asaph.vcf import filter_invariants
+from asaph.vcf import VCFStreamer
 
 ALPHA = 0.01
 
@@ -136,6 +147,42 @@ def plot_associations(plot_fl, snp_pvalues, boundaries=None, y_limit=None):
 
     plt.savefig(plot_fl)
 
+def run_association_tests(variants, pc_coordinates, components):
+    for variant_label, string_features in variants:
+        for component in components:
+            coords = pc_coordinates[:, component - 1]
+            feature_to_coords = defaultdict(list)
+            for i, (sample_name, feature) in enumerate(string_features):
+                if feature != None:
+                    feature_to_coords[feature].append(coords[i])
+
+            if len(feature_to_coords) < 2:
+                pvalue = 1.0
+            else:
+                _, pvalue = stats.f_oneway(*feature_to_coords.values())
+            
+                if np.isnan(pvalue) or np.isinf(pvalue):
+                    pvalue = 1.0
+
+            yield component, variant_label, pvalue
+
+def write_test_results(flname, test_stream):    
+    with open(flname, "w") as fl:
+        next_output = 1
+
+        headers = ["component", "chrom", "pos", "pvalue"]
+        fl.write("\t".join(headers))
+        fl.write("\n")
+
+        for i, (compon, (pos_label), pvalue) in enumerate(test_stream):
+            chrom, pos = pos_label
+            if i == next_output:
+                print(i, "Component", compon, "Position", pos_label, "has p-value", pvalue)
+                next_output *= 2
+
+            fl.write("\t".join([str(compon), chrom, str(pos), "%.2E" % pvalue]))
+            fl.write("\n")
+    
 def parseargs():
     parser = argparse.ArgumentParser()
 
@@ -185,6 +232,32 @@ def parseargs():
     boundary_parser.add_argument("--n-windows",
                                  type=int,
                                  default=10000)
+
+    association_parser = subparsers.add_parser("association-tests",
+                                               help="Run PCA association tests for plotting and boundary detection")
+
+    association_parser.add_argument("--workdir",
+                                    type=str,
+                                    help="Work directory",
+                                    required=True)
+
+    format_group = association_parser.add_mutually_exclusive_group(required=True)
+    format_group.add_argument("--vcf", type=str, help="VCF file to import")
+    format_group.add_argument("--vcf-gz", type=str, help="Gzipped VCF file to import")
+
+    association_parser.add_argument("--allele-min-freq-threshold",
+                                    type=float,
+                                    help="Minimum allele frequency allowed",
+                                    default=0.000001)
+
+    association_parser.add_argument("--output-tsv",
+                                    type=str,
+                                    help="Output file",
+                                    required=True)
+
+    association_parser.add_argument("--components",
+                                    type=int,
+                                    nargs="+")
     
     return parser.parse_args()
 
@@ -222,6 +295,47 @@ if __name__ == "__main__":
 
         print("Left boundary: {}".format(left_boundary))
         print("Right boundary: {}".format(right_boundary))
+
+    elif args.mode == "association-tests":
+        if not os.path.exists(args.workdir):
+            print("Work directory '%s' does not exist." % args.workdir)
+            sys.exit(1)
+
+        project_summary = deserialize(os.path.join(args.workdir,
+                                                   PROJECT_SUMMARY_FLNAME))
+        sample_names = project_summary.sample_names
+
+        model_fl = os.path.join(args.workdir,
+                                "models",
+                                MODEL_FLNAME)
+        model = joblib.load(model_fl)
+        projections = model[PROJECTION_KEY]
+
+        if args.vcf is not None:
+            flname = args.vcf
+            gzipped = False
+        else:
+            flname = args.vcf_gz
+            gzipped = True
+    
+        # the VCF streamer should return the
+        # variants in the order of the given
+        # kept_individuals parameter
+        stream = VCFStreamer(flname,
+                             gzipped,
+                             kept_individuals = sample_names)
+
+        filtered_variants = filter_invariants(args.allele_min_freq_threshold,
+                                              stream)
+
+        string_features = FeatureStringsExtractor(filtered_variants)
+
+        test_stream = run_association_tests(string_features,
+                                            projections,
+                                            args.components)
+
+        write_test_results(args.output_tsv,
+                           test_stream)
 
     else:
         print("Unknown mode '{}'".format(args.mode))
