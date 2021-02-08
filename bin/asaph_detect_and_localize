@@ -62,8 +62,6 @@ def find_inversion_boundaries(df, n_windows, threshold=None):
     n_sig_snps = len(df[df["is_significant"] == 1])
     exp_prob = n_sig_snps / len(df)
 
-    print(n_windows, n_sig_snps, len(df), threshold, exp_prob)
-
     n_sig_wins = 0
     for i in range(n_windows - 1):
         mask = (df["pos"] >= windows[i]) & (df["pos"] < windows[i+1])
@@ -168,6 +166,25 @@ def parseargs():
     plot_parser.add_argument("--n-windows",
                              type=int,
                              default=10000)
+
+    boundary_parser = subparsers.add_parser("detect-boundaries",
+                                            help="Detect inversion boundaries")
+
+    boundary_parser.add_argument("--input-tsv",
+                                 required=True,
+                                 type=str)
+
+    boundary_parser.add_argument("--component",
+                                 required=True,
+                                 type=int)
+
+    boundary_parser.add_argument("--chromosome",
+                                 required=True,
+                                 type=str)
+    
+    boundary_parser.add_argument("--n-windows",
+                                 type=int,
+                                 default=10000)
     
     return parser.parse_args()
 
@@ -185,11 +202,27 @@ if __name__ == "__main__":
         if args.n_windows != -1:
             boundaries = find_inversion_boundaries(df,
                                                    args.n_windows)
+            print("Left boundary: {}".format(boundaries[0]))
+            print("Right boundary: {}".format(boundaries[1]))
 
         plot_associations(args.plot_fl,
                           df,
                           boundaries=boundaries,
                           y_limit = args.y_limit)
+
+    elif args.mode == "detect-boundaries":
+        df = read_snp_table(args.input_tsv,
+                            args.component,
+                            args.chromosome)
+    
+        df = mark_significant_snps(df)
+
+        left_boundary, right_boundary = find_inversion_boundaries(df,
+                                                                  args.n_windows)
+
+        print("Left boundary: {}".format(left_boundary))
+        print("Right boundary: {}".format(right_boundary))
+
     else:
         print("Unknown mode '{}'".format(args.mode))
         sys.exit(1)
