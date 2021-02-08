@@ -28,7 +28,7 @@ $ asaph_pca \
 ```
 
 ## Outputing PCA Coordiantes
-We will output the PCA coordinates for each sample to make scatter plots.  To output the coordinates:
+We will output the PCA coordinates for each sample for use in the detection, localization, and genotyping steps.  To output the coordinates:
 
 ```bash
 $ asaph_pca \

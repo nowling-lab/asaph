@@ -20,7 +20,6 @@ from collections import defaultdict
 import os
 import sys
 
-import joblib
 import matplotlib
 matplotlib.use("PDF")
 import matplotlib.pyplot as plt
@@ -29,10 +28,6 @@ import pandas as pd
 import scipy.stats as stats
 
 from asaph.feature_extraction import FeatureStringsExtractor
-from asaph.newioutils import deserialize
-from asaph.newioutils import MODEL_FLNAME
-from asaph.newioutils import PROJECTION_KEY
-from asaph.newioutils import PROJECT_SUMMARY_FLNAME
 from asaph.vcf import filter_invariants
 from asaph.vcf import VCFStreamer
 
@@ -147,6 +142,25 @@ def plot_associations(plot_fl, snp_pvalues, boundaries=None, y_limit=None):
 
     plt.savefig(plot_fl)
 
+def read_pca_coordinates(flname):
+    sample_coordinates = []
+    sample_names = []
+    with open(flname) as fl:
+        # skip header
+        next(fl)
+        for ln in fl:
+            cols = ln.split("\t")
+
+            sample_name = cols[0]
+            coordinates = list(map(float, cols[1:]))
+            
+            sample_names.append(sample_name)
+            sample_coordinates.append(coordinates)
+
+    coordinates = np.array(sample_coordinates)
+
+    return sample_names, coordinates
+    
 def run_association_tests(variants, pc_coordinates, components):
     for variant_label, string_features in variants:
         for component in components:
@@ -191,7 +205,7 @@ def parseargs():
     plot_parser = subparsers.add_parser("plot",
                                         help="Create Manhattan plot")
     
-    plot_parser.add_argument("--input-tsv",
+    plot_parser.add_argument("--pca-associations-tsv",
                              required=True,
                              type=str)
 
@@ -217,7 +231,7 @@ def parseargs():
     boundary_parser = subparsers.add_parser("detect-boundaries",
                                             help="Detect inversion boundaries")
 
-    boundary_parser.add_argument("--input-tsv",
+    boundary_parser.add_argument("--pca-associations-tsv",
                                  required=True,
                                  type=str)
 
@@ -236,9 +250,9 @@ def parseargs():
     association_parser = subparsers.add_parser("association-tests",
                                                help="Run PCA association tests for plotting and boundary detection")
 
-    association_parser.add_argument("--workdir",
+    association_parser.add_argument("--pca-coordinates-tsv",
                                     type=str,
-                                    help="Work directory",
+                                    help="",
                                     required=True)
 
     format_group = association_parser.add_mutually_exclusive_group(required=True)
@@ -250,7 +264,7 @@ def parseargs():
                                     help="Minimum allele frequency allowed",
                                     default=0.000001)
 
-    association_parser.add_argument("--output-tsv",
+    association_parser.add_argument("--pca-associations-tsv",
                                     type=str,
                                     help="Output file",
                                     required=True)
@@ -265,7 +279,7 @@ if __name__ == "__main__":
     args = parseargs()
 
     if args.mode == "plot":
-        df = read_snp_table(args.input_tsv,
+        df = read_snp_table(args.pca_associations_tsv,
                             args.component,
                             args.chromosome)
     
@@ -284,7 +298,7 @@ if __name__ == "__main__":
                           y_limit = args.y_limit)
 
     elif args.mode == "detect-boundaries":
-        df = read_snp_table(args.input_tsv,
+        df = read_snp_table(args.pca_associations_tsv,
                             args.component,
                             args.chromosome)
     
@@ -297,19 +311,7 @@ if __name__ == "__main__":
         print("Right boundary: {}".format(right_boundary))
 
     elif args.mode == "association-tests":
-        if not os.path.exists(args.workdir):
-            print("Work directory '%s' does not exist." % args.workdir)
-            sys.exit(1)
-
-        project_summary = deserialize(os.path.join(args.workdir,
-                                                   PROJECT_SUMMARY_FLNAME))
-        sample_names = project_summary.sample_names
-
-        model_fl = os.path.join(args.workdir,
-                                "models",
-                                MODEL_FLNAME)
-        model = joblib.load(model_fl)
-        projections = model[PROJECTION_KEY]
+        sample_names, coordinates = read_pca_coordinates(args.pca_coordinates_tsv)
 
         if args.vcf is not None:
             flname = args.vcf
@@ -331,10 +333,10 @@ if __name__ == "__main__":
         string_features = FeatureStringsExtractor(filtered_variants)
 
         test_stream = run_association_tests(string_features,
-                                            projections,
+                                            coordinates,
                                             args.components)
 
-        write_test_results(args.output_tsv,
+        write_test_results(args.pca_associations_tsv,
                            test_stream)
 
     else:

@@ -33,17 +33,17 @@ load model_setup_helper
 
     run asaph_detect_and_localize \
         association-tests \
-        --workdir ${WORKDIR_PATH} \
+        --pca-coordinates-tsv ${WORKDIR_PATH}/pca_coordinates.txt \
 	    --vcf ${VCF_PATH} \
 	    --components 1 2 \
-	    --output-tsv ${TEST_TEMP_DIR}/pca_tests.tsv
+	    --pca-associations-tsv ${TEST_TEMP_DIR}/pca_tests.tsv
 
     [ "$status" -eq 0 ]
     [ -e "${TEST_TEMP_DIR}/pca_tests.tsv" ]
 
     run asaph_detect_and_localize \
         plot \
-        --input-tsv "${TEST_TEMP_DIR}/pca_tests.tsv" \
+        --pca-associations-tsv "${TEST_TEMP_DIR}/pca_tests.tsv" \
 	    --plot-fl "${TEST_TEMP_DIR}/manhattan_plot_comp1.png" \
 	    --component 1 \
 	    --chromosome 1 \
@@ -54,7 +54,7 @@ load model_setup_helper
 
     run asaph_detect_and_localize \
         plot \
-        --input-tsv "${TEST_TEMP_DIR}/pca_tests.tsv" \
+        --pca-associations-tsv "${TEST_TEMP_DIR}/pca_tests.tsv" \
         --plot-fl "${TEST_TEMP_DIR}/manhattan_plot_comp2.png" \
 	    --component 2 \
 	    --chromosome 1 \
@@ -85,17 +85,17 @@ load model_setup_helper
 
     run asaph_detect_and_localize \
         association-tests \
-        --workdir ${COUNTS_WORKDIR_PATH} \
+        --pca-coordinates-tsv ${COUNTS_WORKDIR_PATH}/pca_coordinates.txt \
 	    --vcf ${VCF_PATH} \
 	    --components 1 2 \
-	    --output-tsv ${TEST_TEMP_DIR}/pca_tests_counts.tsv
+	    --pca-associations-tsv ${TEST_TEMP_DIR}/pca_tests_counts.tsv
 
     [ "$status" -eq 0 ]
     [ -e "${TEST_TEMP_DIR}/pca_tests_counts.tsv" ]
 
     run asaph_detect_and_localize \
         plot \
-        --input-tsv "${TEST_TEMP_DIR}/pca_tests_counts.tsv" \
+        --pca-associations-tsv "${TEST_TEMP_DIR}/pca_tests_counts.tsv" \
 	    --plot-fl "${TEST_TEMP_DIR}/manhattan_plot_comp1.png" \
 	    --component 1 \
 	    --chromosome 1 \
@@ -106,7 +106,7 @@ load model_setup_helper
 
     run asaph_detect_and_localize \
         plot \
-        --input-tsv "${TEST_TEMP_DIR}/pca_tests_counts.tsv" \
+        --pca-associations-tsv "${TEST_TEMP_DIR}/pca_tests_counts.tsv" \
 	    --plot-fl "${TEST_TEMP_DIR}/manhattan_plot_comp2.png" \
 	    --component 2 \
         --chromosome 1 \

@@ -8,10 +8,10 @@ We can now run single-SNP association tests.  The genotypes of each SNP are test
 ```bash
 $ asaph_detect_and_localize \
     association-tests \
-    --workdir <workdir> \
+    --pca-coordinates-tsv coordinates.tsv \
     --components 1 2 \
 	--vcf <path/to/vcf> \
-	--output-tsv pca_snp_tests.tsv
+	--pca-associations-tsv pca_snp_tests.tsv
 ```
 ## Manhattan Plots
 Secondly, we will use manhattan plots to show the p-values of the SNPs across the chromosome.  Spatial correlation can indicate structural variations such as inversions.  To generate a plot for the association tests against component 1, run the following:
@@ -19,7 +19,7 @@ Secondly, we will use manhattan plots to show the p-values of the SNPs across th
 ```bash
 $ asaph_detect_and_localize \
     plot \
-    --input-tsv pca_snp_tests.tsv \
+    --pca-associations-tsv pca_snp_tests.tsv \
 	--component 1 \
     --plot-fl manhattan_pc_1.png
 ```
