@@ -1,6 +1,6 @@
 # Installing Asaph
 
-Asaph requires Python 3.6 and above and the [numpy and scipy](http://www.numpy.org/), [matplotlib](http://matplotlib.org/), [scikit-learn](http://scikit-learn.org/stable/), and [seaborn](https://seaborn.pydata.org/index.html) libraries.
+Asaph requires Python 3.6 and above and the [numpy and scipy](http://www.numpy.org/), [matplotlib](http://matplotlib.org/), [scikit-learn](http://scikit-learn.org/stable/), [seaborn](https://seaborn.pydata.org/index.html), and [pandas](https://pandas.pydata.org/) libraries.
 
 ## Getting Asaph
 Download Asaph by cloning the git repository:
@@ -36,7 +36,7 @@ Asaph will install the scripts located under `bin/` system wide.
 If, for some reason, the installation of Asaph failed, install these libraries and try again:
 
 ```bash
-$ pip3 install numpy scipy sklearn matplotlib seaborn pandas
+$ pip3 install -U numpy scipy sklearn matplotlib seaborn pandas
 ```
 
 
