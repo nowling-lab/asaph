@@ -62,38 +62,38 @@ load pca_setup_helper
 
 @test "clustering (categories)" {
     run asaph_genotype \
-    	cluster-samples \
+    	unsupervised-genotyping \
 	--coordinates ${FULL_WORKDIR_PATH}/pca_coordinates.txt \
 	--components 1 \
 	--n-clusters 3 \
-	--output-labels-fl ${FULL_WORKDIR_PATH}/dbscan.labels
+	--predicted-labels-fl ${FULL_WORKDIR_PATH}/unsupervised.labels
 
     [ "$status" -eq 0 ]
-    [ -e "${FULL_WORKDIR_PATH}/dbscan.labels" ]
+    [ -e "${FULL_WORKDIR_PATH}/unsupervised.labels" ]
 
     run asaph_genotype \
-    	evaluate-clusters \
-	--cluster-labels-fl ${FULL_WORKDIR_PATH}/dbscan.labels \
-	--other-labels-fl ${POPS_PATH}
+    	evaluate-predicted-genotypes \
+	--predicted-labels-fl ${FULL_WORKDIR_PATH}/unsupervised.labels \
+	--known-labels-fl ${POPS_PATH}
 
     [ "$status" -eq 0 ]
 }
 
 @test "clustering (hashed)" {
     run asaph_genotype \
-    	cluster-samples \
+    	unsupervised-genotyping \
 	--coordinates ${HASHED_WORKDIR_PATH}/pca_coordinates.txt \
 	--components 1 \
 	--n-clusters 3 \
-	--output-labels-fl ${HASHED_WORKDIR_PATH}/dbscan.labels
+	--predicted-labels-fl ${HASHED_WORKDIR_PATH}/unsupervised.labels
 
     [ "$status" -eq 0 ]
-    [ -e "${HASHED_WORKDIR_PATH}/dbscan.labels" ]
+    [ -e "${HASHED_WORKDIR_PATH}/unsupervised.labels" ]
 
     run asaph_genotype \
-    	evaluate-clusters \
-	--cluster-labels-fl ${HASHED_WORKDIR_PATH}/dbscan.labels \
-	--other-labels-fl ${POPS_PATH}
+    	evaluate-predicted-genotypes \
+	--predicted-labels-fl ${HASHED_WORKDIR_PATH}/unsupervised.labels \
+	--known-labels-fl ${POPS_PATH}
 
     [ "$status" -eq 0 ]
 }

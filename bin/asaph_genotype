@@ -31,6 +31,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from sklearn.cluster import k_means
+from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.metrics import confusion_matrix
@@ -39,6 +40,10 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier
 
 def read_pca_coordinates(flname):
+    if not os.path.exists(flname):
+        print("Coordinates file path is invalid")
+        sys.exit(1)
+
     sample_coordinates = []
     sample_names = []
     with open(flname) as fl:
@@ -54,7 +59,6 @@ def read_pca_coordinates(flname):
             sample_coordinates.append(coordinates)
 
     coordinates = np.array(sample_coordinates)
-    print(coordinates.shape)
 
     return sample_names, coordinates
 
@@ -162,10 +166,6 @@ def test_pcs(coordinates_fl, sample_names, sample_labels):
         print()    
 
 def cluster_samples(coordinates_fl, components, n_clusters, output_fl):
-    if not os.path.exists(coordinates_fl):
-        print("Coordinates file path is invalid")
-        sys.exit(1)
-
     sample_names, coordinates = read_pca_coordinates(coordinates_fl)
     
     components = list(map(lambda idx: idx - 1, components))
@@ -201,7 +201,49 @@ def cluster_samples(coordinates_fl, components, n_clusters, output_fl):
                 fl.write(name)
             fl.write("\n")
 
-def evaluate_clusters(cluster_labels_fl, other_labels_fl):
+def supervised_genotyping(coordinates_fl, known_fl, output_fl):
+    sample_names, coordinates = read_pca_coordinates(coordinates_fl)
+    known_labels = read_label_names(known_fl)
+
+    training_indices = [idx for idx, name in enumerate(sample_names) \
+                        if name in known_labels]
+
+    naive_indices = [idx for idx, name in enumerate(sample_names) \
+                     if name not in known_labels]
+
+    naive_names = [name for name in sample_names \
+                   if name not in known_labels]
+
+    text_labels = [known_labels[name] for name in sample_names \
+                   if name in known_labels]
+
+    encoder = LabelEncoder()
+    training_labels = encoder.fit_transform(text_labels)
+
+    training_X = coordinates[training_indices, :]
+    naive_X = coordinates[naive_indices, :]
+
+    sgd = SGDClassifier(loss="log")
+    sgd.fit(training_X, training_labels)
+    pred_labels = sgd.predict(naive_X)
+
+    pred_text_labels = encoder.inverse_transform(pred_labels)
+
+    # group samples by cluster
+    populations = defaultdict(set)
+    for i, pred_label in enumerate(pred_text_labels):
+        sample_name = naive_names[i]
+        populations[pred_label].add(sample_name)
+
+    with open(output_fl, "w") as fl:
+        for pop_name, samples in populations.items():
+            fl.write(str(pop_name))
+            for name in samples:
+                fl.write(",")
+                fl.write(name)
+            fl.write("\n")
+            
+def evaluate_predictions(cluster_labels_fl, other_labels_fl):
     orig_cluster_labels = read_label_names(cluster_labels_fl)
     known_labels = read_label_names(other_labels_fl)
 
@@ -283,6 +325,21 @@ def parseargs():
                              type=str,
                              required=True)
 
+    supervised_parser = subparsers.add_parser("supervised-genotyping",
+                                              help="Predict unknown genotypes from known genotypes")
+    
+    supervised_parser.add_argument("--known-labels-fl",
+                                   type=str,
+                                   help="Labels file to use for training model")
+
+    supervised_parser.add_argument("--predicted-labels-fl",
+                                   type=str,
+                                   help="Predicted labels from model")
+
+    supervised_parser.add_argument("--coordinates",
+                                   type=str,
+                                   required=True)
+    
     label_test_parser = subparsers.add_parser("test-pcs",
                                               help="Run association tests on PCs vs labels")
 
@@ -295,39 +352,39 @@ def parseargs():
                                    required=True,
                                    help="Labels file")
 
-    dbscan_parser = subparsers.add_parser("cluster-samples",
-                                          help="Cluster samples with dbscan")
+    unsupervised_parser = subparsers.add_parser("unsupervised-genotyping",
+                                                help="Infer genotypes with clustering")
 
-    dbscan_parser.add_argument("--coordinates",
-                               type=str,
-                               required=True)
+    unsupervised_parser.add_argument("--coordinates",
+                                     type=str,
+                                     required=True)
     
-    dbscan_parser.add_argument("--components",
-                               type=int,
-                               nargs="+",
-                               required=True,
-                               help="Components to use in projection")
+    unsupervised_parser.add_argument("--components",
+                                     type=int,
+                                     nargs="+",
+                                     required=True,
+                                     help="Components to use in projection")
 
-    dbscan_parser.add_argument("--n-clusters",
-                               type=int,
-                               required=True,
-                               help="Maximum distance between two points in the same neighborhood")
+    unsupervised_parser.add_argument("--n-clusters",
+                                     type=int,
+                                     required=True,
+                                     help="Maximum distance between two points in the same neighborhood")
     
-    dbscan_parser.add_argument("--output-labels-fl",
-                               type=str,
-                               required=True,
-                               help="Labels file to output")
+    unsupervised_parser.add_argument("--predicted-labels-fl",
+                                     type=str,
+                                     required=True,
+                                     help="Predicted labels are written to this file")
 
-    test_clusters_parser = subparsers.add_parser("evaluate-clusters",
-                                                 help="Evaluate cluster and known labels")
+    evaluate_parser = subparsers.add_parser("evaluate-predicted-genotypes",
+                                            help="Evaluate predicted labels against known labels")
     
-    test_clusters_parser.add_argument("--cluster-labels-fl",
-                                      type=str,
-                                      required=True)
+    evaluate_parser.add_argument("--predicted-labels-fl",
+                                 type=str,
+                                 required=True)
 
-    test_clusters_parser.add_argument("--other-labels-fl",
-                                       type=str,
-                                       required=True)
+    evaluate_parser.add_argument("--known-labels-fl",
+                                 type=str,
+                                 required=True)
 
     return parser.parse_args()
 
@@ -349,15 +406,20 @@ if __name__ == "__main__":
                  sample_names,
                  labels)
 
-    elif args.mode == "cluster-samples":
+    elif args.mode == "unsupervised-genotyping":
         cluster_samples(args.coordinates,
                         args.components,
                         args.n_clusters,
-                        args.output_labels_fl)
+                        args.predicted_labels_fl)
 
-    elif args.mode == "evaluate-clusters":
-        evaluate_clusters(args.cluster_labels_fl,
-                          args.other_labels_fl)
+    elif args.mode == "supervised-genotyping":
+        supervised_genotyping(args.coordinates,
+                              args.known_labels_fl,
+                              args.predicted_labels_fl)
+        
+    elif args.mode == "evaluate-predicted-genotypes":
+        evaluate_predictions(args.predicted_labels_fl,
+                             args.known_labels_fl)
 
     else:
         print("Unknown mode '%s'" % args.mode)
