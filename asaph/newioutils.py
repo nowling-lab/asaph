@@ -30,6 +30,7 @@ MODEL_FLNAME = "model"
 MODEL_KEY = "pca"
 PROJECT_SUMMARY_FLNAME = "project_summary"
 PROJECTION_KEY = "projected-coordinates"
+FEATURES_FLNAME = "features"
 
 def read_populations(flname):
     """

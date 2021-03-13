@@ -34,6 +34,7 @@ from asaph.feature_matrix_construction import CATEGORIES_FEATURE_TYPE
 from asaph.feature_matrix_construction import HASHED_FEATURE_TYPE
 from asaph.models import ProjectSummary
 from asaph.newioutils import deserialize
+from asaph.newioutils import FEATURES_FLNAME
 from asaph.newioutils import MODEL_FLNAME
 from asaph.newioutils import MODEL_KEY
 from asaph.newioutils import PROJECT_SUMMARY_FLNAME
@@ -94,6 +95,7 @@ def import_vcf(args):
 
     serialize(os.path.join(args.workdir, SAMPLE_LABELS_FLNAME), individual_names)
     serialize(os.path.join(args.workdir, PROJECT_SUMMARY_FLNAME), project_summary)
+    serialize(os.path.join(args.workdir, FEATURES_FLNAME), feature_matrix)
 
     print("Variants imported")
 
