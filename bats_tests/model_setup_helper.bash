@@ -23,13 +23,11 @@ setup() {
 
     asaph_pca \
 	--workdir ${WORKDIR_PATH} \
-	train \
 	--vcf ${VCF_PATH} \
 	--feature-type categories
     
     asaph_pca \
 	--workdir ${COUNTS_WORKDIR_PATH} \
-	train \
 	--vcf ${VCF_PATH} \
 	--feature-type counts
 }

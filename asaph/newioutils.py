@@ -31,6 +31,7 @@ MODEL_KEY = "pca"
 PROJECT_SUMMARY_FLNAME = "project_summary"
 PROJECTION_KEY = "projected-coordinates"
 FEATURES_FLNAME = "features"
+COORDINATES_FLNAME = "pca_coordinates.tsv"
 
 def read_populations(flname):
     """

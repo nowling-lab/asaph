@@ -11,7 +11,6 @@ The Asaph analysis pipeline begins with importing data and performing PCA.  Feat
 ```bash
 $ asaph_pca \
 	--workdir <workdir> \
-    train \
 	--vcf <path/to/vcf>
 ```
 
@@ -22,23 +21,12 @@ If your inversion is not detected in the later stages, you can adjust the minimu
 ```bash
 $ asaph_pca \
 	--workdir <workdir> \
-    train \
 	--vcf <path/to/vcf> \
 	--min-inversion-fraction 0.01
 ```
 
 ## Outputing PCA Coordiantes
-We will output the PCA coordinates for each sample for use in the detection, localization, and genotyping steps.  To output the coordinates:
-
-```bash
-$ asaph_pca \
-	--workdir <workdir> \
-	output-coordinates \
-	--components 1 2 3 4 \
-	--output-fl <workdir>/pca_coordinates.tsv
-```
-
-The file will look like so:
+The PCA coordinates for each sample for use in the detection, localization, and genotyping steps will automatically be output to a file named `<workdir>/pca_coordinates.tsv`.  The file will look like so:
 
 ```
 sample 	1	2	3	4
@@ -50,7 +38,5 @@ line_32	2.4899268824159315	-2.177898665769419	-0.15243794901799274	-0.1371282784
 line_38	-0.5689557880617656	-0.34942765856267216	-0.2130572294672218	-0.5187670246143677
 ```
 
-In this example, the resulting `pca_coordinates.tsv` file will be located in the working directory that you specified.
-
-## What Next?
+## What's Next?
 Now that the data has been prepared, imported, and PCA was performed, you can move on to [detecting and localizing inversions](localizing-inversions.md).

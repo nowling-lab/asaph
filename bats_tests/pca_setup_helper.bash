@@ -23,27 +23,13 @@ setup() {
 
     asaph_pca \
 	--workdir ${FULL_WORKDIR_PATH} \
-	train \
 	--vcf ${VCF_PATH} \
 	--feature-type categories \
         --n-components 6
 
     asaph_pca \
-	--workdir ${FULL_WORKDIR_PATH} \
-        output-coordinates \
-        --selected-components 1 2 3 4 \
-        --output-fl ${FULL_WORKDIR_PATH}/pca_coordinates.txt
-
-    asaph_pca \
 	--workdir ${HASHED_WORKDIR_PATH} \
-	train \
 	--vcf ${VCF_PATH} \
 	--feature-type hashed \
         --n-components 6
-
-    asaph_pca \
-	--workdir ${HASHED_WORKDIR_PATH} \
-        output-coordinates \
-        --selected-components 1 2 3 4 \
-        --output-fl ${HASHED_WORKDIR_PATH}/pca_coordinates.txt
 }

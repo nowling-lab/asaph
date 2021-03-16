@@ -14,26 +14,11 @@ load model_setup_helper
 
 @test "pca (categories)" {
     [ -e "${WORKDIR_PATH}/models/model" ]
-
-    run asaph_pca \
-	    --workdir ${WORKDIR_PATH} \
-        explained-variance-analysis
-
-    [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/figures/pca_explained_variance_ratios.png" ]
-
-    run asaph_pca \
-	    --workdir ${WORKDIR_PATH} \
-        output-coordinates \
-        --selected-components 1 2 3 4 \
-        --output-fl ${WORKDIR_PATH}/pca_coordinates.txt
-
-    [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}/pca_coordinates.txt" ]
+    [ -e "${WORKDIR_PATH}/pca_coordinates.tsv" ]
 
     run asaph_detect_and_localize \
         association-tests \
-        --pca-coordinates-tsv ${WORKDIR_PATH}/pca_coordinates.txt \
+        --pca-coordinates-tsv ${WORKDIR_PATH}/pca_coordinates.tsv \
 	    --vcf ${VCF_PATH} \
 	    --components 1 2 \
 	    --pca-associations-tsv ${TEST_TEMP_DIR}/pca_tests.tsv
@@ -66,26 +51,11 @@ load model_setup_helper
 
 @test "pca (counts)" {
     [ -e "${COUNTS_WORKDIR_PATH}/models/model" ]
-
-    run asaph_pca \
-	    --workdir ${COUNTS_WORKDIR_PATH} \
-        explained-variance-analysis
-
-    [ "$status" -eq 0 ]
-    [ -e "${COUNTS_WORKDIR_PATH}/figures/pca_explained_variance_ratios.png" ]
-
-    run asaph_pca \
-        --workdir ${COUNTS_WORKDIR_PATH} \
-	    output-coordinates \
-        --selected-components 1 2 3 4 \
-        --output-fl ${COUNTS_WORKDIR_PATH}/pca_coordinates.txt
-
-    [ "$status" -eq 0 ]
-    [ -e "${COUNTS_WORKDIR_PATH}/pca_coordinates.txt" ]
+    [ -e "${COUNTS_WORKDIR_PATH}/pca_coordinates.tsv" ]
 
     run asaph_detect_and_localize \
         association-tests \
-        --pca-coordinates-tsv ${COUNTS_WORKDIR_PATH}/pca_coordinates.txt \
+        --pca-coordinates-tsv ${COUNTS_WORKDIR_PATH}/pca_coordinates.tsv \
 	    --vcf ${VCF_PATH} \
 	    --components 1 2 \
 	    --pca-associations-tsv ${TEST_TEMP_DIR}/pca_tests_counts.tsv

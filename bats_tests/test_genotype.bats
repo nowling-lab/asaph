@@ -17,7 +17,7 @@ load pca_setup_helper
 @test "plot projections (categories)" {
     run asaph_genotype \
 	plot-projections \
-	--coordinates ${FULL_WORKDIR_PATH}/pca_coordinates.txt \
+	--coordinates ${FULL_WORKDIR_PATH}/pca_coordinates.tsv \
 	--plot-dir ${FULL_WORKDIR_PATH}/pca_proj_plots \
 	--pairs 1 2
 
@@ -28,7 +28,7 @@ load pca_setup_helper
 @test "plot projections (hashed)" {
     run asaph_genotype \
 	plot-projections \
-	--coordinates ${HASHED_WORKDIR_PATH}/pca_coordinates.txt \
+	--coordinates ${HASHED_WORKDIR_PATH}/pca_coordinates.tsv \
 	--plot-dir ${HASHED_WORKDIR_PATH}/pca_proj_plots \
 	--pairs 1 2
 
@@ -39,7 +39,7 @@ load pca_setup_helper
 @test "plot projections with labels (categories)" {
     run asaph_genotype \
 	plot-projections \
-	--coordinates ${FULL_WORKDIR_PATH}/pca_coordinates.txt \
+	--coordinates ${FULL_WORKDIR_PATH}/pca_coordinates.tsv \
 	--plot-dir ${FULL_WORKDIR_PATH}/pca_proj_plots \
 	--pairs 1 2 \
 	--labels-fl ${POPS_PATH}
@@ -51,7 +51,7 @@ load pca_setup_helper
 @test "plot projections (hashed)" {
     run asaph_genotype \
 	plot-projections \
-	--coordinates ${HASHED_WORKDIR_PATH}/pca_coordinates.txt \
+	--coordinates ${HASHED_WORKDIR_PATH}/pca_coordinates.tsv \
 	--plot-dir ${HASHED_WORKDIR_PATH}/pca_proj_plots \
 	--pairs 1 2 \
 	--labels-fl ${POPS_PATH}
@@ -63,7 +63,7 @@ load pca_setup_helper
 @test "clustering (categories)" {
     run asaph_genotype \
     	unsupervised-genotyping \
-	--coordinates ${FULL_WORKDIR_PATH}/pca_coordinates.txt \
+	--coordinates ${FULL_WORKDIR_PATH}/pca_coordinates.tsv \
 	--components 1 \
 	--n-clusters 3 \
 	--predicted-labels-fl ${FULL_WORKDIR_PATH}/unsupervised.labels
@@ -82,7 +82,7 @@ load pca_setup_helper
 @test "clustering (hashed)" {
     run asaph_genotype \
     	unsupervised-genotyping \
-	--coordinates ${HASHED_WORKDIR_PATH}/pca_coordinates.txt \
+	--coordinates ${HASHED_WORKDIR_PATH}/pca_coordinates.tsv \
 	--components 1 \
 	--n-clusters 3 \
 	--predicted-labels-fl ${HASHED_WORKDIR_PATH}/unsupervised.labels
