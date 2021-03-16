@@ -186,7 +186,7 @@ def parseargs():
                         required=True,
                         help="Work directory")
 
-    subparsers = parser.add_subparsers(dest="mode")
+    subparsers = parser.add_subparsers(dest="mode", required=True)
 
     train_parser = subparsers.add_parser("train",
                                          help="Train dimensionality reduction model")
