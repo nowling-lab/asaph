@@ -282,6 +282,9 @@ if __name__ == "__main__":
         df = read_snp_table(args.pca_associations_tsv,
                             args.component,
                             args.chromosome)
+
+        # avoid domain errors from trying to take the log of 0
+        df["pvalue"] = np.maximum(df["pvalue"], np.power(10., -300.))
     
         df = mark_significant_snps(df)
 
