@@ -33,15 +33,28 @@ from asaph.vcf import VCFStreamer
 
 ALPHA = 0.01
 
-def read_snp_table(flname, component, chromosome):
+def read_snp_table(flname, component, chromosome=None):
     with open(flname) as fl:
         df = pd.read_csv(fl, delim_whitespace=True)
         df["chrom"] = df["chrom"].astype(str)
-        mask = (df["chrom"] == chromosome) & (df["component"] == component)
 
+        if chromosome == None:
+            chromosomes = set(df["chrom"])
+            if len(chromosomes) > 1:
+                print("SNPs for more than one chromosome are present in the association file.  Use the --chromosome flag to indicate which chromosome should be plotted.")
+                sys.exit(1)
+
+            chromosome = next(iter(chromosomes))
+
+        mask = (df["chrom"] == chromosome) & (df["component"] == component)
         df = df[mask]
+
+        if len(df) == 0:
+            print("No association tests for the given chromosome or component.")
+            sys.exit(1)
+
         df = df.sort_values(by="pos")
-        
+
     return df
 
 def mark_significant_snps(df, threshold=None):
@@ -218,7 +231,6 @@ def parseargs():
                              type=int)
 
     plot_parser.add_argument("--chromosome",
-                             required=True,
                              type=str)
     
     plot_parser.add_argument("--y-limit",
@@ -240,7 +252,6 @@ def parseargs():
                                  type=int)
 
     boundary_parser.add_argument("--chromosome",
-                                 required=True,
                                  type=str)
     
     boundary_parser.add_argument("--n-windows",
@@ -281,7 +292,7 @@ if __name__ == "__main__":
     if args.mode == "plot":
         df = read_snp_table(args.pca_associations_tsv,
                             args.component,
-                            args.chromosome)
+                            chromosome=args.chromosome)
 
         # avoid domain errors from trying to take the log of 0
         df["pvalue"] = np.maximum(df["pvalue"], np.power(10., -300.))
@@ -303,7 +314,7 @@ if __name__ == "__main__":
     elif args.mode == "detect-boundaries":
         df = read_snp_table(args.pca_associations_tsv,
                             args.component,
-                            args.chromosome)
+                            chromosome=args.chromosome)
     
         df = mark_significant_snps(df)
 

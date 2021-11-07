@@ -42,7 +42,6 @@ load model_setup_helper
         --pca-associations-tsv "${TEST_TEMP_DIR}/pca_tests.tsv" \
         --plot-fl "${TEST_TEMP_DIR}/manhattan_plot_comp2.png" \
 	    --component 2 \
-	    --chromosome 1 \
 	    --n-windows -1
 
    [ "$status" -eq 0 ]
@@ -68,7 +67,6 @@ load model_setup_helper
         --pca-associations-tsv "${TEST_TEMP_DIR}/pca_tests_counts.tsv" \
 	    --plot-fl "${TEST_TEMP_DIR}/manhattan_plot_comp1.png" \
 	    --component 1 \
-	    --chromosome 1 \
 	    --n-windows -1
 
    [ "$status" -eq 0 ]
@@ -79,7 +77,6 @@ load model_setup_helper
         --pca-associations-tsv "${TEST_TEMP_DIR}/pca_tests_counts.tsv" \
 	    --plot-fl "${TEST_TEMP_DIR}/manhattan_plot_comp2.png" \
 	    --component 2 \
-        --chromosome 1 \
 	    --n-windows -1
 
    [ "$status" -eq 0 ]
