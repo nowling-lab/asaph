@@ -3,12 +3,12 @@
 load model_setup_helper
 
 @test "Run with no arguments" {
-    run asaph_detect_and_localize
+    run asaph_localize
     [ "$status" -eq 2 ]
 }
 
 @test "Run with --help option" {
-    run asaph_detect_and_localize --help
+    run asaph_localize --help
     [ "$status" -eq 0 ]
 }
 
@@ -16,7 +16,7 @@ load model_setup_helper
     [ -e "${WORKDIR_PATH}/models/model" ]
     [ -e "${WORKDIR_PATH}/pca_coordinates.tsv" ]
 
-    run asaph_detect_and_localize \
+    run asaph_localize \
         --workdir ${WORKDIR_PATH} \
         association-tests \
 	--vcf ${VCF_PATH} \
@@ -25,7 +25,7 @@ load model_setup_helper
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}/pca_associations.tsv" ]
 
-    run asaph_detect_and_localize \
+    run asaph_localize \
 	--workdir ${WORKDIR_PATH} \
         plot \
 	--component 1 \
@@ -35,7 +35,7 @@ load model_setup_helper
    [ "$status" -eq 0 ]
    [ -e "${WORKDIR_PATH}/plots/manhattan_pc1_chrom1.png" ]
 
-    run asaph_detect_and_localize \
+    run asaph_localize \
         --workdir "${WORKDIR_PATH}" \
 	plot \
 	--component 2 \
@@ -50,7 +50,7 @@ load model_setup_helper
     [ -e "${COUNTS_WORKDIR_PATH}/models/model" ]
     [ -e "${COUNTS_WORKDIR_PATH}/pca_coordinates.tsv" ]
 
-    run asaph_detect_and_localize \
+    run asaph_localize \
 	--workdir "${COUNTS_WORKDIR_PATH}" \
         association-tests \
 	--vcf ${VCF_PATH} \
@@ -59,7 +59,7 @@ load model_setup_helper
     [ "$status" -eq 0 ]
     [ -e "${COUNTS_WORKDIR_PATH}/pca_associations.tsv" ]
 
-    run asaph_detect_and_localize \
+    run asaph_localize \
         --workdir ${COUNTS_WORKDIR_PATH} \
 	plot \
 	--component 1 \
@@ -69,7 +69,7 @@ load model_setup_helper
    [ "$status" -eq 0 ]
    [ -e "${COUNTS_WORKDIR_PATH}/plots/manhattan_pc1_chrom1.png" ]
 
-    run asaph_detect_and_localize \
+    run asaph_localize \
         --workdir "${COUNTS_WORKDIR_PATH}" \
 	plot \
 	--chromosome 1 \

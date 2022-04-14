@@ -6,7 +6,7 @@ In the previous [tutorial](pca.md), you prepared, imported, and performed princi
 We can now run single-SNP association tests.  The genotypes of each SNP are tested against the samples' PC coordinates.  The p-values will be written to tab-separated value (TSV) files.  The file will contain four columns (the component, the chromosome, position, and p-value) with one row for each SNP-component pair.
 
 ```bash
-$ asaph_detect_and_localize \
+$ asaph_localize \
     --workdir <workdir> \
     association-tests \
     --components 1 2 \
@@ -19,7 +19,7 @@ The association test results (p-values) will be written out to the file `<workdi
 Secondly, we will use manhattan plots to show the p-values of the SNPs across the chromosome.  Spatial correlation can indicate structural variations such as inversions.  To generate a plot for the association tests against component 1, run the following:
 
 ```bash
-$ asaph_detect_and_localize \
+$ asaph_localize \
     --workdir <workdir> \
     plot \
 	--component 1
