@@ -2,13 +2,13 @@
 
 load model_setup_helper
 
-@test "Run pca with no arguments" {
-    run asaph_pca
+@test "Run with no arguments" {
+    run asaph_detect_and_localize
     [ "$status" -eq 2 ]
 }
 
-@test "Run pca with --help option" {
-    run asaph_pca --help
+@test "Run with --help option" {
+    run asaph_detect_and_localize --help
     [ "$status" -eq 0 ]
 }
 
@@ -17,35 +17,33 @@ load model_setup_helper
     [ -e "${WORKDIR_PATH}/pca_coordinates.tsv" ]
 
     run asaph_detect_and_localize \
+        --workdir ${WORKDIR_PATH} \
         association-tests \
-        --pca-coordinates-tsv ${WORKDIR_PATH}/pca_coordinates.tsv \
-	    --vcf ${VCF_PATH} \
-	    --components 1 2 \
-	    --pca-associations-tsv ${TEST_TEMP_DIR}/pca_tests.tsv
+	--vcf ${VCF_PATH} \
+	--components 1 2
 
     [ "$status" -eq 0 ]
-    [ -e "${TEST_TEMP_DIR}/pca_tests.tsv" ]
+    [ -e "${WORKDIR_PATH}/pca_associations.tsv" ]
 
     run asaph_detect_and_localize \
+	--workdir ${WORKDIR_PATH} \
         plot \
-        --pca-associations-tsv "${TEST_TEMP_DIR}/pca_tests.tsv" \
-	    --plot-fl "${TEST_TEMP_DIR}/manhattan_plot_comp1.png" \
-	    --component 1 \
-	    --chromosome 1 \
-	    --n-windows -1
+	--component 1 \
+	--chromosome 1 \
+	--n-windows -1
 
    [ "$status" -eq 0 ]
-   [ -e "${TEST_TEMP_DIR}/manhattan_plot_comp1.png" ]
+   [ -e "${WORKDIR_PATH}/plots/manhattan_pc1_chrom1.png" ]
 
     run asaph_detect_and_localize \
-        plot \
-        --pca-associations-tsv "${TEST_TEMP_DIR}/pca_tests.tsv" \
-        --plot-fl "${TEST_TEMP_DIR}/manhattan_plot_comp2.png" \
-	    --component 2 \
-	    --n-windows -1
+        --workdir "${WORKDIR_PATH}" \
+	plot \
+	--component 2 \
+	--chromosome 1 \
+	--n-windows -1
 
    [ "$status" -eq 0 ]
-   [ -e "${TEST_TEMP_DIR}/manhattan_plot_comp2.png" ]
+   [ -e "${WORKDIR_PATH}/plots/manhattan_pc2_chrom1.png" ]
 }
 
 @test "pca (counts)" {
@@ -53,32 +51,31 @@ load model_setup_helper
     [ -e "${COUNTS_WORKDIR_PATH}/pca_coordinates.tsv" ]
 
     run asaph_detect_and_localize \
+	--workdir "${COUNTS_WORKDIR_PATH}" \
         association-tests \
-        --pca-coordinates-tsv ${COUNTS_WORKDIR_PATH}/pca_coordinates.tsv \
-	    --vcf ${VCF_PATH} \
-	    --components 1 2 \
-	    --pca-associations-tsv ${TEST_TEMP_DIR}/pca_tests_counts.tsv
+	--vcf ${VCF_PATH} \
+	--components 1 2
 
     [ "$status" -eq 0 ]
-    [ -e "${TEST_TEMP_DIR}/pca_tests_counts.tsv" ]
+    [ -e "${COUNTS_WORKDIR_PATH}/pca_associations.tsv" ]
 
     run asaph_detect_and_localize \
-        plot \
-        --pca-associations-tsv "${TEST_TEMP_DIR}/pca_tests_counts.tsv" \
-	    --plot-fl "${TEST_TEMP_DIR}/manhattan_plot_comp1.png" \
-	    --component 1 \
-	    --n-windows -1
+        --workdir ${COUNTS_WORKDIR_PATH} \
+	plot \
+	--component 1 \
+	--chromosome 1 \
+	--n-windows -1
 
    [ "$status" -eq 0 ]
-   [ -e "${TEST_TEMP_DIR}/manhattan_plot_comp1.png" ]
+   [ -e "${COUNTS_WORKDIR_PATH}/plots/manhattan_pc1_chrom1.png" ]
 
     run asaph_detect_and_localize \
-        plot \
-        --pca-associations-tsv "${TEST_TEMP_DIR}/pca_tests_counts.tsv" \
-	    --plot-fl "${TEST_TEMP_DIR}/manhattan_plot_comp2.png" \
-	    --component 2 \
-	    --n-windows -1
+        --workdir "${COUNTS_WORKDIR_PATH}" \
+	plot \
+	--chromosome 1 \
+	--component 2 \
+	--n-windows -1
 
    [ "$status" -eq 0 ]
-   [ -e "${TEST_TEMP_DIR}/manhattan_plot_comp2.png" ]
+   [ -e "${COUNTS_WORKDIR_PATH}/plots/manhattan_pc2_chrom1.png" ]
 }

@@ -100,13 +100,15 @@ def pairwise(iterable):
     except StopIteration:
         pass
     
-def plot_projections(coordinates_fl, pairs, dirname, labels=None):
+def plot_projections(workdir, pairs, labels=None):
+    coordinates_fl = os.path.join(workdir, "pca_coordinates.tsv")
     sample_names, coordinates = read_pca_coordinates(coordinates_fl)
 
     if len(pairs) % 2 != 0:
         print("Error: PCs must be provided in pairs of 2")
         sys.exit(1)
 
+    dirname = os.path.join(workdir, "plots")
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 
@@ -119,7 +121,8 @@ def plot_projections(coordinates_fl, pairs, dirname, labels=None):
 
         if labels is None:
             plt.scatter(coordinates[:, p1 - 1],
-                        coordinates[:, p2 - 1])
+                        coordinates[:, p2 - 1],
+                        marker=".")
         else:
             label_samples = defaultdict(list)
             for idx, sample_name in enumerate(sample_names):
@@ -144,7 +147,8 @@ def plot_projections(coordinates_fl, pairs, dirname, labels=None):
         plt.ylabel("Component %s" % p2, fontsize=16)
         plt.savefig(fig_flname)
 
-def test_pcs(coordinates_fl, sample_names, sample_labels):
+def test_pcs(workdir, sample_names, sample_labels):
+    coordinates_fl = os.path.join(workdir, "pca_coordinates.tsv")
     sample_names, coordinates = read_pca_coordinates(coordinates_fl)
 
     for i in range(pc_coordinates.shape[1]):
@@ -165,7 +169,8 @@ def test_pcs(coordinates_fl, sample_names, sample_labels):
         print("p-value: ", pvalue)
         print()    
 
-def cluster_samples(coordinates_fl, components, n_clusters, output_fl):
+def cluster_samples(workdir, components, n_clusters, output_fl):
+    coordinates_fl = os.path.join(workdir, "pca_coordinates.tsv")
     sample_names, coordinates = read_pca_coordinates(coordinates_fl)
     
     components = list(map(lambda idx: idx - 1, components))
@@ -201,7 +206,8 @@ def cluster_samples(coordinates_fl, components, n_clusters, output_fl):
                 fl.write(name)
             fl.write("\n")
 
-def supervised_genotyping(coordinates_fl, known_fl, output_fl):
+def supervised_genotyping(workdir, known_fl, output_fl):
+    coordinates_fl = os.path.join(workdir, "pca_coordinates.tsv")
     sample_names, coordinates = read_pca_coordinates(coordinates_fl)
     known_labels = read_label_names(known_fl)
 
@@ -308,10 +314,6 @@ def parseargs():
     plot_parser = subparsers.add_parser("plot-projections",
                                         help="Plot PCA projections")
     
-    plot_parser.add_argument("--plot-dir",
-                             type=str,
-                             required=True)
-
     plot_parser.add_argument("--pairs",
                              nargs="+",
                              type=int,
@@ -321,7 +323,7 @@ def parseargs():
                              type=str,
                              help="Labels file to use in coloring points")
 
-    plot_parser.add_argument("--coordinates",
+    plot_parser.add_argument("--workdir",
                              type=str,
                              required=True)
 
@@ -336,14 +338,14 @@ def parseargs():
                                    type=str,
                                    help="Predicted labels from model")
 
-    supervised_parser.add_argument("--coordinates",
+    supervised_parser.add_argument("--workdir",
                                    type=str,
                                    required=True)
     
     label_test_parser = subparsers.add_parser("test-pcs",
                                               help="Run association tests on PCs vs labels")
 
-    label_test_parser.add_argument("--coordinates",
+    label_test_parser.add_argument("--workdir",
                                    type=str,
                                    required=True)
     
@@ -355,7 +357,7 @@ def parseargs():
     unsupervised_parser = subparsers.add_parser("unsupervised-genotyping",
                                                 help="Infer genotypes with clustering")
 
-    unsupervised_parser.add_argument("--coordinates",
+    unsupervised_parser.add_argument("--workdir",
                                      type=str,
                                      required=True)
     
@@ -395,25 +397,24 @@ if __name__ == "__main__":
         labels = None
         if args.labels_fl:
             labels = read_label_names(args.labels_fl)
-        plot_projections(args.coordinates,
+        plot_projections(args.workdir,
                          args.pairs,
-                         args.plot_dir,
                          labels=labels)
 
     elif args.mode == "test-pcs":
         labels = read_labels(args.labels_fl)
-        test_pcs(args.coordinates,
+        test_pcs(args.workdir,
                  sample_names,
                  labels)
 
     elif args.mode == "unsupervised-genotyping":
-        cluster_samples(args.coordinates,
+        cluster_samples(args.workdir,
                         args.components,
                         args.n_clusters,
                         args.predicted_labels_fl)
 
     elif args.mode == "supervised-genotyping":
-        supervised_genotyping(args.coordinates,
+        supervised_genotyping(args.workdir,
                               args.known_labels_fl,
                               args.predicted_labels_fl)
         

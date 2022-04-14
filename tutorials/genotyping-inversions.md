@@ -9,8 +9,8 @@ For example, if an inversion is captured by PC 1, we can cluster the samples as 
 
 ```bash
 $ asaph_genotype \
+    --workdir <workdir> \
 	unsupervised-genotyping \
-	--coordinates pca_coordinates.tsv \
 	--components 1 \
 	--n-clusters 3 \
 	--predicted-labels-fl predicted_labels.pops
@@ -20,8 +20,8 @@ If an inversion is captured by PCs 1 and 2, we can cluster the samples using bot
 
 ```bash
 $ asaph-genotype \
+    --workdir <workdir> \
 	unsupervised-genotyping \
-	--coordinates pca_coordinates.tsv \
 	--components 1 2 \
 	--n-clusters 3 \
 	--predicted-labels-fl predicted_labels.pops
@@ -32,8 +32,8 @@ If we have two sets of samples in which one set has known labels and the other d
 
 ```bash
 $ asaph_genotype \
+    --workdir <workdir> \
 	supervised-genotyping \
-	--coordinates pca_coordinates.tsv \
 	--known-labels-fl known_labels.pops \
 	--predicted-labels-fl predicted_labels.pops
 ```
@@ -56,21 +56,20 @@ We can then generate scatter plots for the PCA:
 
 ```bash
 $ asaph_genotype \
+    --workdir <workdir> \
 	plot-projections \
-	--coordinates pca_coordinates.tsv \
 	--pairs 1 2 3 4 \
 	--labels-fl predicted_labels.pops \
 	--plot-dir pca_plots
 ```
 
-The two plot files `pca_projection_1_2.png` and `pca_projection_3_4.png` will be created.  The samples will be colored according to their cluster assignment.
+Two plot files `pca_projection_1_2.png` and `pca_projection_3_4.png` will be created in the `<workdir>/plots` directory.  The samples will be colored according to their cluster assignment.
 
 You can also plot the projections without cluster labels:
 
 ```bash
 $ asaph_genotype \
+    --workdir <workdir> \
 	plot-projections \
-	--coordinates pca_coordinates.tsv \
 	--pairs 1 2 3 4 \
-	--plot-dir pca_plots
 ```

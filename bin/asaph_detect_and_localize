@@ -213,19 +213,15 @@ def write_test_results(flname, test_stream):
 def parseargs():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("--workdir",
+                        type=str,
+                        required=True)
+    
     subparsers = parser.add_subparsers(dest="mode")
 
     plot_parser = subparsers.add_parser("plot",
                                         help="Create Manhattan plot")
     
-    plot_parser.add_argument("--pca-associations-tsv",
-                             required=True,
-                             type=str)
-
-    plot_parser.add_argument("--plot-fl",
-                             required=True,
-                             type=str)
-
     plot_parser.add_argument("--component",
                              required=True,
                              type=int)
@@ -243,10 +239,6 @@ def parseargs():
     boundary_parser = subparsers.add_parser("detect-boundaries",
                                             help="Detect inversion boundaries")
 
-    boundary_parser.add_argument("--pca-associations-tsv",
-                                 required=True,
-                                 type=str)
-
     boundary_parser.add_argument("--component",
                                  required=True,
                                  type=int)
@@ -261,11 +253,6 @@ def parseargs():
     association_parser = subparsers.add_parser("association-tests",
                                                help="Run PCA association tests for plotting and boundary detection")
 
-    association_parser.add_argument("--pca-coordinates-tsv",
-                                    type=str,
-                                    help="",
-                                    required=True)
-
     format_group = association_parser.add_mutually_exclusive_group(required=True)
     format_group.add_argument("--vcf", type=str, help="VCF file to import")
     format_group.add_argument("--vcf-gz", type=str, help="Gzipped VCF file to import")
@@ -274,11 +261,6 @@ def parseargs():
                                     type=float,
                                     help="Minimum allele frequency allowed",
                                     default=0.000001)
-
-    association_parser.add_argument("--pca-associations-tsv",
-                                    type=str,
-                                    help="Output file",
-                                    required=True)
 
     association_parser.add_argument("--components",
                                     type=int,
@@ -289,8 +271,10 @@ def parseargs():
 if __name__ == "__main__":
     args = parseargs()
 
+    pca_assoc_tsv = os.path.join(args.workdir, "pca_associations.tsv")
+
     if args.mode == "plot":
-        df = read_snp_table(args.pca_associations_tsv,
+        df = read_snp_table(pca_assoc_tsv,
                             args.component,
                             chromosome=args.chromosome)
 
@@ -306,13 +290,24 @@ if __name__ == "__main__":
             print("Left boundary: {}".format(boundaries[0]))
             print("Right boundary: {}".format(boundaries[1]))
 
-        plot_associations(args.plot_fl,
+        plot_dir = os.path.join(args.workdir, "plots")
+        if not os.path.exists(plot_dir):
+            os.makedirs(plot_dir)
+
+        chrom = ""
+        if args.chromosome:
+            chrom = "_chrom{}".format(args.chromosome)
+
+        plot_fl = os.path.join(plot_dir,
+                               "manhattan_pc{}{}.png".format(args.component,
+                                                             chrom))
+        plot_associations(plot_fl,
                           df,
                           boundaries=boundaries,
                           y_limit = args.y_limit)
 
     elif args.mode == "detect-boundaries":
-        df = read_snp_table(args.pca_associations_tsv,
+        df = read_snp_table(pca_assoc_tsv,
                             args.component,
                             chromosome=args.chromosome)
     
@@ -325,7 +320,8 @@ if __name__ == "__main__":
         print("Right boundary: {}".format(right_boundary))
 
     elif args.mode == "association-tests":
-        sample_names, coordinates = read_pca_coordinates(args.pca_coordinates_tsv)
+        coordinates_fl = os.path.join(args.workdir, "pca_coordinates.tsv")
+        sample_names, coordinates = read_pca_coordinates(coordinates_fl)
 
         if args.vcf is not None:
             flname = args.vcf
@@ -350,7 +346,7 @@ if __name__ == "__main__":
                                             coordinates,
                                             args.components)
 
-        write_test_results(args.pca_associations_tsv,
+        write_test_results(pca_assoc_tsv,
                            test_stream)
 
     else:
