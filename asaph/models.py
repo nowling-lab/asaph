@@ -22,5 +22,5 @@ ProjectSummary = namedtuple("ProjectSummary",
                              "n_features",
                              "n_samples",
                              "feature_type",
-                             "subsampling_method",
+                             "sampling_method",
                              "sample_names"])

@@ -27,7 +27,9 @@ from sklearn.random_projection import johnson_lindenstrauss_min_dim as jl_min_di
 from asaph.feature_matrix_construction import construct_feature_matrix
 from asaph.feature_matrix_construction import COUNTS_FEATURE_TYPE
 from asaph.feature_matrix_construction import CATEGORIES_FEATURE_TYPE
-from asaph.feature_matrix_construction import HASHED_FEATURE_TYPE
+from asaph.feature_matrix_construction import RESERVOIR_SAMPLING
+from asaph.feature_matrix_construction import FEATURE_HASHING
+from asaph.feature_matrix_construction import BOTTOMK_SKETCHING
 from asaph.models import ProjectSummary
 from asaph.newioutils import COORDINATES_FLNAME
 from asaph.newioutils import FEATURES_FLNAME
@@ -72,10 +74,8 @@ def import_vcf(args):
     feature_matrix = construct_feature_matrix(variant_stream,
                                               n_samples,
                                               args.feature_type,
-                                              args.subsampling_method,
-                                              args.chunk_size,
-                                              n_dim,
-                                              n_inner_dim=args.inner_dim)
+                                              args.sampling_method,
+                                              n_dim)
 
     print(feature_matrix.shape[0], "individuals")
     print(feature_matrix.shape[1], "features")
@@ -85,7 +85,7 @@ def import_vcf(args):
                                      n_features = feature_matrix.shape[1],
                                      n_samples = feature_matrix.shape[0],
                                      feature_type = args.feature_type,
-                                     subsampling_method = args.subsampling_method,
+                                     sampling_method = args.sampling_method,
                                      sample_names = individual_names)
 
     serialize(os.path.join(args.workdir, SAMPLE_LABELS_FLNAME), individual_names)
@@ -149,20 +149,16 @@ def parseargs():
 
     parser.add_argument("--feature-type",
                         type=str,
-                        default="hashed",
-                        choices=["counts",
-                                 "categories",
-                                 "hashed"])
+                        default="allele-counts",
+                        choices=["allele-counts",
+                                 "genotype-categories"])
 
-    parser.add_argument("--subsampling-method",
+    parser.add_argument("--sampling-method",
                         type=str,
-                        default=None,
-                        choices=["random-projection",
-                                 "reservoir"])
-
-    parser.add_argument("--chunk-size",
-                        type=int,
-                        default=10000)
+                        default="feature-hashing",
+                        choices=["feature-hashing",
+                                 "reservoir",
+                                 "bottom-k"])
 
     dimensions_group = parser.add_mutually_exclusive_group()
     dimensions_group.add_argument("--num-dimensions",
@@ -174,11 +170,6 @@ def parseargs():
                                   type=float,
                                   help="Use minimum inversion size (in terms of fraction of SNPs) to estimate number of dimensions needed.")
 
-    parser.add_argument("--inner-dim",
-                        type=int,
-                        default=2**20,
-                        help="Number of hashed features to use as an inner dimension with random projection.")
-    
     format_group = parser.add_mutually_exclusive_group(required=True)
     format_group.add_argument("--vcf", type=str, help="VCF file to import")
     format_group.add_argument("--vcf-gz", type=str, help="Gzipped VCF file to import")

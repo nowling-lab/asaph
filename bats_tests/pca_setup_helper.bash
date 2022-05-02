@@ -24,12 +24,13 @@ setup() {
     asaph_pca \
 	--workdir ${FULL_WORKDIR_PATH} \
 	--vcf ${VCF_PATH} \
-	--feature-type categories \
+	--feature-type genotype-categories \
         --n-components 6
 
     asaph_pca \
 	--workdir ${HASHED_WORKDIR_PATH} \
 	--vcf ${VCF_PATH} \
-	--feature-type hashed \
+	--feature-type allele-counts \
+	--sampling-method feature-hashing \
         --n-components 6
 }

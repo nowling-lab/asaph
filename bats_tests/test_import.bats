@@ -57,9 +57,7 @@ setup() {
     run ${IMPORT_CMD} \
 	    --workdir ${WORKDIR_PATH} \
 	    --vcf ${VCF_PATH} \
-	    --feature-type counts
-
-    N_FEATURES=$((N_SNPS * 2))
+	    --feature-type allele-counts
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
@@ -67,7 +65,6 @@ setup() {
     [ -e "${WORKDIR_PATH}/project_summary" ]
     [ -e "${WORKDIR_PATH}/models/model" ]
     [ -e "${WORKDIR_PATH}/pca_coordinates.tsv" ]
-    [ $(count_features ${WORKDIR_PATH}) -eq ${N_FEATURES} ]
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
 
@@ -75,9 +72,7 @@ setup() {
     run ${IMPORT_CMD} \
 	    --workdir ${WORKDIR_PATH} \
 	    --vcf ${VCF_PATH} \
-	    --feature-type categories
-
-    N_FEATURES=$((N_SNPS * 3))
+	    --feature-type genotype-categories
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
@@ -85,15 +80,15 @@ setup() {
     [ -e "${WORKDIR_PATH}/project_summary" ]
     [ -e "${WORKDIR_PATH}/models/model" ]
     [ -e "${WORKDIR_PATH}/pca_coordinates.tsv" ]
-    [ $(count_features ${WORKDIR_PATH}) -eq ${N_FEATURES} ]
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
 
-@test "Import data: vcf, hashed" {
+@test "Import data: vcf, feature hashing" {
     run ${IMPORT_CMD} \
 	    --workdir ${WORKDIR_PATH} \
 	    --vcf ${VCF_PATH} \
-	    --feature-type hashed
+	    --feature-type allele-counts \
+	    --sampling-method feature-hashing
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
@@ -108,9 +103,7 @@ setup() {
     run ${IMPORT_CMD} \
 	    --workdir ${WORKDIR_PATH} \
 	    --vcf-gz ${VCF_PATH}.gz \
-	    --feature-type counts
-
-    N_FEATURES=$((N_SNPS * 2))
+	    --feature-type allele-counts
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
@@ -118,7 +111,6 @@ setup() {
     [ -e "${WORKDIR_PATH}/project_summary" ]
     [ -e "${WORKDIR_PATH}/models/model" ]
     [ -e "${WORKDIR_PATH}/pca_coordinates.tsv" ]
-    [ $(count_features ${WORKDIR_PATH}) -eq ${N_FEATURES} ]
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
 
@@ -126,9 +118,7 @@ setup() {
     run ${IMPORT_CMD} \
 	    --workdir ${WORKDIR_PATH} \
 	    --vcf-gz ${VCF_PATH}.gz \
-	    --feature-type categories
-
-    N_FEATURES=$((N_SNPS * 3))
+	    --feature-type genotype-categories
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
@@ -136,15 +126,15 @@ setup() {
     [ -e "${WORKDIR_PATH}/project_summary" ]
     [ -e "${WORKDIR_PATH}/models/model" ]
     [ -e "${WORKDIR_PATH}/pca_coordinates.tsv" ]
-    [ $(count_features ${WORKDIR_PATH}) -eq ${N_FEATURES} ]
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
 
-@test "Import data: vcf.gz, hashed, reduced by size" {
+@test "Import data: vcf.gz, feature hashing, reduced by size" {
     run ${IMPORT_CMD} \
 	    --workdir ${WORKDIR_PATH} \
 	    --vcf-gz ${VCF_PATH}.gz \
-	    --feature-type hashed \
+	    --feature-type allele-counts \
+	    --sampling-method feature-hashing \
 	    --min-inversion-fraction 0.05
 
     [ "$status" -eq 0 ]
@@ -156,11 +146,12 @@ setup() {
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
 
-@test "Import data: vcf.gz, hashed, reduced by dimensions" {
+@test "Import data: vcf.gz, feature hashing, reduced by dimensions" {
     run ${IMPORT_CMD} \
 	    --workdir ${WORKDIR_PATH} \
 	    --vcf-gz ${VCF_PATH}.gz \
-	    --feature-type hashed \
+	    --feature-type allele-counts \
+	    --sampling-method feature-hashing \
 	    --num-dimensions 10
 
     [ "$status" -eq 0 ]
@@ -177,8 +168,8 @@ setup() {
     run ${IMPORT_CMD} \
 	    --workdir ${WORKDIR_PATH} \
 	    --vcf-gz ${VCF_PATH}.gz \
-	    --feature-type categories \
-	    --subsampling-method reservoir \
+	    --feature-type genotype-categories \
+	    --sampling-method reservoir \
 	    --min-inversion-fraction 0.05
 
     N_FEATURES=$((N_SNPS * 3))
@@ -196,46 +187,9 @@ setup() {
     run ${IMPORT_CMD} \
 	    --workdir ${WORKDIR_PATH} \
 	    --vcf-gz ${VCF_PATH}.gz \
-	    --feature-type categories \
-	    --subsampling-method reservoir \
+	    --feature-type genotype-categories \
+	    --sampling-method reservoir \
 	    --num-dimensions 10
-
-    [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}" ]
-    [ -d "${WORKDIR_PATH}" ]
-    [ -e "${WORKDIR_PATH}/project_summary" ]
-    [ -e "${WORKDIR_PATH}/models/model" ]
-    [ -e "${WORKDIR_PATH}/pca_coordinates.tsv" ]
-    [ $(count_features ${WORKDIR_PATH}) -eq 10 ]
-    [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
-}
-
-@test "Import data: vcf.gz, hashed, random projection, reduced by size" {
-    run ${IMPORT_CMD} \
-	    --workdir ${WORKDIR_PATH} \
-	    --vcf-gz ${VCF_PATH}.gz \
-	    --feature-type hashed \
-	    --subsampling-method random-projection \
-	    --min-inversion-fraction 0.2 \
-	    --inner-dim 4096
-
-    [ "$status" -eq 0 ]
-    [ -e "${WORKDIR_PATH}" ]
-    [ -d "${WORKDIR_PATH}" ]
-    [ -e "${WORKDIR_PATH}/project_summary" ]
-    [ -e "${WORKDIR_PATH}/models/model" ]
-    [ -e "${WORKDIR_PATH}/pca_coordinates.tsv" ]
-    [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
-}
-
-@test "Import data: vcf.gz, hashed, random-projection, reduced by dimensions" {
-    run ${IMPORT_CMD} \
-	    --workdir ${WORKDIR_PATH} \
-	    --vcf-gz ${VCF_PATH}.gz \
-	    --feature-type hashed \
-	    --subsampling-method random-projection \
-	    --num-dimensions 10 \
-	    --inner-dim 1024
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]

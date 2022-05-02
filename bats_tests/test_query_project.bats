@@ -21,9 +21,6 @@ file_contains() {
     RESULTS_FILE="${TEST_TEMP_DIR}/query_results.txt"
     run bash -c "asaph_query --workdir ${WORKDIR_PATH} > ${RESULTS_FILE}"
 
-    N_FEATURES=$((N_SNPS * 3))
-
     [ "$status" -eq 0 ]
     [ $(file_contains ${RESULTS_FILE} ${N_INDIVIDUALS}) -eq 0 ]
-    [ $(file_contains ${RESULTS_FILE} ${N_FEATURES}) -eq 0 ]
 }

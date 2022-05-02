@@ -25,7 +25,7 @@ $ asaph_pca \
 	--min-inversion-fraction 0.01
 ```
 
-## Outputing PCA Coordiantes
+## Outputing PCA Coordinates
 The PCA coordinates for each sample for use in the detection, localization, and genotyping steps will automatically be output to a file named `<workdir>/pca_coordinates.tsv`.  The file will look like so:
 
 ```
@@ -37,6 +37,13 @@ line_31	-0.36233433754549305	-0.4606695545925513	-1.0556892238848392	-0.21483260
 line_32	2.4899268824159315	-2.177898665769419	-0.15243794901799274	-0.13712827848692657
 line_38	-0.5689557880617656	-0.34942765856267216	-0.2130572294672218	-0.5187670246143677
 ```
+
+## More Details
+Asaph provides two ways (allele counts and genotype categories) of encoding SNPs as features.  In the first approach, a separate column in the feature matrix is created for each allele.  For example, if using biallelic SNPs and a site has "A" and "T" alleles, then two columns will be created.  The columns will store the number of copies of each allele.  For diploid organisms, this means the two columns will have values of (0, 2), (2, 0), (1, 1), or (0, 0).  For the second approach, a separate column is created for each genotype.  If using biallelic SNPs and a site has "A" and "T" alleles, then three columns correspond to "A/A", "A/T", and "T/T" will be created.  These columns are treated as mutually exclusive so only one column will have a 1 for each sample.  If the genotype is unknown for a sample, then all three columns will have values of 0.
+
+Asaph supports three ways (feature hashing, bottom-k sketching, and reservoir sampling) of subsampling variants.  For feature hashing and bottom-k sketching, a string is generated for each column such as "2L\_5453\_A" (allele counts), "2L\_345345\_T" (allele counts), or "2L\_345345\_homo\_0" (genotype categories).  With feature hashing, the number of dimensions is specified ahead of time and columns are mapped to a particular feature as `feature_idx = abs(hash(s)) % n_dimensions`.  This will cause collisions in which the values of multiple variants will be summed up.  This is a form of lossy compression.  For bottom-k sketching, only the `n_dimensions` columns with the smallest hash values are kept.   For reservoir sampling, `n_dimensions` columns are chosen randomly with uniform probability.
+
+By default, Asaph uses allele counts with feature hashing to encode the feature matrix.  The number of dimensions is calculated from the Johnson–Lindenstrauss lemma based on the number of samples detected and the expected minimum fraction of the chromosome that the inversion occupies.  The default assumption is that an inversion occupies 10% of a chromosome.
 
 ## What's Next?
 Now that the data has been prepared, imported, and PCA was performed, you can move on to [detecting and localizing inversions](localizing-inversions.md).
