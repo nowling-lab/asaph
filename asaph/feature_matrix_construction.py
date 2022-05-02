@@ -96,6 +96,9 @@ class BottomKAccumulator(object):
             if feature_idx % 10000 == 0:
                 print("Chunk", feature_idx // 10000, len(feature_columns))
 
+        # drop the hash and feature idx
+        feature_columns = [column for _, _, column in feature_columns]
+
         # need to transpose, otherwise we get (n_features, n_individuals) instead
         feature_matrix = np.array(feature_columns).T
 
