@@ -26,6 +26,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
+from sklearn.metrics import jaccard_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
 
 from asaph.feature_extraction import FeatureStringsExtractor
 from asaph.vcf import filter_invariants
@@ -209,6 +212,37 @@ def write_test_results(flname, test_stream):
 
             fl.write("\t".join([str(compon), chrom, str(pos), "%.2E" % pvalue]))
             fl.write("\n")
+
+def evaluate_predicted_boundaries(expected, predicted):
+    min_left = min(expected[0], predicted[0])
+    min_right = max(expected[1], predicted[1])
+    size = min_right - min_left + 1
+
+    expected_array = np.zeros(size)
+    expected_size = expected[1] - expected[0] + 1
+    expected_offset = expected[0] - min_left
+    for i in range(expected_size):
+        expected_array[i + expected_offset] = 1.0
+
+    predicted_array = np.zeros(size)
+    predicted_size = predicted[1] - predicted[0] + 1
+    predicted_offset = predicted[0] - min_left
+    for i in range(predicted_size):
+        predicted_array[i + predicted_offset] = 1.0
+
+    precision = precision_score(expected_array, predicted_array)
+    recall = recall_score(expected_array, predicted_array)
+    jaccard = jaccard_score(expected_array, predicted_array)
+
+    print("Left expected boundary: {}".format(expected[0]))
+    print("Right expected boundary: {}".format(expected[1]))
+    print()
+    print("Left predicted boundary: {}".format(predicted[0]))
+    print("Right predicted boundary: {}".format(predicted[1]))
+    print()
+    print("Recall: {:.1%}".format(recall))
+    print("Precision: {:.1%}".format(precision))
+    print("Jaccard: {:.1%}".format(jaccard))
     
 def parseargs():
     parser = argparse.ArgumentParser()
@@ -249,6 +283,25 @@ def parseargs():
     boundary_parser.add_argument("--n-windows",
                                  type=int,
                                  default=10000)
+
+    eval_parser = subparsers.add_parser("evaluate-boundaries",
+                                            help="Evaluate boundary predictions")
+
+    eval_parser.add_argument("--component",
+                             required=True,
+                             type=int)
+
+    eval_parser.add_argument("--n-windows",
+                             type=int,
+                             default=10000)
+
+    eval_parser.add_argument("--boundaries",
+                             type=int,
+                             nargs=2,
+                             required=True)
+
+    eval_parser.add_argument("--chromosome",
+                             type=str)
 
     association_parser = subparsers.add_parser("association-tests",
                                                help="Run PCA association tests for plotting and boundary detection")
@@ -312,6 +365,19 @@ if __name__ == "__main__":
         print("Left boundary: {}".format(left_boundary))
         print("Right boundary: {}".format(right_boundary))
 
+    elif args.mode == "evaluate-boundaries":
+        df = read_snp_table(pca_assoc_tsv,
+                            args.component,
+                            chromosome=args.chromosome)
+    
+        df = mark_significant_snps(df)
+
+        left_boundary, right_boundary = find_inversion_boundaries(df,
+                                                                  args.n_windows)
+
+        evaluate_predicted_boundaries(args.boundaries,
+                                      [left_boundary, right_boundary])
+        
     elif args.mode == "association-tests":
         coordinates_fl = os.path.join(args.workdir, "pca_coordinates.tsv")
         sample_names, coordinates = read_pca_coordinates(coordinates_fl)

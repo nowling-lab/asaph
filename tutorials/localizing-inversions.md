@@ -47,6 +47,31 @@ Left boundary: 19032733
 Right boundary: 30828378
 ```
 
+You can evaluate the predicted boundaries against known (expected) boundaries like so:
+
+```bash
+$ asaph-localize \
+    --workdir <workdir> \
+	evaluate-boundaries \
+	--component 1 \
+	--boundaries 19032733 30828378
+```
+
+which will result in the following output:
+
+```
+122 of 10000 were significant
+Left expected boundary: 26758676
+Right expected boundary: 31488544
+
+Left predicted boundary: 19032733
+Right predicted boundary: 30828378
+
+Recall: 86.0%
+Precision: 34.5%
+Jaccard: 32.7%
+```
+
 You can add these boundaries to your Manhattan plot like so:
 
 ```bash
