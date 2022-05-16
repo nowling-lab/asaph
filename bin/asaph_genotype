@@ -205,49 +205,6 @@ def cluster_samples(workdir, components, n_clusters, output_fl):
                 fl.write(",")
                 fl.write(name)
             fl.write("\n")
-
-def supervised_genotyping(workdir, known_fl, output_fl):
-    coordinates_fl = os.path.join(workdir, "pca_coordinates.tsv")
-    sample_names, coordinates = read_pca_coordinates(coordinates_fl)
-    known_labels = read_label_names(known_fl)
-
-    training_indices = [idx for idx, name in enumerate(sample_names) \
-                        if name in known_labels]
-
-    naive_indices = [idx for idx, name in enumerate(sample_names) \
-                     if name not in known_labels]
-
-    naive_names = [name for name in sample_names \
-                   if name not in known_labels]
-
-    text_labels = [known_labels[name] for name in sample_names \
-                   if name in known_labels]
-
-    encoder = LabelEncoder()
-    training_labels = encoder.fit_transform(text_labels)
-
-    training_X = coordinates[training_indices, :]
-    naive_X = coordinates[naive_indices, :]
-
-    sgd = SGDClassifier(loss="log")
-    sgd.fit(training_X, training_labels)
-    pred_labels = sgd.predict(naive_X)
-
-    pred_text_labels = encoder.inverse_transform(pred_labels)
-
-    # group samples by cluster
-    populations = defaultdict(set)
-    for i, pred_label in enumerate(pred_text_labels):
-        sample_name = naive_names[i]
-        populations[pred_label].add(sample_name)
-
-    with open(output_fl, "w") as fl:
-        for pop_name, samples in populations.items():
-            fl.write(str(pop_name))
-            for name in samples:
-                fl.write(",")
-                fl.write(name)
-            fl.write("\n")
             
 def evaluate_predictions(cluster_labels_fl, other_labels_fl):
     orig_cluster_labels = read_label_names(cluster_labels_fl)
@@ -327,21 +284,6 @@ def parseargs():
                              type=str,
                              required=True)
 
-    supervised_parser = subparsers.add_parser("supervised-genotyping",
-                                              help="Predict unknown genotypes from known genotypes")
-    
-    supervised_parser.add_argument("--known-labels-fl",
-                                   type=str,
-                                   help="Labels file to use for training model")
-
-    supervised_parser.add_argument("--predicted-labels-fl",
-                                   type=str,
-                                   help="Predicted labels from model")
-
-    supervised_parser.add_argument("--workdir",
-                                   type=str,
-                                   required=True)
-    
     label_test_parser = subparsers.add_parser("test-pcs",
                                               help="Run association tests on PCs vs labels")
 
@@ -413,11 +355,6 @@ if __name__ == "__main__":
                         args.n_clusters,
                         args.predicted_labels_fl)
 
-    elif args.mode == "supervised-genotyping":
-        supervised_genotyping(args.workdir,
-                              args.known_labels_fl,
-                              args.predicted_labels_fl)
-        
     elif args.mode == "evaluate-predicted-genotypes":
         evaluate_predictions(args.predicted_labels_fl,
                              args.known_labels_fl)
