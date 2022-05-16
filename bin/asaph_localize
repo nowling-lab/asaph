@@ -232,9 +232,9 @@ def parseargs():
     plot_parser.add_argument("--y-limit",
                              type=float)
 
-    plot_parser.add_argument("--n-windows",
+    plot_parser.add_argument("--boundaries",
                              type=int,
-                             default=10000)
+                             nargs=2)
 
     boundary_parser = subparsers.add_parser("detect-boundaries",
                                             help="Detect inversion boundaries")
@@ -283,13 +283,6 @@ if __name__ == "__main__":
     
         df = mark_significant_snps(df)
 
-        boundaries = None
-        if args.n_windows != -1:
-            boundaries = find_inversion_boundaries(df,
-                                                   args.n_windows)
-            print("Left boundary: {}".format(boundaries[0]))
-            print("Right boundary: {}".format(boundaries[1]))
-
         plot_dir = os.path.join(args.workdir, "plots")
         if not os.path.exists(plot_dir):
             os.makedirs(plot_dir)
@@ -303,7 +296,7 @@ if __name__ == "__main__":
                                                              chrom))
         plot_associations(plot_fl,
                           df,
-                          boundaries=boundaries,
+                          boundaries = args.boundaries,
                           y_limit = args.y_limit)
 
     elif args.mode == "detect-boundaries":

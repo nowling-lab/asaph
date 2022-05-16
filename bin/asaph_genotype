@@ -121,8 +121,7 @@ def plot_projections(workdir, pairs, labels=None):
 
         if labels is None:
             plt.scatter(coordinates[:, p1 - 1],
-                        coordinates[:, p2 - 1],
-                        marker=".")
+                        coordinates[:, p2 - 1])
         else:
             label_samples = defaultdict(list)
             for idx, sample_name in enumerate(sample_names):
