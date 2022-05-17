@@ -74,7 +74,7 @@ def import_vcf(args):
     n_dim = calculate_dimensions(n_samples, args)
 
     sampling_method = args.sampling_method
-    if sampling_method = "none":
+    if sampling_method == "none":
         sampling_method = None
     
     feature_matrix = construct_feature_matrix(variant_stream,
@@ -91,17 +91,17 @@ def import_vcf(args):
                                      feature_type = args.feature_type,
                                      sampling_method = sampling_method,
                                      sample_names = individual_names,
-                                     explained_variance = None)
+                                     explained_variance_ratios = None)
 
     print("Variants imported")
 
     return feature_matrix, project_summary
 
-def write_project(workdir, project_summary, pca_model):
+def write_project(workdir, project_summary, pca_model, feature_matrix):
     if not os.path.exists(workdir):
         os.makedirs(workdir)
 
-    serialize(os.path.join(workdir, SAMPLE_LABELS_FLNAME), individual_names)
+    serialize(os.path.join(workdir, SAMPLE_LABELS_FLNAME), project_summary.sample_names)
     serialize(os.path.join(workdir, PROJECT_SUMMARY_FLNAME), project_summary)
     serialize(os.path.join(workdir, FEATURES_FLNAME), feature_matrix)
 
@@ -114,7 +114,7 @@ def write_project(workdir, project_summary, pca_model):
                 model_fl)
 
     output_coordinates(workdir,
-                       pca_model["projections"],
+                       pca_model[PROJECTION_KEY],
                        project_summary.sample_names)
 
 def train_pca(feature_matrix, project_summary, args):
@@ -125,13 +125,13 @@ def train_pca(feature_matrix, project_summary, args):
     projections = pca.fit_transform(feature_matrix)
 
     print("Explained variance ratios:", pca.explained_variance_ratio_)
-    project_summary = project_summary.update(explained_variance_ratios =
-                                             pca.explained_variance_ratio_)
+    project_summary = project_summary._replace(explained_variance_ratios =
+                                               pca.explained_variance_ratio_)
     
     model = { MODEL_KEY : pca,
               PROJECTION_KEY : projections}
 
-    return model
+    return model, project_summary
 
 def output_coordinates(workdir, projections, sample_names):
     fl_path = os.path.join(workdir, COORDINATES_FLNAME)
@@ -317,8 +317,13 @@ if __name__ == "__main__":
 
     if args.mode == "pca":
         features, project_summary = import_vcf(args)
-        pca_model, project_summary = train_pca(features, project_summary, args)
-        write_project(workdir, project_summary, pca_model)
+        pca_model, project_summary = train_pca(features,
+                                               project_summary,
+                                               args)
+        write_project(args.workdir,
+                      project_summary,
+                      pca_model,
+                      features)
     elif args.mode == "plot-projections":
         labels = None
         if args.labels_fl:
