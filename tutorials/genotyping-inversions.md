@@ -51,25 +51,3 @@ $ asaph_genotype \
 	--output-labels-fl known_labels.pops
 ```
 
-## PCA Projection Plots
-We can then generate scatter plots for the PCA:
-
-```bash
-$ asaph_genotype \
-    --workdir <workdir> \
-	plot-projections \
-	--pairs 1 2 3 4 \
-	--labels-fl predicted_labels.pops \
-	--plot-dir pca_plots
-```
-
-Two plot files `pca_projection_1_2.png` and `pca_projection_3_4.png` will be created in the `<workdir>/plots` directory.  The samples will be colored according to their cluster assignment.
-
-You can also plot the projections without cluster labels:
-
-```bash
-$ asaph_genotype \
-    --workdir <workdir> \
-	plot-projections \
-	--pairs 1 2 3 4 \
-```

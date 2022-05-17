@@ -29,20 +29,21 @@ setup() {
     gzip -k ${VCF_PATH}
 }
 
-@test "Run import with no arguments" {
+@test "Run asaph_pca with no arguments" {
     run ${IMPORT_CMD}
     [ "$status" -eq 2 ]
 }
 
-@test "Run import with --help option" {
+@test "Run asaph_pca with --help option" {
     run ${IMPORT_CMD} --help
     [ "$status" -eq 0 ]
 }
 
-@test "Import data: vcf, default" {
+@test "PCA: vcf, default" {
     run ${IMPORT_CMD} \
-	    --workdir ${WORKDIR_PATH} \
-	    --vcf ${VCF_PATH}
+	--workdir ${WORKDIR_PATH} \
+	pca \
+	--vcf ${VCF_PATH}
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
@@ -53,11 +54,12 @@ setup() {
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
 
-@test "Import data: vcf, counts" {
+@test "PCA: vcf, counts" {
     run ${IMPORT_CMD} \
-	    --workdir ${WORKDIR_PATH} \
-	    --vcf ${VCF_PATH} \
-	    --feature-type allele-counts
+	--workdir ${WORKDIR_PATH} \
+	pca \
+	--vcf ${VCF_PATH} \
+	--feature-type allele-counts
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
@@ -68,11 +70,12 @@ setup() {
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
 
-@test "Import data: vcf, categories" {
+@test "PCA: vcf, categories" {
     run ${IMPORT_CMD} \
-	    --workdir ${WORKDIR_PATH} \
-	    --vcf ${VCF_PATH} \
-	    --feature-type genotype-categories
+	--workdir ${WORKDIR_PATH} \
+	pca \
+	--vcf ${VCF_PATH} \
+	--feature-type genotype-categories
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
@@ -83,12 +86,13 @@ setup() {
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
 
-@test "Import data: vcf, feature hashing" {
+@test "PCA: vcf, feature hashing" {
     run ${IMPORT_CMD} \
-	    --workdir ${WORKDIR_PATH} \
-	    --vcf ${VCF_PATH} \
-	    --feature-type allele-counts \
-	    --sampling-method feature-hashing
+	--workdir ${WORKDIR_PATH} \
+	pca \
+	--vcf ${VCF_PATH} \
+	--feature-type allele-counts \
+	--sampling-method feature-hashing
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
@@ -99,11 +103,12 @@ setup() {
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
 
-@test "Import data: vcf.gz, counts" {
+@test "PCA: vcf.gz, counts" {
     run ${IMPORT_CMD} \
-	    --workdir ${WORKDIR_PATH} \
-	    --vcf-gz ${VCF_PATH}.gz \
-	    --feature-type allele-counts
+	--workdir ${WORKDIR_PATH} \
+	pca \
+	--vcf-gz ${VCF_PATH}.gz \
+	--feature-type allele-counts
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
@@ -114,11 +119,12 @@ setup() {
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
 
-@test "Import data: vcf.gz, categories" {
+@test "PCA: vcf.gz, categories" {
     run ${IMPORT_CMD} \
-	    --workdir ${WORKDIR_PATH} \
-	    --vcf-gz ${VCF_PATH}.gz \
-	    --feature-type genotype-categories
+	--workdir ${WORKDIR_PATH} \
+	pca \
+	--vcf-gz ${VCF_PATH}.gz \
+	--feature-type genotype-categories
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
@@ -129,13 +135,14 @@ setup() {
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
 
-@test "Import data: vcf.gz, feature hashing, reduced by size" {
+@test "PCA: vcf.gz, feature hashing, reduced by size" {
     run ${IMPORT_CMD} \
-	    --workdir ${WORKDIR_PATH} \
-	    --vcf-gz ${VCF_PATH}.gz \
-	    --feature-type allele-counts \
-	    --sampling-method feature-hashing \
-	    --min-inversion-fraction 0.05
+	--workdir ${WORKDIR_PATH} \
+	pca \
+	--vcf-gz ${VCF_PATH}.gz \
+	--feature-type allele-counts \
+	--sampling-method feature-hashing \
+	--min-inversion-fraction 0.05
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
@@ -146,13 +153,14 @@ setup() {
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
 
-@test "Import data: vcf.gz, feature hashing, reduced by dimensions" {
+@test "PCA: vcf.gz, feature hashing, reduced by dimensions" {
     run ${IMPORT_CMD} \
-	    --workdir ${WORKDIR_PATH} \
-	    --vcf-gz ${VCF_PATH}.gz \
-	    --feature-type allele-counts \
-	    --sampling-method feature-hashing \
-	    --num-dimensions 10
+	--workdir ${WORKDIR_PATH} \
+	pca \
+	--vcf-gz ${VCF_PATH}.gz \
+	--feature-type allele-counts \
+	--sampling-method feature-hashing \
+	--num-dimensions 10
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]
@@ -164,13 +172,14 @@ setup() {
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
 
-@test "Import data: vcf.gz, categories, reservoir, reduced by size" {
+@test "PCA: vcf.gz, categories, reservoir, reduced by size" {
     run ${IMPORT_CMD} \
-	    --workdir ${WORKDIR_PATH} \
-	    --vcf-gz ${VCF_PATH}.gz \
-	    --feature-type genotype-categories \
-	    --sampling-method reservoir \
-	    --min-inversion-fraction 0.05
+	--workdir ${WORKDIR_PATH} \
+	pca \
+	--vcf-gz ${VCF_PATH}.gz \
+	--feature-type genotype-categories \
+	--sampling-method reservoir \
+	--min-inversion-fraction 0.05
 
     N_FEATURES=$((N_SNPS * 3))
 
@@ -183,13 +192,14 @@ setup() {
     [ $(count_samples ${WORKDIR_PATH}) -eq ${N_INDIVIDUALS} ]
 }
 
-@test "Import data: vcf.gz, categories, reservoir, reduced by dimensions" {
+@test "PCA: vcf.gz, categories, reservoir, reduced by dimensions" {
     run ${IMPORT_CMD} \
-	    --workdir ${WORKDIR_PATH} \
-	    --vcf-gz ${VCF_PATH}.gz \
-	    --feature-type genotype-categories \
-	    --sampling-method reservoir \
-	    --num-dimensions 10
+	--workdir ${WORKDIR_PATH} \
+	pca \
+	--vcf-gz ${VCF_PATH}.gz \
+	--feature-type genotype-categories \
+	--sampling-method reservoir \
+	--num-dimensions 10
 
     [ "$status" -eq 0 ]
     [ -e "${WORKDIR_PATH}" ]

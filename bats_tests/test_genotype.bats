@@ -14,48 +14,6 @@ load pca_setup_helper
     [ "$status" -eq 0 ]
 }
 
-@test "plot projections (categories)" {
-    run asaph_genotype \
-	plot-projections \
-	--workdir ${FULL_WORKDIR_PATH} \
-	--pairs 1 2
-
-    [ "$status" -eq 0 ]
-    [ -e "${FULL_WORKDIR_PATH}/plots/pca_projection_1_2.png" ]
-}
-
-@test "plot projections (hashed)" {
-    run asaph_genotype \
-	plot-projections \
-	--workdir ${HASHED_WORKDIR_PATH} \
-	--pairs 1 2
-
-    [ "$status" -eq 0 ]
-    [ -e "${HASHED_WORKDIR_PATH}/plots/pca_projection_1_2.png" ]
-}
-
-@test "plot projections with labels (categories)" {
-    run asaph_genotype \
-	plot-projections \
-	--workdir ${FULL_WORKDIR_PATH} \
-	--pairs 1 2 \
-	--labels-fl ${POPS_PATH}
-
-    [ "$status" -eq 0 ]
-    [ -e "${FULL_WORKDIR_PATH}/plots/pca_projection_1_2.png" ]
-}
-
-@test "plot projections (hashed)" {
-    run asaph_genotype \
-	plot-projections \
-	--workdir ${HASHED_WORKDIR_PATH} \
-	--pairs 1 2 \
-	--labels-fl ${POPS_PATH}
-
-    [ "$status" -eq 0 ]
-    [ -e "${HASHED_WORKDIR_PATH}/plots/pca_projection_1_2.png" ]
-}
-
 @test "clustering (categories)" {
     run asaph_genotype \
     	unsupervised-genotyping \

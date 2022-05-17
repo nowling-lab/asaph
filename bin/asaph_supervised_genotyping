@@ -1,0 +1,260 @@
+#!/usr/bin/env python3
+"""
+Copyright 2019 Ronald J. Nowling
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
+
+import argparse
+from collections import defaultdict
+import os
+import sys
+import warnings
+
+import numpy as np
+from scipy import stats
+
+from sklearn.decomposition import PCA
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import StratifiedKFold
+from sklearn.preprocessing import LabelEncoder
+from sklearn.random_projection import johnson_lindenstrauss_min_dim as jl_min_dim
+
+from asaph.feature_matrix_construction import construct_feature_matrix
+from asaph.feature_matrix_construction import COUNTS_FEATURE_TYPE
+from asaph.feature_matrix_construction import CATEGORIES_FEATURE_TYPE
+from asaph.feature_matrix_construction import RESERVOIR_SAMPLING
+from asaph.feature_matrix_construction import FEATURE_HASHING
+from asaph.feature_matrix_construction import BOTTOMK_SKETCHING
+from asaph.vcf import stream_vcf_variants
+
+def calculate_dimensions(n_samples, args):
+    if args.num_dimensions is None and args.min_inversion_fraction is None:
+        n_dim = jl_min_dim(n_samples, eps=0.1)
+    elif args.min_inversion_fraction is not None:
+        if not (0.0 < args.min_inversion_fraction < 1.0):
+            raise Exception("Minimum inversion fraction must be a number between 0 and 1 (exclusive).")
+        n_dim = jl_min_dim(n_samples, eps=args.min_inversion_fraction)
+    elif args.num_dimensions is not None:
+        n_dim = args.num_dimensions
+
+    return n_dim
+
+def read_labels(flname):
+    sample_indices = dict()
+
+    with open(flname) as fl:
+        for label_idx, ln in enumerate(fl):
+            cols = ln.strip().split(",")
+
+            label = cols[0]
+
+            for sample_name in cols[1:]:
+                sample_indices[sample_name] = label_idx
+
+    return sample_indices
+
+def read_label_names(flname):
+    sample_indices = dict()
+
+    with open(flname) as fl:
+        for label_idx, ln in enumerate(fl):
+            cols = ln.strip().split(",")
+
+            label = cols[0]
+
+            for sample_name in cols[1:]:
+                sample_indices[sample_name] = label
+
+    return sample_indices
+
+def crossfold_validation(labels_fl, vcf_fl, gzipped, min_allele_freq, sig_threshold, sampling_method, pca_mode, args):
+    variant_stream, sample_names = stream_vcf_variants(vcf_fl,
+                                                       gzipped,
+                                                       min_allele_freq)
+
+    labels = read_label_names(labels_fl)
+    kept_indices = [idx for idx, name in enumerate(sample_names) \
+                    if name in labels]
+    text_labels = [labels[name] for name in sample_names \
+                   if name in labels]
+
+    n_dim = calculate_dimensions(len(kept_indices),
+                                 args)
+
+    encoder = LabelEncoder()
+    y = encoder.fit_transform(text_labels)
+
+    n_samples = len(sample_names)
+    counts = construct_feature_matrix(variant_stream,
+                                      n_dim,
+                                      CATEGORIES_FEATURE_TYPE,
+                                      sampling_method,
+                                      n_dim)
+
+    counts = counts[kept_indices, :]
+
+    if pca_mode == "transductive":
+        print("Doing PCA in transductive context")
+        pca = PCA(n_components = 10)
+        counts = pca.fit_transform(counts)
+    elif pca_mode == "transductive-plus":
+        print("Doing PCA in transductive context")
+        pca = PCA(n_components = 10)
+        proj = pca.fit_transform(counts)
+        counts = np.hstack([counts, proj])
+
+    print("Feature matrix shape:", counts.shape)
+
+    model = RandomForestClassifier(n_estimators=100)
+    skfold = StratifiedKFold(n_splits=5, shuffle=True)
+
+    predictions = []
+    true_labels = []
+    for train_index, test_index in skfold.split(counts, y):
+        X_train = counts[train_index]
+        X_test = counts[test_index]
+
+        y_train = y[train_index]
+        y_test = y[test_index]
+
+        print(y_train)
+
+        if sig_threshold:
+            groups = defaultdict(list)
+            for sample_idx, sample_label in enumerate(y_train):
+                groups[sample_label].append(sample_idx)
+
+            kept_features = []
+            for feature_idx in range(X_train.shape[1]):
+                count_groups = [X_train[samples, feature_idx] for samples in groups.values()]
+
+                # prevent constant arrays
+                all_constant = True
+                for group in count_groups:
+                    if len(set(group)) > 1:
+                        all_constant = False
+
+                if not all_constant:
+                    _, pvalue = stats.f_oneway(*count_groups)
+                    if pvalue < sig_threshold:
+                        kept_features.append(feature_idx)
+
+            X_train = X_train[:, kept_features]
+            X_test = X_test[:, kept_features]
+            print(X_train.shape)
+
+        if pca_mode == "inductive":
+            print("Doing PCA in inductive context")
+            pca = PCA(n_components = 10)
+            X_train = pca.fit_transform(X_train)
+            X_test = pca.transform(X_test)
+        elif pca_mode == "inductive-plus":
+            print("Doing PCA in inductive context")
+            pca = PCA(n_components = 10)
+            X_train_proj = pca.fit_transform(X_train)
+            X_test_proj = pca.transform(X_test)
+            X_train = np.hstack([X_train, X_train_proj])
+            X_test = np.hstack([X_test, X_test_proj])
+
+        model.fit(X_train, y_train)
+
+        pred_y = model.predict(X_test)
+
+        predictions.extend(pred_y)
+        true_labels.extend(y_test)
+
+    acc = accuracy_score(true_labels, predictions)
+    balanced_acc = balanced_accuracy_score(true_labels, predictions)
+    cm = confusion_matrix(true_labels, predictions)
+
+    print("Accuracy: {:.1%}".format(acc))
+    print("Balanced accuracy: {:.1%}".format(balanced_acc))
+    print("Confusion matrix:")
+    print(cm)
+        
+def parseargs():
+    parser = argparse.ArgumentParser()
+
+    format_group = parser.add_mutually_exclusive_group(required=True)
+    format_group.add_argument("--vcf", type=str, help="VCF file to import")
+    format_group.add_argument("--vcf-gz", type=str, help="Gzipped VCF file to import")
+    
+    subparsers = parser.add_subparsers(dest="mode", required=True)
+    
+    cross_parser = subparsers.add_parser("crossfold-validation")
+    
+    cross_parser.add_argument("--labels-fl",
+                              type=str,
+                              required=True)
+
+    cross_parser.add_argument("--sig-threshold",
+                              type=float)
+
+    cross_parser.add_argument("--allele-min-freq-threshold",
+                              type=float,
+                              help="Minimum allele frequency allowed",
+                              default=0.000001)
+
+    dimensions_group = cross_parser.add_mutually_exclusive_group()
+    dimensions_group.add_argument("--num-dimensions",
+                                  type=int,
+                                  help="Set number of dimensions to use for reduced space." )
+
+    dimensions_group.add_argument("--min-inversion-fraction",
+                                  type=float,
+                                  help="Use minimum inversion size (in terms of fraction of SNPs) to estimate number of dimensions needed.")
+    
+    cross_parser.add_argument("--sampling-method",
+                              type=str,
+                              choices=["feature-hashing",
+                                       "bottom-k",
+                                       "reservoir"],
+                              required=True)
+
+    cross_parser.add_argument("--pca",
+                              type=str,
+                              choices=["transductive",
+                                       "transductive-plus",
+                                       "inductive",
+                                       "inductive-plus"])
+
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    args = parseargs()
+
+    if args.mode == "crossfold-validation":
+        if args.vcf:
+            vcf_fl = args.vcf
+            gzipped = False
+        else:
+            vcf_fl = args.vcf_gz
+            gzipped = True
+
+        crossfold_validation(args.labels_fl,
+                             vcf_fl,
+                             gzipped,
+                             args.allele_min_freq_threshold,
+                             args.sig_threshold,
+                             args.sampling_method,
+                             args.pca,
+                             args)
+
+    else:
+        print("Unknown mode '%s'" % args.mode)
+        sys.exit(1)

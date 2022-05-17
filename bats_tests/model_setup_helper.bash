@@ -23,11 +23,13 @@ setup() {
 
     asaph_pca \
 	--workdir ${WORKDIR_PATH} \
+	pca \
 	--vcf ${VCF_PATH} \
 	--feature-type genotype-categories
     
     asaph_pca \
 	--workdir ${COUNTS_WORKDIR_PATH} \
+	pca \
 	--vcf ${VCF_PATH} \
 	--feature-type allele-counts
 }

@@ -25,11 +25,6 @@ import warnings
 import numpy as np
 from scipy import stats
 
-import matplotlib
-matplotlib.use("PDF")
-import matplotlib.pyplot as plt
-import seaborn as sns
-
 from sklearn.cluster import k_means
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import accuracy_score
@@ -89,62 +84,6 @@ def read_label_names(flname):
                 sample_indices[sample_name] = label
 
     return sample_indices
-
-def pairwise(iterable):
-    iterable = iter(iterable)
-    try:
-        while True:
-            a = next(iterable)
-            b = next(iterable)
-            yield a, b
-    except StopIteration:
-        pass
-    
-def plot_projections(workdir, pairs, labels=None):
-    coordinates_fl = os.path.join(workdir, "pca_coordinates.tsv")
-    sample_names, coordinates = read_pca_coordinates(coordinates_fl)
-
-    if len(pairs) % 2 != 0:
-        print("Error: PCs must be provided in pairs of 2")
-        sys.exit(1)
-
-    dirname = os.path.join(workdir, "plots")
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-
-    for p1, p2 in pairwise(pairs):
-        fig_flname = os.path.join(dirname,
-                                  "pca_projection_%s_%s.png" % (str(p1), str(p2)))
-        plt.clf()
-        fig = plt.gcf()
-        fig.set_dpi(150)
-
-        if labels is None:
-            plt.scatter(coordinates[:, p1 - 1],
-                        coordinates[:, p2 - 1])
-        else:
-            label_samples = defaultdict(list)
-            for idx, sample_name in enumerate(sample_names):
-                label_name = labels[sample_name]
-                label_samples[label_name].append(idx)
-
-            for i, (label, samples) in enumerate(label_samples.items()):
-                if label != "-1":
-                    plt.scatter(coordinates[samples, p1 - 1],
-                                coordinates[samples, p2 - 1],
-                                label=label)
-
-            if "-1" in label_samples:
-                samples = label_samples["-1"]
-                plt.scatter(coordinates[samples, p1 - 1],
-                            coordinates[samples, p2 - 1],
-                            color="k")
-
-            plt.legend()
-
-        plt.xlabel("Component %s" % p1, fontsize=16)
-        plt.ylabel("Component %s" % p2, fontsize=16)
-        plt.savefig(fig_flname)
 
 def test_pcs(workdir, sample_names, sample_labels):
     coordinates_fl = os.path.join(workdir, "pca_coordinates.tsv")
@@ -267,22 +206,6 @@ def parseargs():
 
     subparsers = parser.add_subparsers(dest="mode", required=True)
 
-    plot_parser = subparsers.add_parser("plot-projections",
-                                        help="Plot PCA projections")
-    
-    plot_parser.add_argument("--pairs",
-                             nargs="+",
-                             type=int,
-                             required=True)
-
-    plot_parser.add_argument("--labels-fl",
-                             type=str,
-                             help="Labels file to use in coloring points")
-
-    plot_parser.add_argument("--workdir",
-                             type=str,
-                             required=True)
-
     label_test_parser = subparsers.add_parser("test-pcs",
                                               help="Run association tests on PCs vs labels")
 
@@ -334,15 +257,7 @@ def parseargs():
 if __name__ == "__main__":
     args = parseargs()
 
-    if args.mode == "plot-projections":
-        labels = None
-        if args.labels_fl:
-            labels = read_label_names(args.labels_fl)
-        plot_projections(args.workdir,
-                         args.pairs,
-                         labels=labels)
-
-    elif args.mode == "test-pcs":
+    if args.mode == "test-pcs":
         labels = read_labels(args.labels_fl)
         test_pcs(args.workdir,
                  sample_names,

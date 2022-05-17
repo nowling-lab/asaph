@@ -17,9 +17,14 @@ limitations under the License.
 """
 
 import argparse
+from collections import defaultdict
 import os
+import sys
 
 import joblib
+import matplotlib
+matplotlib.use("PDF")
+import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.random_projection import johnson_lindenstrauss_min_dim as jl_min_dim
@@ -134,6 +139,100 @@ def output_coordinates(projections, sample_names, workdir):
             fl.write("\t".join(line))
             fl.write("\n")
 
+def read_pca_coordinates(flname):
+    if not os.path.exists(flname):
+        print("Coordinates file path is invalid")
+        sys.exit(1)
+
+    sample_coordinates = []
+    sample_names = []
+    with open(flname) as fl:
+        # skip header
+        next(fl)
+        for ln in fl:
+            cols = ln.split("\t")
+
+            sample_name = cols[0]
+            coordinates = list(map(float, cols[1:]))
+            
+            sample_names.append(sample_name)
+            sample_coordinates.append(coordinates)
+
+    coordinates = np.array(sample_coordinates)
+
+    return sample_names, coordinates
+
+def read_label_names(flname):
+    sample_indices = dict()
+
+    with open(flname) as fl:
+        for label_idx, ln in enumerate(fl):
+            cols = ln.strip().split(",")
+
+            label = cols[0]
+
+            for sample_name in cols[1:]:
+                sample_indices[sample_name] = label
+
+    return sample_indices
+
+def pairwise(iterable):
+    iterable = iter(iterable)
+    try:
+        while True:
+            a = next(iterable)
+            b = next(iterable)
+            yield a, b
+    except StopIteration:
+        pass
+    
+def plot_projections(workdir, pairs, labels=None):
+    coordinates_fl = os.path.join(workdir, "pca_coordinates.tsv")
+    sample_names, coordinates = read_pca_coordinates(coordinates_fl)
+
+    if len(pairs) % 2 != 0:
+        print("Error: PCs must be provided in pairs of 2")
+        sys.exit(1)
+
+    dirname = os.path.join(workdir, "plots")
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+
+    for p1, p2 in pairwise(pairs):
+        fig_flname = os.path.join(dirname,
+                                  "pca_projection_%s_%s.png" % (str(p1), str(p2)))
+        plt.clf()
+        fig = plt.gcf()
+        fig.set_dpi(200)
+
+        if labels is None:
+            plt.scatter(coordinates[:, p1 - 1],
+                        coordinates[:, p2 - 1])
+        else:
+            label_samples = defaultdict(list)
+            for idx, sample_name in enumerate(sample_names):
+                label_name = labels[sample_name]
+                label_samples[label_name].append(idx)
+
+            for i, (label, samples) in enumerate(label_samples.items()):
+                if label != "-1":
+                    plt.scatter(coordinates[samples, p1 - 1],
+                                coordinates[samples, p2 - 1],
+                                label=label)
+
+            if "-1" in label_samples:
+                samples = label_samples["-1"]
+                plt.scatter(coordinates[samples, p1 - 1],
+                            coordinates[samples, p2 - 1],
+                            color="k")
+
+            plt.legend()
+
+        plt.xlabel("Component %s" % p1, fontsize=16)
+        plt.ylabel("Component %s" % p2, fontsize=16)
+        plt.savefig(fig_flname)
+
+
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph")
 
@@ -142,25 +241,30 @@ def parseargs():
                         required=True,
                         help="Work directory")
 
-    parser.add_argument("--n-components",
-                        type=int,
-                        default=10,
-                        help="Number of PCs to compute")
+    subparsers = parser.add_subparsers(dest="mode", required=True)
 
-    parser.add_argument("--feature-type",
-                        type=str,
-                        default="allele-counts",
-                        choices=["allele-counts",
-                                 "genotype-categories"])
+    pca_parser = subparsers.add_parser("pca",
+                                          help="Run PCA")
+    
+    pca_parser.add_argument("--n-components",
+                            type=int,
+                            default=10,
+                            help="Number of PCs to compute")
 
-    parser.add_argument("--sampling-method",
-                        type=str,
-                        default="feature-hashing",
-                        choices=["feature-hashing",
-                                 "reservoir",
-                                 "bottom-k"])
+    pca_parser.add_argument("--feature-type",
+                            type=str,
+                            default="allele-counts",
+                            choices=["allele-counts",
+                                     "genotype-categories"])
 
-    dimensions_group = parser.add_mutually_exclusive_group()
+    pca_parser.add_argument("--sampling-method",
+                            type=str,
+                            default="feature-hashing",
+                            choices=["feature-hashing",
+                                     "reservoir",
+                                     "bottom-k"])
+
+    dimensions_group = pca_parser.add_mutually_exclusive_group()
     dimensions_group.add_argument("--num-dimensions",
                                   type=int,
                                   default=None,
@@ -170,24 +274,48 @@ def parseargs():
                                   type=float,
                                   help="Use minimum inversion size (in terms of fraction of SNPs) to estimate number of dimensions needed.")
 
-    format_group = parser.add_mutually_exclusive_group(required=True)
+    format_group = pca_parser.add_mutually_exclusive_group(required=True)
     format_group.add_argument("--vcf", type=str, help="VCF file to import")
     format_group.add_argument("--vcf-gz", type=str, help="Gzipped VCF file to import")
 
-    parser.add_argument("--selected-samples",
-                        type=str,
-                        help="Use only these samples")
+    pca_parser.add_argument("--selected-samples",
+                               type=str,
+                               help="Use only these samples")
 
-    parser.add_argument("--allele-min-freq-threshold",
-                        type=float,
-                        help="Minimum allele frequency allowed",
-                        default=0.000001)
+    pca_parser.add_argument("--allele-min-freq-threshold",
+                               type=float,
+                               help="Minimum allele frequency allowed",
+                               default=0.000001)
+
+    plot_parser = subparsers.add_parser("plot-projections",
+                                        help="Plot PCA projections")
+    
+    plot_parser.add_argument("--pairs",
+                             nargs="+",
+                             type=int,
+                             required=True)
+
+    plot_parser.add_argument("--labels-fl",
+                             type=str,
+                             help="Labels file to use in coloring points")
+
 
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = parseargs()
 
-    features, sample_names = import_vcf(args)
-    proj = train_pca(features, args)
-    output_coordinates(proj, sample_names, args.workdir)
+    if args.mode == "pca":
+        features, sample_names = import_vcf(args)
+        proj = train_pca(features, args)
+        output_coordinates(proj, sample_names, args.workdir)
+    elif args.mode == "plot-projections":
+        labels = None
+        if args.labels_fl:
+            labels = read_label_names(args.labels_fl)
+        plot_projections(args.workdir,
+                         args.pairs,
+                         labels=labels)
+    else:
+        print("Unknown mode {}".format(args.mode))
+        sys.exit(1)
