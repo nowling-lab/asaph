@@ -17,10 +17,9 @@ limitations under the License.
 from collections import namedtuple
 
 ProjectSummary = namedtuple("ProjectSummary",
-                            ["original_positions",
-                             "filtered_positions",
-                             "n_features",
+                            ["n_features",
                              "n_samples",
                              "feature_type",
                              "sampling_method",
-                             "sample_names"])
+                             "sample_names",
+                             "explained_variance_ratios"])
