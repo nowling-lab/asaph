@@ -218,28 +218,28 @@ def parseargs():
                                    required=True,
                                    help="Labels file")
 
-    unsupervised_parser = subparsers.add_parser("unsupervised-genotyping",
-                                                help="Infer genotypes with clustering")
+    cluster_parser = subparsers.add_parser("cluster",
+                                           help="Infer genotypes with clustering")
 
-    unsupervised_parser.add_argument("--workdir",
+    cluster_parser.add_argument("--workdir",
                                      type=str,
                                      required=True)
     
-    unsupervised_parser.add_argument("--components",
-                                     type=int,
-                                     nargs="+",
-                                     required=True,
-                                     help="Components to use in projection")
+    cluster_parser.add_argument("--components",
+                                type=int,
+                                nargs="+",
+                                required=True,
+                                help="Components to use in projection")
 
-    unsupervised_parser.add_argument("--n-clusters",
-                                     type=int,
-                                     required=True,
-                                     help="Maximum distance between two points in the same neighborhood")
+    cluster_parser.add_argument("--n-clusters",
+                                type=int,
+                                required=True,
+                                help="Maximum distance between two points in the same neighborhood")
     
-    unsupervised_parser.add_argument("--predicted-labels-fl",
-                                     type=str,
-                                     required=True,
-                                     help="Predicted labels are written to this file")
+    cluster_parser.add_argument("--predicted-labels-fl",
+                                type=str,
+                                required=True,
+                                help="Predicted labels are written to this file")
 
     evaluate_parser = subparsers.add_parser("evaluate-predicted-genotypes",
                                             help="Evaluate predicted labels against known labels")
@@ -263,7 +263,7 @@ if __name__ == "__main__":
                  sample_names,
                  labels)
 
-    elif args.mode == "unsupervised-genotyping":
+    elif args.mode == "cluster":
         cluster_samples(args.workdir,
                         args.components,
                         args.n_clusters,

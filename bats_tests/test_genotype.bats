@@ -16,7 +16,7 @@ load pca_setup_helper
 
 @test "clustering (categories)" {
     run asaph_genotype \
-    	unsupervised-genotyping \
+    	cluster \
 	--workdir ${FULL_WORKDIR_PATH} \
 	--components 1 \
 	--n-clusters 3 \
@@ -35,7 +35,7 @@ load pca_setup_helper
 
 @test "clustering (hashed)" {
     run asaph_genotype \
-    	unsupervised-genotyping \
+    	cluster \
 	--workdir ${HASHED_WORKDIR_PATH} \
 	--components 1 \
 	--n-clusters 3 \

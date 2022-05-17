@@ -10,7 +10,7 @@ For example, if an inversion is captured by PC 1, we can cluster the samples as 
 ```bash
 $ asaph_genotype \
     --workdir <workdir> \
-	unsupervised-genotyping \
+	cluster \
 	--components 1 \
 	--n-clusters 3 \
 	--predicted-labels-fl predicted_labels.pops
@@ -21,25 +21,11 @@ If an inversion is captured by PCs 1 and 2, we can cluster the samples using bot
 ```bash
 $ asaph-genotype \
     --workdir <workdir> \
-	unsupervised-genotyping \
+	cluster \
 	--components 1 2 \
 	--n-clusters 3 \
 	--predicted-labels-fl predicted_labels.pops
 ```
-
-## Supervised Genotyping
-If we have two sets of samples in which one set has known labels and the other does not, we can use supervised learning to predict the labels of the unknown set:
-
-```bash
-$ asaph_genotype \
-    --workdir <workdir> \
-	supervised-genotyping \
-	--known-labels-fl known_labels.pops \
-	--predicted-labels-fl predicted_labels.pops
-```
-
-The model will predict the label for any sample which is in the coordinates file but not the known labels file.  You should include both sets of samples when
-performing PCA.
 
 ## Evaluating Predictions
 If you happen to know the genotypes for your samples, you can test the cluster and other labels for agreement:
