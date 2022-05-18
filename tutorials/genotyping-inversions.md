@@ -34,9 +34,10 @@ If you have known labels, you can find the parameters that optimize the clusteri
 $ asaph-genotype \
 	sweep-parameters \
 	--workdir <workdir> \
+    --labels-fl known_labels.pops \
 	--components 1 2 3 4 \
+	kmeans \
 	--n-clusters 2 3 4 5 \
-	--labels-fl known_labels.pops
 ```
 
 The output will look like so:

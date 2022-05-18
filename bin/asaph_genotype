@@ -26,6 +26,7 @@ import warnings
 import numpy as np
 from scipy import stats
 
+from sklearn.cluster import dbscan
 from sklearn.cluster import k_means
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import balanced_accuracy_score
@@ -142,7 +143,7 @@ def cluster_samples(coordinates, sample_names, components, n_clusters, scale_fea
                 fl.write(name)
             fl.write("\n")
 
-def generate_clusterings(coordinates, components, n_clusters):
+def generate_kmeans_clusterings(coordinates, components, n_clusters):
     for n_components in range(1, len(components) + 1):
         for selected in itertools.combinations(components, n_components):
             selected = list(sorted(selected))
@@ -161,10 +162,10 @@ def generate_clusterings(coordinates, components, n_clusters):
                     yield cluster_idx, centroids, params
 
 
-def sweep_parameters(coordinates, components, n_clusters, known_labels, sample_names):
+def sweep_kmeans_parameters(coordinates, sample_names, known_labels, components, n_clusters):
     components = list(map(lambda idx: idx - 1, components))
 
-    gen = generate_clusterings(coordinates, components, n_clusters)
+    gen = generate_kmeans_clusterings(coordinates, components, n_clusters)
     best_score = (-1, 1000)
     best_params = None
     best_centroids = None
@@ -190,6 +191,57 @@ def sweep_parameters(coordinates, components, n_clusters, known_labels, sample_n
     print("Best score:", best_score[0])
     print("Best parameters:", best_params)
     print("Best centroids:", best_centroids)
+
+def generate_dbscan_clusterings(coordinates, components, eps_range, min_samples_range):
+    for n_components in range(1, len(components) + 1):
+        for selected in itertools.combinations(components, n_components):
+            selected = list(sorted(selected))
+            selected_out = list(map(lambda c: c + 1, selected))
+            selected_coordinates = coordinates[:, selected]
+            for eps in np.arange(*eps_range):
+                for min_samples in range(*min_samples_range):
+                    for scaling in [False, True]:
+                        if scaling:
+                            selected_coordinates = StandardScaler().fit_transform(selected_coordinates)
+                        _, cluster_idx = dbscan(selected_coordinates, eps=eps, min_samples=min_samples)
+
+                    params = { "eps" : eps,
+                               "min_samples" : min_samples,
+                               "components" : selected_out,
+                               "feature_scaling" : False }
+
+                    yield cluster_idx, params
+
+def sweep_dbscan_parameters(coordinates, sample_names, known_labels, components, eps_range, min_samples_range):
+    components = list(map(lambda idx: idx - 1, components))
+
+    gen = generate_dbscan_clusterings(coordinates, components, eps_range, min_samples_range)
+    best_score = (-1, 1000)
+    best_params = None
+    for cluster_idx, params in gen:
+
+        cluster_labels = dict()
+        for i, sample_name in enumerate(sample_names):
+            cluster_labels[sample_name] = cluster_idx[i]
+
+        # degenerate solution
+        if len(set(cluster_idx)) == 1:
+            continue
+
+        score = evaluate_clustering(cluster_labels,
+                                    known_labels)
+
+        print(params, score)
+
+        # given two equal scores, prefer
+        # the parameters with fewer components
+        score = (score, -len(params["components"]))
+        if score > best_score:
+            best_score = score
+            best_params = params
+
+    print("Best score:", best_score[0])
+    print("Best parameters:", best_params)
 
 def evaluate_clustering(cluster_labels, known_labels):
     score1 = evaluate_clustering_one_way(cluster_labels, known_labels)
@@ -332,20 +384,38 @@ def parseargs():
                               required=True,
                               help="Components to test")
 
-    sweep_parser.add_argument("--n-clusters",
-                              type=int,
-                              required=True,
-                              nargs="+",
-                              help="Number of clusters to test")
-
     sweep_parser.add_argument("--labels-fl",
                               type=str,
                               required=True,
                               help="Ground truth labels")
 
+    sweep_subparsers = sweep_parser.add_subparsers(dest="sweep_mode", required=True)
+
+    sweep_kmeans = sweep_subparsers.add_parser("kmeans")
+
+    sweep_kmeans.add_argument("--n-clusters",
+                              type=int,
+                              required=True,
+                              nargs="+",
+                              help="Number of clusters to test")
+
+    sweep_dbscan = sweep_subparsers.add_parser("dbscan")
+
+    sweep_dbscan.add_argument("--eps-range",
+                              type=float,
+                              required=True,
+                              nargs=3,
+                              help="Start stop step for eps parameter")
+
+    sweep_dbscan.add_argument("--min-samples-range",
+                              type=int,
+                              required=True,
+                              nargs=3,
+                              help="Start stop step for min_samples parameter")
+
     evaluate_parser = subparsers.add_parser("evaluate-predicted-genotypes",
                                             help="Evaluate predicted labels against known labels")
-    
+
     evaluate_parser.add_argument("--predicted-labels-fl",
                                  type=str,
                                  required=True)
@@ -387,11 +457,20 @@ if __name__ == "__main__":
         sample_names, coordinates = read_pca_coordinates(coordinates_fl)
         known_labels = read_label_names(args.labels_fl)
 
-        sweep_parameters(coordinates,
-                         args.components,
-                         args.n_clusters,
-                         known_labels,
-                         sample_names)
+        if args.sweep_mode == "kmeans":
+            sweep_kmeans_parameters(coordinates,
+                                    sample_names,
+                                    known_labels,
+                                    args.components,
+                                    args.n_clusters)
+
+        elif args.sweep_mode == "dbscan":
+            sweep_dbscan_parameters(coordinates,
+                                    sample_names,
+                                    known_labels,
+                                    args.components,
+                                    args.eps_range,
+                                    args.min_samples_range)
 
     elif args.mode == "evaluate-predicted-genotypes":
         evaluate_predictions(args.predicted_labels_fl,
