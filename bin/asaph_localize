@@ -214,8 +214,16 @@ def write_test_results(flname, test_stream):
             fl.write("\n")
 
 def evaluate_predicted_boundaries(expected, predicted):
-    min_left = min(expected[0], predicted[0])
-    min_right = max(expected[1], predicted[1])
+    if predicted[0] is not None:
+        min_left = min(expected[0], predicted[0])
+    else:
+        min_left = 1
+
+    if predicted[1] is not None:
+        min_right = max(expected[1], predicted[1])
+    else:
+        min_right = 1_000_000_000
+
     size = min_right - min_left + 1
 
     expected_array = np.zeros(size)
