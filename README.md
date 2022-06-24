@@ -17,8 +17,9 @@ Other tutorials related to Asaph:
 * [Preparing the Inversion Benchmark Data Set](inversion-benchmark/README.md) (optional, only if you don't have your own data)
 
 ## Citing Asaph
-Please cite the following papers if you are using Asaph in your work:
+Asaph and associated methods have been described in the following papers:
 
+* RJ Nowling, F Fallas-Moya, et al. [Fast, low-memory detection and localization of large, polymorphic inversions from SNPs](https://peerj.com/articles/12831/). *PeerJ* 2022.
 * RJ Nowling, KR Manke, and SJ Emrich. [Detecting inversions with PCA in the presence of population structure](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0240429). *PLOS One* 2020.
 * RJ Nowling and SJ Emrich. [Detecting Chromosomal Inversions from Dense SNPs by Combining PCA and Association Tests](/publications/ACMBCB_2018.pdf). *Proceedings of the 9th ACM International Conference on Bioinformatics, Computational Biology and Health Informatics* (ACM-BCB 2018), August 2018.
 * RJ Nowling and SJ Emrich. [Adjusted Likelihood-Ratio Test for Variants with Unknown Genotypes](https://www.worldscientific.com/doi/10.1142/S0219720018400206). *Journal of Bioinformatics and Computational Biology* (JBCB), 16(5) 2018.
