@@ -34,6 +34,8 @@ from asaph.feature_extraction import FeatureStringsExtractor
 from asaph.vcf import filter_invariants
 from asaph.vcf import VCFStreamer
 
+plt.rcParams["savefig.dpi"] = 200
+
 ALPHA = 0.01
 
 def read_snp_table(flname, component, chromosome=None):
@@ -131,7 +133,6 @@ def plot_associations(plot_fl, snp_pvalues, boundaries=None, y_limit=None):
         plt.legend()
 
     fig = plt.gcf()
-    fig.set_dpi(200)
 
     df_insign = df[df["is_significant"] == 0]
     if len(df_insign) != 0:

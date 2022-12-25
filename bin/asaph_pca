@@ -46,6 +46,8 @@ from asaph.newioutils import SAMPLE_LABELS_FLNAME
 from asaph.newioutils import serialize
 from asaph.vcf import stream_vcf_variants
 
+plt.rcParams["savefig.dpi"] = 200
+
 def calculate_dimensions(n_samples, args):
     if args.num_dimensions is None and args.min_inversion_fraction is None:
         n_dim = jl_min_dim(n_samples, eps=0.05)
@@ -212,7 +214,6 @@ def plot_projections(workdir, pairs, labels=None):
                                   "pca_projection_%s_%s.png" % (str(p1), str(p2)))
         plt.clf()
         fig = plt.gcf()
-        fig.set_dpi(200)
 
         if labels is None:
             plt.scatter(coordinates[:, p1 - 1],
