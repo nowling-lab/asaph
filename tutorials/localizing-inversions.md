@@ -21,7 +21,7 @@ Secondly, we will use manhattan plots to show the p-values of the SNPs across th
 ```bash
 $ asaph_localize \
     --workdir <workdir> \
-    plot \
+    manhattan-plot \
 	--component 1
 ```
 

@@ -114,7 +114,7 @@ def find_inversion_boundaries(df, n_windows, threshold=None):
 
     return left_boundary, right_boundary
 
-def plot_associations(plot_fl, snp_pvalues, boundaries=None, y_limit=None):
+def manhattan_plot(plot_fl, snp_pvalues, boundaries=None, y_limit=None):
     log10pvalues = -np.log10(df["pvalue"])
     max_value = max(log10pvalues)                
 
@@ -159,6 +159,48 @@ def plot_associations(plot_fl, snp_pvalues, boundaries=None, y_limit=None):
 
     plt.savefig(plot_fl)
 
+def window_plot(plot_fl, snp_pvalues, window_size, boundaries=None):
+    fig = plt.gcf()
+
+    sig_counts = defaultdict(int)
+    total_counts = defaultdict(int)
+    for idx, row in snp_pvalues.iterrows():
+        win_idx = row.pos // window_size
+        total_counts[win_idx] += 1
+        if row.is_significant:
+            sig_counts[win_idx] += 1
+
+    xs = []
+    ys = []
+    for win_idx, win_total in total_counts.items():
+        xs.append(win_idx * window_size)
+        xs.append((win_idx + 1) * window_size)
+        ys.append(sig_counts[win_idx] / win_total)
+        ys.append(sig_counts[win_idx] / win_total)
+
+    plt.plot(xs, ys, color="tab:purple")
+
+    plt.xlabel("Position (bp)", fontsize=16)
+    plt.ylabel("Significant SNPs (%)", fontsize=16)
+
+    if boundaries != None:
+        left_boundary, right_boundary = boundaries
+        
+        plt.plot([left_boundary, left_boundary],
+                 [0, max_value],
+                 "k-",
+                 label="Expected Boundary")
+
+        plt.plot([right_boundary, right_boundary],
+                 [0, max_value],
+                 "k-")
+
+        plt.legend()
+
+    plt.ylim([0, 1])
+    
+    plt.savefig(plot_fl)
+    
 def read_pca_coordinates(flname):
     sample_coordinates = []
     sample_names = []
@@ -262,7 +304,7 @@ def parseargs():
     
     subparsers = parser.add_subparsers(dest="mode")
 
-    plot_parser = subparsers.add_parser("plot",
+    plot_parser = subparsers.add_parser("manhattan-plot",
                                         help="Create Manhattan plot")
     
     plot_parser.add_argument("--component",
@@ -279,6 +321,24 @@ def parseargs():
                              type=int,
                              nargs=2)
 
+    window_parser = subparsers.add_parser("window-plot",
+                                          help="Create plot of percentage of significant SNPs per window")
+    
+    window_parser.add_argument("--component",
+                               required=True,
+                               type=int)
+
+    window_parser.add_argument("--chromosome",
+                               type=str)
+
+    window_parser.add_argument("--window-size",
+                               type=int,
+                               required=True)
+    
+    window_parser.add_argument("--boundaries",
+                               type=int,
+                               nargs=2)
+    
     boundary_parser = subparsers.add_parser("detect-boundaries",
                                             help="Detect inversion boundaries")
 
@@ -335,7 +395,7 @@ if __name__ == "__main__":
 
     pca_assoc_tsv = os.path.join(args.workdir, "pca_associations.tsv")
 
-    if args.mode == "plot":
+    if args.mode == "manhattan-plot":
         df = read_snp_table(pca_assoc_tsv,
                             args.component,
                             chromosome=args.chromosome)
@@ -356,11 +416,37 @@ if __name__ == "__main__":
         plot_fl = os.path.join(plot_dir,
                                "manhattan_pc{}{}.png".format(args.component,
                                                              chrom))
-        plot_associations(plot_fl,
-                          df,
-                          boundaries = args.boundaries,
-                          y_limit = args.y_limit)
+        manhattan_plot(plot_fl,
+                       df,
+                       boundaries = args.boundaries,
+                       y_limit = args.y_limit)
 
+    elif args.mode == "window-plot":
+        df = read_snp_table(pca_assoc_tsv,
+                            args.component,
+                            chromosome=args.chromosome)
+
+        # avoid domain errors from trying to take the log of 0
+        df["pvalue"] = np.maximum(df["pvalue"], np.power(10., -300.))
+    
+        df = mark_significant_snps(df)
+
+        plot_dir = os.path.join(args.workdir, "plots")
+        if not os.path.exists(plot_dir):
+            os.makedirs(plot_dir)
+
+        chrom = ""
+        if args.chromosome:
+            chrom = "_chrom{}".format(args.chromosome)
+
+        plot_fl = os.path.join(plot_dir,
+                               "window_pc{}{}.png".format(args.component,
+                                                          chrom))
+        window_plot(plot_fl,
+                    df,
+                    args.window_size,
+                    boundaries = args.boundaries)
+        
     elif args.mode == "detect-boundaries":
         df = read_snp_table(pca_assoc_tsv,
                             args.component,
