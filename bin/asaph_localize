@@ -458,11 +458,16 @@ if __name__ == "__main__":
                     boundaries = args.boundaries)
         
     elif args.mode == "detect-boundaries":
+        proj_path = os.path.join(args.workdir, PROJECT_SUMMARY_FLNAME)
+        proj_summary = deserialize(proj_path)
+
+        n_samples = proj_summary.n_samples
+
         df = read_snp_table(pca_assoc_tsv,
                             args.component,
                             chromosome=args.chromosome)
     
-        df = mark_significant_snps(df)
+        df = mark_significant_snps(df, n_samples)
 
         left_boundary, right_boundary = find_inversion_boundaries(df,
                                                                   args.n_windows)
@@ -471,11 +476,16 @@ if __name__ == "__main__":
         print("Right boundary: {}".format(right_boundary))
 
     elif args.mode == "evaluate-boundaries":
+        proj_path = os.path.join(args.workdir, PROJECT_SUMMARY_FLNAME)
+        proj_summary = deserialize(proj_path)
+
+        n_samples = proj_summary.n_samples
+    
         df = read_snp_table(pca_assoc_tsv,
                             args.component,
                             chromosome=args.chromosome)
     
-        df = mark_significant_snps(df)
+        df = mark_significant_snps(df, n_samples)
 
         left_boundary, right_boundary = find_inversion_boundaries(df,
                                                                   args.n_windows)
@@ -516,7 +526,3 @@ if __name__ == "__main__":
     else:
         print("Unknown mode '{}'".format(args.mode))
         sys.exit(1)
-
-        
-
-
