@@ -31,6 +31,7 @@ from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 
 from asaph.feature_extraction import FeatureStringsExtractor
+from asaph.newioutils import *
 from asaph.vcf import filter_invariants
 from asaph.vcf import VCFStreamer
 
@@ -62,9 +63,9 @@ def read_snp_table(flname, component, chromosome=None):
 
     return df
 
-def mark_significant_snps(df, threshold=None):
+def mark_significant_snps(df, n_samples, threshold=None):
     if threshold is None:
-        threshold = ALPHA / len(df)
+        threshold = ALPHA / n_samples
 
     df["is_significant"] = 0.0
     mask = df["pvalue"] < threshold
@@ -96,19 +97,18 @@ def find_inversion_boundaries(df, n_windows, threshold=None):
         
         # number of successes (sig SNPs per window)
         win_sig_snps = len(df_window[df_window["is_significant"] == 1])
-        
-        #if len(sign_snp_marks) >= 2 and np.mean(sign_snp_marks) != 0.0:
-        #    _, win_pvalue = stats.ttest_1samp(sign_snp_marks, 0.0)
-        win_pvalue = stats.binom_test(win_sig_snps,
-                                      win_snps,
-                                      exp_prob,
-                                      alternative="greater")
+
+        if win_snps > 0:
+            win_result = stats.binomtest(win_sig_snps,
+                                         win_snps,
+                                         exp_prob,
+                                         alternative="greater")
                                       
-        if win_pvalue < threshold:
-            n_sig_wins += 1
-            right_boundary = max(df_window["pos"])
-            if left_boundary is None:
-                left_boundary = min(df_window["pos"])
+            if win_result.pvalue < threshold:
+                n_sig_wins += 1
+                right_boundary = max(df_window["pos"])
+                if left_boundary is None:
+                    left_boundary = min(df_window["pos"])
 
     print(n_sig_wins, "of", n_windows, "were significant")
 
@@ -187,17 +187,17 @@ def window_plot(plot_fl, snp_pvalues, window_size, boundaries=None):
         left_boundary, right_boundary = boundaries
         
         plt.plot([left_boundary, left_boundary],
-                 [0, max_value],
+                 [0, 0.5],
                  "k-",
                  label="Expected Boundary")
 
         plt.plot([right_boundary, right_boundary],
-                 [0, max_value],
+                 [0, 0.5],
                  "k-")
 
         plt.legend()
 
-    plt.ylim([0, 1])
+    plt.ylim([0, 0.5])
     
     plt.savefig(plot_fl)
     
@@ -396,6 +396,11 @@ if __name__ == "__main__":
     pca_assoc_tsv = os.path.join(args.workdir, "pca_associations.tsv")
 
     if args.mode == "manhattan-plot":
+        proj_path = os.path.join(args.workdir, PROJECT_SUMMARY_FLNAME)
+        proj_summary = deserialize(proj_path)
+
+        n_samples = proj_summary.n_samples
+
         df = read_snp_table(pca_assoc_tsv,
                             args.component,
                             chromosome=args.chromosome)
@@ -403,7 +408,7 @@ if __name__ == "__main__":
         # avoid domain errors from trying to take the log of 0
         df["pvalue"] = np.maximum(df["pvalue"], np.power(10., -300.))
     
-        df = mark_significant_snps(df)
+        df = mark_significant_snps(df, n_samples)
 
         plot_dir = os.path.join(args.workdir, "plots")
         if not os.path.exists(plot_dir):
@@ -422,6 +427,11 @@ if __name__ == "__main__":
                        y_limit = args.y_limit)
 
     elif args.mode == "window-plot":
+        proj_path = os.path.join(args.workdir, PROJECT_SUMMARY_FLNAME)
+        proj_summary = deserialize(proj_path)
+
+        n_samples = proj_summary.n_samples
+    
         df = read_snp_table(pca_assoc_tsv,
                             args.component,
                             chromosome=args.chromosome)
@@ -429,7 +439,7 @@ if __name__ == "__main__":
         # avoid domain errors from trying to take the log of 0
         df["pvalue"] = np.maximum(df["pvalue"], np.power(10., -300.))
     
-        df = mark_significant_snps(df)
+        df = mark_significant_snps(df, n_samples)
 
         plot_dir = os.path.join(args.workdir, "plots")
         if not os.path.exists(plot_dir):
