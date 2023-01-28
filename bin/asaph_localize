@@ -159,7 +159,15 @@ def manhattan_plot(plot_fl, snp_pvalues, boundaries=None, y_limit=None):
 
     plt.savefig(plot_fl)
 
-def window_plot(plot_fl, snp_pvalues, window_size, boundaries=None):
+def overlaps(range1, range2):
+    if range2[0] <= range1[0] <= range2[1] or range2[0] <= range1[1] <= range2[1]:
+        return True
+    elif range1[0] <= range2[0] <= range1[1] or range1[0] <= range2[1] <= range1[1]:
+        return True
+    
+    return False
+
+def window_plot(plot_fl, snp_pvalues, window_size, boundaries=None, highlights=None):
     fig = plt.gcf()
 
     sig_counts = defaultdict(int)
@@ -172,13 +180,32 @@ def window_plot(plot_fl, snp_pvalues, window_size, boundaries=None):
 
     xs = []
     ys = []
-    for win_idx, win_total in total_counts.items():
+    for win_idx, win_total in sorted(total_counts.items()):
         xs.append(win_idx * window_size)
         xs.append((win_idx + 1) * window_size)
         ys.append(sig_counts[win_idx] / win_total)
         ys.append(sig_counts[win_idx] / win_total)
 
     plt.plot(xs, ys, color="tab:purple")
+
+    if highlights is not None:
+        xs = []
+        ys = []
+        for win_idx, win_total in sorted(total_counts.items()):
+            left = win_idx * window_size
+            right = (win_idx + 1) * window_size
+
+            for i in range(0, len(highlights), 2):
+                highlight_range = (highlights[i], highlights[i+1])
+                if overlaps((left, right), highlight_range):
+                    xs.append(left)
+                    xs.append(right)
+                    ys.append(sig_counts[win_idx] / win_total)
+                    ys.append(sig_counts[win_idx] / win_total)
+                    break
+
+        plt.plot(xs, ys, color="tab:orange")                            
+            
 
     plt.xlabel("Position (bp)", fontsize=16)
     plt.ylabel("Significant SNPs (%)", fontsize=16)
@@ -188,17 +215,14 @@ def window_plot(plot_fl, snp_pvalues, window_size, boundaries=None):
         
         plt.plot([left_boundary, left_boundary],
                  [0, 0.5],
-                 "k-",
-                 label="Expected Boundary")
+                 "k-")
 
         plt.plot([right_boundary, right_boundary],
                  [0, 0.5],
                  "k-")
 
-        plt.legend()
 
-    plt.ylim([0, 0.5])
-    
+    plt.ylim([0, 0.5])    
     plt.savefig(plot_fl)
     
 def read_pca_coordinates(flname):
@@ -338,6 +362,10 @@ def parseargs():
     window_parser.add_argument("--boundaries",
                                type=int,
                                nargs=2)
+
+    window_parser.add_argument("--highlights",
+                               type=int,
+                               nargs="*")
     
     boundary_parser = subparsers.add_parser("detect-boundaries",
                                             help="Detect inversion boundaries")
@@ -427,6 +455,11 @@ if __name__ == "__main__":
                        y_limit = args.y_limit)
 
     elif args.mode == "window-plot":
+        if args.highlights is not None:
+            if len(args.highlights) % 2 != 0:
+                print("The number of highlight coordinates must be even.")
+                sys.exit(1)
+    
         proj_path = os.path.join(args.workdir, PROJECT_SUMMARY_FLNAME)
         proj_summary = deserialize(proj_path)
 
@@ -455,7 +488,8 @@ if __name__ == "__main__":
         window_plot(plot_fl,
                     df,
                     args.window_size,
-                    boundaries = args.boundaries)
+                    boundaries = args.boundaries,
+                    highlights = args.highlights)
         
     elif args.mode == "detect-boundaries":
         proj_path = os.path.join(args.workdir, PROJECT_SUMMARY_FLNAME)
