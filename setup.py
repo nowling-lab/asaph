@@ -25,6 +25,6 @@ setup(name="asaph",
       zip_safe=False,
       packages=["asaph"],
       python_requires=">=3.6",
-      install_requires = ["numpy>=0.19.1", "scipy>=0.19.1", "matplotlib", "seaborn", "sklearn", "joblib", "pandas", "mmh3"],
+      install_requires = ["numpy>=0.19.1", "scipy>=0.19.1", "matplotlib", "seaborn", "scikit-learn", "joblib", "pandas", "mmh3"],
       scripts=["bin/asaph_pca", "bin/asaph_query",
                "bin/asaph_localize", "bin/asaph_genotype", "bin/asaph_generate_data"])

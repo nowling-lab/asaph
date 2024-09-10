@@ -55,7 +55,7 @@ Two plot files `pca_projection_1_2.png` and `pca_projection_3_4.png` will be cre
 You can also supply a labels file to color the points by population, genotype, etc..
 
 ```bash
-$ asaph_genotype \
+$ asaph_pca \
     --workdir <workdir> \
 	plot-projections \
 	--pairs 1 2 3 4 \
