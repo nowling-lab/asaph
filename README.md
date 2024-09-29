@@ -1,5 +1,5 @@
 # Asaph
-[![Build Status](https://travis-ci.com/rnowling/asaph.svg?branch=main)](https://travis-ci.com/rnowling/asaph) [![DOI](https://zenodo.org/badge/42882932.svg)](https://zenodo.org/badge/latestdoi/42882932)
+[![DOI](https://zenodo.org/badge/42882932.svg)](https://zenodo.org/badge/latestdoi/42882932)
 
 Asaph enables analysis of large inversions from SNP data.  Asaph employs streaming and dimensionality reduction to be fast and maintain a small memory footprint.  Asaph is developed primarily by [RJ Nowling](http://rnowling.github.io/) and students at [MSOE](https://msoe.edu).
 
