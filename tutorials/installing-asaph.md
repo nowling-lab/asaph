@@ -16,6 +16,7 @@ If you would prefer to use a virtual environment instead of installing system wi
 $ cd asaph
 $ python3 -m venv venv
 $ source venv/bin/activate
+$ pip3 install setuptools
 $ python3 setup.py install
 ```
 
@@ -26,6 +27,7 @@ You can install Asaph using Python's setup tools:
 
 ```bash
 $ cd asaph
+$ sudo pip3 install setuptools
 $ sudo python3 setup.py install
 ```
 
@@ -36,7 +38,7 @@ Asaph will install the scripts located under `bin/` system wide.
 If, for some reason, the installation of Asaph failed, install these libraries and try again:
 
 ```bash
-$ pip3 install -U numpy scipy sklearn matplotlib seaborn pandas
+$ pip3 install -U numpy scipy scikit-learn matplotlib seaborn pandas
 ```
 
 
