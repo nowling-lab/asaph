@@ -114,7 +114,8 @@ def find_inversion_boundaries(df, n_windows, threshold=None):
 
     return left_boundary, right_boundary
 
-def manhattan_plot(plot_fl, snp_pvalues, boundaries=None, y_limit=None):
+def manhattan_plot(plot_fl, snp_pvalues, boundaries=None, y_limit=None,
+				   insig_color=None, sig_color=None):
     log10pvalues = -np.log10(df["pvalue"])
     max_value = max(log10pvalues)                
 
@@ -134,12 +135,13 @@ def manhattan_plot(plot_fl, snp_pvalues, boundaries=None, y_limit=None):
 
     fig = plt.gcf()
 
-    df_insign = df[df["is_significant"] == 0]
+   df_insign = df[df["is_significant"] == 0]
     if len(df_insign) != 0:
         log10pvalues = -np.log10(df_insign["pvalue"])
         plt.scatter(df_insign["pos"],
                     log10pvalues,
-                    marker=".")
+                    marker=".",
+                    color=insig_color)
 
     df_sig = df[df["is_significant"] == 1]
     if len(df_sig) != 0:
@@ -147,6 +149,7 @@ def manhattan_plot(plot_fl, snp_pvalues, boundaries=None, y_limit=None):
         plt.scatter(df_sig["pos"],
                     log10pvalues,
                     marker=".",
+                    color=sig_color,
                     label="Significant")
 
     plt.xlabel("Position (bp)", fontsize=16)
@@ -328,7 +331,7 @@ def parseargs():
     
     subparsers = parser.add_subparsers(dest="mode")
 
-    plot_parser = subparsers.add_parser("manhattan-plot",
+     plot_parser = subparsers.add_parser("manhattan-plot",
                                         help="Create Manhattan plot")
     
     plot_parser.add_argument("--component",
@@ -344,6 +347,14 @@ def parseargs():
     plot_parser.add_argument("--boundaries",
                              type=int,
                              nargs=2)
+                             
+    plot_parser.add_argument("--insig-color",
+    						type=str,
+    						help="Color for insignificant SNPs (default: matplotlib default)")
+    
+    plot_parser.add_argument("--sig-color",
+    						type=str,
+    						help="Color for significant SNPs (default: matplotlib default)")
 
     window_parser = subparsers.add_parser("window-plot",
                                           help="Create plot of percentage of significant SNPs per window")
@@ -452,7 +463,9 @@ if __name__ == "__main__":
         manhattan_plot(plot_fl,
                        df,
                        boundaries = args.boundaries,
-                       y_limit = args.y_limit)
+                       y_limit = args.y_limit,
+                       insig_color=args.insig_color,
+                       sig_color=args.sig_color)
 
     elif args.mode == "window-plot":
         if args.highlights is not None:
