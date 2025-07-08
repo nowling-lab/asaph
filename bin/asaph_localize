@@ -44,7 +44,7 @@ def read_snp_table(flname, component, chromosome=None):
         df = pd.read_csv(fl, delim_whitespace=True)
         df["chrom"] = df["chrom"].astype(str)
 
-        if chromosome == None:
+        if chromosome is None:
             chromosomes = set(df["chrom"])
             if len(chromosomes) > 1:
                 print("SNPs for more than one chromosome are present in the association file.  Use the --chromosome flag to indicate which chromosome should be plotted.")
@@ -69,7 +69,7 @@ def mark_significant_snps(df, n_samples, threshold=None):
 
     df["is_significant"] = 0.0
     mask = df["pvalue"] < threshold
-    df.loc[mask, "is_significant"] = 1.0    
+    df.loc[mask, "is_significant"] = 1.0
 
     return df
 
@@ -94,7 +94,7 @@ def find_inversion_boundaries(df, n_windows, threshold=None):
 
         # number of trials (SNPs per window)
         win_snps = len(df_window)
-        
+
         # number of successes (sig SNPs per window)
         win_sig_snps = len(df_window[df_window["is_significant"] == 1])
 
@@ -103,7 +103,7 @@ def find_inversion_boundaries(df, n_windows, threshold=None):
                                          win_snps,
                                          exp_prob,
                                          alternative="greater")
-                                      
+
             if win_result.pvalue < threshold:
                 n_sig_wins += 1
                 right_boundary = max(df_window["pos"])
@@ -114,13 +114,14 @@ def find_inversion_boundaries(df, n_windows, threshold=None):
 
     return left_boundary, right_boundary
 
-def manhattan_plot(plot_fl, snp_pvalues, boundaries=None, y_limit=None):
+def manhattan_plot(plot_fl, snp_pvalues, boundaries=None, y_limit=None,
+				   insig_color=None, sig_color=None):
     log10pvalues = -np.log10(df["pvalue"])
-    max_value = max(log10pvalues)                
+    max_value = max(log10pvalues)
 
     if boundaries != None:
         left_boundary, right_boundary = boundaries
-        
+
         plt.plot([left_boundary, left_boundary],
                  [0, max_value],
                  "k-",
@@ -132,14 +133,13 @@ def manhattan_plot(plot_fl, snp_pvalues, boundaries=None, y_limit=None):
 
         plt.legend()
 
-    fig = plt.gcf()
-
     df_insign = df[df["is_significant"] == 0]
     if len(df_insign) != 0:
         log10pvalues = -np.log10(df_insign["pvalue"])
         plt.scatter(df_insign["pos"],
                     log10pvalues,
-                    marker=".")
+                    marker=".",
+                    color=insig_color)
 
     df_sig = df[df["is_significant"] == 1]
     if len(df_sig) != 0:
@@ -147,6 +147,7 @@ def manhattan_plot(plot_fl, snp_pvalues, boundaries=None, y_limit=None):
         plt.scatter(df_sig["pos"],
                     log10pvalues,
                     marker=".",
+                    color=sig_color,
                     label="Significant")
 
     plt.xlabel("Position (bp)", fontsize=16)
@@ -162,17 +163,15 @@ def manhattan_plot(plot_fl, snp_pvalues, boundaries=None, y_limit=None):
 def overlaps(range1, range2):
     if range2[0] <= range1[0] <= range2[1] or range2[0] <= range1[1] <= range2[1]:
         return True
-    elif range1[0] <= range2[0] <= range1[1] or range1[0] <= range2[1] <= range1[1]:
+    if range1[0] <= range2[0] <= range1[1] or range1[0] <= range2[1] <= range1[1]:
         return True
-    
+
     return False
 
 def window_plot(plot_fl, snp_pvalues, window_size, boundaries=None, highlights=None):
-    fig = plt.gcf()
-
     sig_counts = defaultdict(int)
     total_counts = defaultdict(int)
-    for idx, row in snp_pvalues.iterrows():
+    for _, row in snp_pvalues.iterrows():
         win_idx = row.pos // window_size
         total_counts[win_idx] += 1
         if row.is_significant:
@@ -204,15 +203,15 @@ def window_plot(plot_fl, snp_pvalues, window_size, boundaries=None, highlights=N
                     ys.append(sig_counts[win_idx] / win_total)
                     break
 
-        plt.plot(xs, ys, color="tab:orange")                            
-            
+        plt.plot(xs, ys, color="tab:orange")
+
 
     plt.xlabel("Position (bp)", fontsize=16)
     plt.ylabel("Significant SNPs (%)", fontsize=16)
 
-    if boundaries != None:
+    if boundaries is not None:
         left_boundary, right_boundary = boundaries
-        
+
         plt.plot([left_boundary, left_boundary],
                  [0, 0.5],
                  "k-")
@@ -222,9 +221,9 @@ def window_plot(plot_fl, snp_pvalues, window_size, boundaries=None, highlights=N
                  "k-")
 
 
-    plt.ylim([0, 0.5])    
+    plt.ylim([0, 0.5])
     plt.savefig(plot_fl)
-    
+
 def read_pca_coordinates(flname):
     sample_coordinates = []
     sample_names = []
@@ -236,34 +235,34 @@ def read_pca_coordinates(flname):
 
             sample_name = cols[0]
             coordinates = list(map(float, cols[1:]))
-            
+
             sample_names.append(sample_name)
             sample_coordinates.append(coordinates)
 
     coordinates = np.array(sample_coordinates)
 
     return sample_names, coordinates
-    
+
 def run_association_tests(variants, pc_coordinates, components):
     for variant_label, string_features in variants:
         for component in components:
             coords = pc_coordinates[:, component - 1]
             feature_to_coords = defaultdict(list)
-            for i, (sample_name, feature) in enumerate(string_features):
-                if feature != None:
+            for i, (_, feature) in enumerate(string_features):
+                if feature is not None:
                     feature_to_coords[feature].append(coords[i])
 
             if len(feature_to_coords) < 2:
                 pvalue = 1.0
             else:
                 _, pvalue = stats.f_oneway(*feature_to_coords.values())
-            
+
                 if np.isnan(pvalue) or np.isinf(pvalue):
                     pvalue = 1.0
 
             yield component, variant_label, pvalue
 
-def write_test_results(flname, test_stream):    
+def write_test_results(flname, test_stream):
     with open(flname, "w") as fl:
         next_output = 1
 
@@ -318,26 +317,26 @@ def evaluate_predicted_boundaries(expected, predicted):
     print("Recall: {:.1%}".format(recall))
     print("Precision: {:.1%}".format(precision))
     print("Jaccard: {:.1%}".format(jaccard))
-    
+
 def parseargs():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--workdir",
                         type=str,
                         required=True)
-    
+
     subparsers = parser.add_subparsers(dest="mode")
 
     plot_parser = subparsers.add_parser("manhattan-plot",
                                         help="Create Manhattan plot")
-    
+
     plot_parser.add_argument("--component",
                              required=True,
                              type=int)
 
     plot_parser.add_argument("--chromosome",
                              type=str)
-    
+
     plot_parser.add_argument("--y-limit",
                              type=float)
 
@@ -345,9 +344,17 @@ def parseargs():
                              type=int,
                              nargs=2)
 
+    plot_parser.add_argument("--insig-color",
+                            type=str,
+                            help="Color for insignificant SNPs (default: matplotlib default)")
+
+    plot_parser.add_argument("--sig-color",
+                            type=str,
+                            help="Color for significant SNPs (default: matplotlib default)")
+
     window_parser = subparsers.add_parser("window-plot",
                                           help="Create plot of percentage of significant SNPs per window")
-    
+
     window_parser.add_argument("--component",
                                required=True,
                                type=int)
@@ -358,7 +365,7 @@ def parseargs():
     window_parser.add_argument("--window-size",
                                type=int,
                                required=True)
-    
+
     window_parser.add_argument("--boundaries",
                                type=int,
                                nargs=2)
@@ -366,7 +373,7 @@ def parseargs():
     window_parser.add_argument("--highlights",
                                type=int,
                                nargs="*")
-    
+
     boundary_parser = subparsers.add_parser("detect-boundaries",
                                             help="Detect inversion boundaries")
 
@@ -376,7 +383,7 @@ def parseargs():
 
     boundary_parser.add_argument("--chromosome",
                                  type=str)
-    
+
     boundary_parser.add_argument("--n-windows",
                                  type=int,
                                  default=10000)
@@ -415,7 +422,7 @@ def parseargs():
     association_parser.add_argument("--components",
                                     type=int,
                                     nargs="+")
-    
+
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -435,7 +442,7 @@ if __name__ == "__main__":
 
         # avoid domain errors from trying to take the log of 0
         df["pvalue"] = np.maximum(df["pvalue"], np.power(10., -300.))
-    
+
         df = mark_significant_snps(df, n_samples)
 
         plot_dir = os.path.join(args.workdir, "plots")
@@ -452,26 +459,28 @@ if __name__ == "__main__":
         manhattan_plot(plot_fl,
                        df,
                        boundaries = args.boundaries,
-                       y_limit = args.y_limit)
+                       y_limit = args.y_limit,
+                       insig_color=args.insig_color,
+                       sig_color=args.sig_color)
 
     elif args.mode == "window-plot":
         if args.highlights is not None:
             if len(args.highlights) % 2 != 0:
                 print("The number of highlight coordinates must be even.")
                 sys.exit(1)
-    
+
         proj_path = os.path.join(args.workdir, PROJECT_SUMMARY_FLNAME)
         proj_summary = deserialize(proj_path)
 
         n_samples = proj_summary.n_samples
-    
+
         df = read_snp_table(pca_assoc_tsv,
                             args.component,
                             chromosome=args.chromosome)
 
         # avoid domain errors from trying to take the log of 0
         df["pvalue"] = np.maximum(df["pvalue"], np.power(10., -300.))
-    
+
         df = mark_significant_snps(df, n_samples)
 
         plot_dir = os.path.join(args.workdir, "plots")
@@ -490,7 +499,7 @@ if __name__ == "__main__":
                     args.window_size,
                     boundaries = args.boundaries,
                     highlights = args.highlights)
-        
+
     elif args.mode == "detect-boundaries":
         proj_path = os.path.join(args.workdir, PROJECT_SUMMARY_FLNAME)
         proj_summary = deserialize(proj_path)
@@ -500,7 +509,7 @@ if __name__ == "__main__":
         df = read_snp_table(pca_assoc_tsv,
                             args.component,
                             chromosome=args.chromosome)
-    
+
         df = mark_significant_snps(df, n_samples)
 
         left_boundary, right_boundary = find_inversion_boundaries(df,
@@ -514,11 +523,11 @@ if __name__ == "__main__":
         proj_summary = deserialize(proj_path)
 
         n_samples = proj_summary.n_samples
-    
+
         df = read_snp_table(pca_assoc_tsv,
                             args.component,
                             chromosome=args.chromosome)
-    
+
         df = mark_significant_snps(df, n_samples)
 
         left_boundary, right_boundary = find_inversion_boundaries(df,
@@ -526,7 +535,7 @@ if __name__ == "__main__":
 
         evaluate_predicted_boundaries(args.boundaries,
                                       [left_boundary, right_boundary])
-        
+
     elif args.mode == "association-tests":
         coordinates_fl = os.path.join(args.workdir, "pca_coordinates.tsv")
         sample_names, coordinates = read_pca_coordinates(coordinates_fl)
@@ -537,7 +546,7 @@ if __name__ == "__main__":
         else:
             flname = args.vcf_gz
             gzipped = True
-    
+
         # the VCF streamer should return the
         # variants in the order of the given
         # kept_individuals parameter

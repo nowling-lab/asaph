@@ -16,16 +16,19 @@ $ asaph_localize \
 The association test results (p-values) will be written out to the file `<workdir>/pca_associations.tsv`.
 
 ## Manhattan Plots
-Secondly, we will use manhattan plots to show the p-values of the SNPs across the chromosome.  SNPs marked in orange are statistically significant using a significance threshold of 0.01 with a Bonferroni correction based on the number of SNPs.  Spatial correlation can indicate structural variations such as inversions.  To generate a plot for the association tests against component 1, run the following:
+Secondly, we will use manhattan plots to show the p-values of the SNPs across the chromosome. To generate a plot for the association tests against component 1, run the following:
 
 ```bash
 $ asaph_localize \
     --workdir <workdir> \
     manhattan-plot \
-	--component 1
+	--component 1 \
+	--insig-color "<color>" \
+	--sig-color "<color>"
 ```
+Users have the option to set custom colors for distinguishing statistically significant and insignificant SNPs. Colors can be specified using hexadecimal codes (e.g., "#fff5ee") or by referencing [named Matplotlib colors](https://matplotlib.org/stable/gallery/color/named_colors.html) (e.g., "seashell"). Always enclose color values in quotation marks to avoid errors. If no custom colors are provided, the program will use Matplotlib’s default scheme: significant SNPs appear in orange, and insignificant SNPs in blue.
 
-The plots will be written out to files with the prefix `manhattan` in the directory `<workdir>/plots`.
+SNPs highlighted in orange, or any user-specified color for significance, are considered statistically significant at a threshold of 0.01, with Bonferroni correction applied based on the total number of SNPs. Spatial correlation among significant SNPs may indicate structural genomic variations, such as inversions. The plots will be written out to files with the prefix `manhattan` in the directory `<workdir>/plots`.
 
 Inversions will be indicated by a step function-like pattern in the Manhattan plot.  Different karyotypes of the same inversion may be captured by separate PCs, so you may see the inversion present in more than one plot.
 
