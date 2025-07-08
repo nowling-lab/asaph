@@ -331,7 +331,7 @@ def parseargs():
     
     subparsers = parser.add_subparsers(dest="mode")
 
-     plot_parser = subparsers.add_parser("manhattan-plot",
+    plot_parser = subparsers.add_parser("manhattan-plot",
                                         help="Create Manhattan plot")
     
     plot_parser.add_argument("--component",
