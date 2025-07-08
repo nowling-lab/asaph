@@ -135,7 +135,7 @@ def manhattan_plot(plot_fl, snp_pvalues, boundaries=None, y_limit=None,
 
     fig = plt.gcf()
 
-   df_insign = df[df["is_significant"] == 0]
+    df_insign = df[df["is_significant"] == 0]
     if len(df_insign) != 0:
         log10pvalues = -np.log10(df_insign["pvalue"])
         plt.scatter(df_insign["pos"],
