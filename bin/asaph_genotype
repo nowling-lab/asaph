@@ -15,6 +15,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+"""
+Command-line tool for performing unsupervised genotyping of genetic samples using clustering algorithms.
+This tool provides functionality for testing principal components against known labels, clustering samples
+to infer genotypes, sweeping clustering parameters to find optimal configurations, and evaluating predicted
+genotypes against ground truth labels. It supports both k-means and DBSCAN clustering methods with various
+parameter optimization strategies for genotype inference from genetic variation data.
+"""
 
 import argparse
 from collections import defaultdict

@@ -16,6 +16,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+"""
+Command-line tool for querying and displaying project summary information from Asaph analysis directories.
+This tool reads project summary files containing metadata about genetic analyses, including sample counts,
+feature dimensions, analysis parameters, and explained variance ratios from dimensionality reduction.
+It provides a simple interface for inspecting analysis results and verifying project configurations
+without needing to parse individual data files.
+"""
+
 import argparse
 import os
 

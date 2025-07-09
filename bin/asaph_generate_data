@@ -16,6 +16,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+"""
+Command-line tool for generating synthetic genetic data for testing and validation purposes.
+This tool creates simulated VCF files with random genetic variants, population assignment files
+with specified numbers of populations, and phenotype label files for categorical traits.
+It provides configurable parameters for the number of individuals, SNPs, populations, and phenotypes,
+enabling the creation of controlled test datasets for evaluating genetic analysis pipelines
+and validating statistical methods on known data structures.
+"""
+
 import argparse
 import gzip
 import random

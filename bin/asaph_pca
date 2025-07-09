@@ -16,6 +16,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+"""
+Command-line tool for performing Principal Component Analysis (PCA) on genetic variation data.
+This tool constructs feature matrices from VCF files using various feature types and sampling methods,
+trains PCA models to reduce dimensionality while preserving genetic structure, and creates visualization
+plots of principal component projections. It supports both allele count and genotype category features,
+multiple sampling strategies for large datasets, and customizable dimensionality reduction parameters
+for population genetic analysis.
+"""
+
 import argparse
 from collections import defaultdict
 import os

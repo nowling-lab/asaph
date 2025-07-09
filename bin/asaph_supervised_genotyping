@@ -15,6 +15,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+"""
+Command-line tool for performing supervised genotyping using machine learning approaches.
+This tool implements cross-fold validation with Random Forest classifiers to predict genetic
+genotypes from variant data, supporting various feature selection methods and dimensionality
+reduction techniques including PCA in both transductive and inductive contexts. It provides
+comprehensive evaluation metrics including accuracy, balanced accuracy, and confusion matrices
+for assessing genotype prediction performance on labeled training data.
+"""
 
 import argparse
 from collections import defaultdict

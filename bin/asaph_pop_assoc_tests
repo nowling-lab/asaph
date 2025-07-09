@@ -16,6 +16,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+"""
+Command-line tool for performing population association tests on genetic variant data.
+This tool reads VCF files and population assignments, then performs chi-square contingency tests
+on each genetic variant to identify significant associations between allele frequencies and population
+structure. It filters invariant sites and outputs p-values for each variant, providing a statistical
+framework for detecting genetic differentiation between populations and identifying candidate loci
+underlying population structure or selection.
+"""
+
 import argparse
 from collections import defaultdict
 import os
