@@ -14,6 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+"""
+This module provides VCF file parsing and streaming functionality for population genetics
+analysis, including classes for reading compressed and uncompressed VCF files, filtering
+invariant sites, and converting genotype data into standardized formats for downstream
+processing.
+"""
+
 import gzip
 
 import numpy as np

@@ -14,6 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+"""
+This module provides utility functions for processing sample labels and population assignments,
+including functions to create population labels from sample names and validate population
+assignments for downstream analysis.
+"""
+
 def make_labels(sample_labels, sample_populations):
     populations = []
     for name in sample_labels:

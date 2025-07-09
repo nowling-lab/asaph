@@ -14,6 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+"""
+This module provides machine learning utilities for population genetics analysis
+including logistic regression models, likelihood ratio tests, statistical tests for
+genotype associations, and feature upsampling techniques for handling missing genotype data.
+"""
+
 from collections import defaultdict
 import random
 

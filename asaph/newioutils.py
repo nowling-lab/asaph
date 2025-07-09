@@ -14,6 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+"""
+This module provides input/output utilities for reading and writing population genetics data
+including population labels, sample names, model serialization, and file format handling for the
+Asaph analysis pipeline.
+"""
+
 import pickle
 from collections import OrderedDict
 import os
