@@ -21,9 +21,7 @@ allele counts, categorical genotype representations, and string-based feature en
 population genetics analysis.
 """
 
-import numpy as np
-
-class CountFeaturesExtractor(object):
+class CountFeaturesExtractor:
     def __init__(self, stream):
         self.stream = stream
 
@@ -33,14 +31,14 @@ class CountFeaturesExtractor(object):
             ref_column = [0.] * len(genotypes)
             alt_column = [0.] * len(genotypes)
 
-            for row_idx, (sample_name, allele_counts) in enumerate(genotypes):
+            for row_idx, (_, allele_counts) in enumerate(genotypes):
                 ref_column[row_idx] = allele_counts[0]
                 alt_column[row_idx] = allele_counts[1]
 
             yield (chrom, pos, alleles[0]), tuple(ref_column)
             yield (chrom, pos, alleles[1]), tuple(alt_column)
 
-class CategoricalFeaturesExtractor(object):
+class CategoricalFeaturesExtractor:
     def __init__(self, stream):
         self.stream = stream
 
@@ -51,7 +49,7 @@ class CategoricalFeaturesExtractor(object):
             homo2_column = [0.] * len(genotypes)
             het_column = [0.] * len(genotypes)
 
-            for row_idx, (sample_name, allele_counts) in enumerate(genotypes):
+            for row_idx, (_, allele_counts) in enumerate(genotypes):
                 if allele_counts == (2, 0):
                     homo1_column[row_idx] = 1
                 elif allele_counts == (0, 2):
@@ -63,7 +61,7 @@ class CategoricalFeaturesExtractor(object):
             yield (chrom, pos, (alleles[1] + "/" + alleles[1])), tuple(homo2_column)
             yield (chrom, pos, (alleles[0] + "/" + alleles[1])), tuple(het_column)
 
-class FeatureStringsExtractor(object):
+class FeatureStringsExtractor:
     def __init__(self, stream):
         self.stream = stream
 
