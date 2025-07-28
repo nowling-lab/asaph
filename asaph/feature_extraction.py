@@ -1,4 +1,9 @@
 """
+This module provides feature extraction classes for converting VCF genotype data into
+numerical features suitable for machine learning algorithms. It includes extractors for
+allele counts, categorical genotype representations, and string-based feature encoding for
+population genetics analysis.
+
 Copyright 2015 Ronald J. Nowling
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,13 +17,6 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-"""
-
-"""
-This module provides feature extraction classes for converting VCF genotype data into
-numerical features suitable for machine learning algorithms. It includes extractors for
-allele counts, categorical genotype representations, and string-based feature encoding for
-population genetics analysis.
 """
 
 class CountFeaturesExtractor:
