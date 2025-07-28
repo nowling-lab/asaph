@@ -1,4 +1,8 @@
 """
+This module provides utility functions for processing sample labels and population assignments,
+including functions to create population labels from sample names and validate population
+assignments for downstream analysis.
+
 Copyright 2019 Ronald J. Nowling
 
 Licensed under the Apache License, Version 2.0 (the "License");

@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """
+Command-line tool for performing unsupervised genotyping of genetic samples using clustering algorithms.
+This tool provides functionality for testing principal components against known labels, clustering samples
+to infer genotypes, sweeping clustering parameters to find optimal configurations, and evaluating predicted
+genotypes against ground truth labels. It supports both k-means and DBSCAN clustering methods with various
+parameter optimization strategies for genotype inference from genetic variation data.
+
 Copyright 2019 Ronald J. Nowling
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +20,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
 
 import argparse
 from collections import defaultdict
@@ -43,7 +48,7 @@ def read_pca_coordinates(flname):
 
     sample_coordinates = []
     sample_names = []
-    with open(flname) as fl:
+    with open(flname, "rt", encoding="utf-8") as fl:
         # skip header
         next(fl)
         for ln in fl:
@@ -51,7 +56,7 @@ def read_pca_coordinates(flname):
 
             sample_name = cols[0]
             coordinates = list(map(float, cols[1:]))
-            
+
             sample_names.append(sample_name)
             sample_coordinates.append(coordinates)
 
@@ -62,11 +67,9 @@ def read_pca_coordinates(flname):
 def read_labels(flname):
     sample_indices = dict()
 
-    with open(flname) as fl:
+    with open(flname, "rt", encoding="utf-8") as fl:
         for label_idx, ln in enumerate(fl):
             cols = ln.strip().split(",")
-
-            label = cols[0]
 
             for sample_name in cols[1:]:
                 sample_indices[sample_name] = label_idx
@@ -76,8 +79,8 @@ def read_labels(flname):
 def read_label_names(flname):
     sample_indices = dict()
 
-    with open(flname) as fl:
-        for label_idx, ln in enumerate(fl):
+    with open(flname, "rt", encoding="utf-8") as fl:
+        for ln in fl:
             cols = ln.strip().split(",")
 
             label = cols[0]
@@ -104,11 +107,11 @@ def test_pcs(coordinates, sample_names, sample_labels):
 
         print("Component:", (i+1))
         print("p-value: ", pvalue)
-        print()    
+        print()
 
 def cluster_samples(coordinates, sample_names, components, n_clusters, scale_features, output_fl):
     components = list(map(lambda idx: idx - 1, components))
-    
+
     selected = coordinates[:, components]
 
     if scale_features:
@@ -135,7 +138,7 @@ def cluster_samples(coordinates, sample_names, components, n_clusters, scale_fea
     else:
         print("Found", len(populations), "clusters (including outliers)")
 
-    with open(output_fl, "w") as fl:
+    with open(output_fl, "wt", encoding="utf-8") as fl:
         for pop_name, samples in populations.items():
             fl.write(str(pop_name))
             for name in samples:
@@ -257,7 +260,7 @@ def evaluate_clustering_one_way(cluster_labels, known_labels):
     cluster_labels = { name : cluster_labels[name] for name in common_names }
     other_labels = { name : known_labels[name] for name in common_names }
 
-    feature_encoder = OneHotEncoder(sparse=False)
+    feature_encoder = OneHotEncoder(sparse_output=False)
     cluster_features = np.array(list(cluster_labels.values())).reshape(-1, 1)
     features = feature_encoder.fit_transform(cluster_features)
 
@@ -270,7 +273,7 @@ def evaluate_clustering_one_way(cluster_labels, known_labels):
     pred_labels = dt.predict(features)
 
     return balanced_accuracy_score(sample_labels, pred_labels)
-            
+
 def evaluate_predictions(cluster_labels_fl, other_labels_fl):
     orig_cluster_labels = read_label_names(cluster_labels_fl)
     known_labels = read_label_names(other_labels_fl)
@@ -284,7 +287,7 @@ def evaluate_predictions(cluster_labels_fl, other_labels_fl):
     other_labels = { name : known_labels[name] for name in cluster_labels }
     other_outlier_labels = { name : known_labels[name] for name in cluster_outlier_labels }
 
-    feature_encoder = OneHotEncoder(sparse=False)
+    feature_encoder = OneHotEncoder(sparse_output=False)
     cluster_features = np.array(list(cluster_labels.values())).reshape(-1, 1)
     features = feature_encoder.fit_transform(cluster_features)
 
@@ -310,10 +313,10 @@ def evaluate_predictions(cluster_labels_fl, other_labels_fl):
 
         sample_labels = np.concatenate([sample_labels,
                                         sample_outlier_labels])
-    
+
     acc = accuracy_score(sample_labels, pred_labels)
     balanced = balanced_accuracy_score(sample_labels, pred_labels)
-    
+
     print(pred_labels)
     print()
     print(sample_labels)
@@ -327,7 +330,7 @@ def evaluate_predictions(cluster_labels_fl, other_labels_fl):
 
     print("Labels:", all_labels)
     print(confusion_matrix(pred_labels, sample_labels))
-        
+
 def parseargs():
     parser = argparse.ArgumentParser()
 
@@ -339,7 +342,7 @@ def parseargs():
     label_test_parser.add_argument("--workdir",
                                    type=str,
                                    required=True)
-    
+
     label_test_parser.add_argument("--labels-fl",
                                    type=str,
                                    required=True,
@@ -351,7 +354,7 @@ def parseargs():
     cluster_parser.add_argument("--workdir",
                                      type=str,
                                      required=True)
-    
+
     cluster_parser.add_argument("--components",
                                 type=int,
                                 nargs="+",
@@ -365,7 +368,7 @@ def parseargs():
 
     cluster_parser.add_argument("--scale-features",
                                 action="store_true")
-    
+
     cluster_parser.add_argument("--predicted-labels-fl",
                                 type=str,
                                 required=True,

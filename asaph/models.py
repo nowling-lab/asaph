@@ -1,4 +1,8 @@
 """
+This module defines data structures and named tuples for representing project summaries,
+including feature counts, sample information, and dimensionality reduction parameters
+for population genetics analysis workflows.
+
 Copyright 2015 Ronald J. Nowling
 
 Licensed under the Apache License, Version 2.0 (the "License");

@@ -1,4 +1,8 @@
 """
+This module provides functionality for constructing feature matrices from variant
+streams using various dimensionality reduction techniques including reservoir sampling,
+feature hashing, and bottom-k sketching to handle large-scale genomic datasets efficiently.
+
 Copyright 2015 Ronald J. Nowling
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,8 +25,6 @@ import mmh3
 
 import numpy as np
 
-from sklearn.feature_extraction import FeatureHasher
-
 from .feature_extraction import *
 
 COUNTS_FEATURE_TYPE = "allele-counts"
@@ -32,7 +34,7 @@ RESERVOIR_SAMPLING = "reservoir"
 FEATURE_HASHING = "feature-hashing"
 BOTTOMK_SKETCHING = "bottom-k"
 
-class FeatureHashingAccumulator(object):
+class FeatureHashingAccumulator:
     def __init__(self, n_features, n_samples):
         self.n_features = n_features
         self.n_samples = n_samples
@@ -61,7 +63,7 @@ class FeatureHashingAccumulator(object):
 
         return feature_matrix
 
-class BottomKAccumulator(object):
+class BottomKAccumulator:
     """
     Online sampling of columns using bottom-k sketching
     """
@@ -103,11 +105,11 @@ class BottomKAccumulator(object):
         feature_matrix = np.array(feature_columns).T
 
         return feature_matrix
-    
-class FullMatrixAccumulator(object):
+
+class FullMatrixAccumulator:
     def transform(self, stream):
         feature_columns = []
-        for feature_idx, ((chrom, pos, gt), column) in enumerate(stream, start=1):
+        for feature_idx, (_, column) in enumerate(stream, start=1):
             feature_columns.append(column)
 
             if feature_idx % 10000 == 0:
@@ -119,7 +121,7 @@ class FullMatrixAccumulator(object):
 
         return feature_matrix
 
-class ReservoirMatrixAccumulator(object):
+class ReservoirMatrixAccumulator:
     """
     Online sampling of columns using reservoir sampling.
     """
@@ -128,7 +130,7 @@ class ReservoirMatrixAccumulator(object):
 
     def transform(self, stream):
         feature_columns = []
-        for feature_idx, ((chrom, pos, gt), column) in enumerate(stream):
+        for feature_idx, (_, column) in enumerate(stream):
             if feature_idx < self.n_features:
                 feature_columns.append(column)
             else:
@@ -138,7 +140,7 @@ class ReservoirMatrixAccumulator(object):
 
             if feature_idx % 10000 == 0:
                 print("Chunk", feature_idx // 10000, len(feature_columns))
-                    
+
         # need to transpose, otherwise we get (n_features, n_individuals) instead
         feature_matrix = np.array(feature_columns).T
 
@@ -172,4 +174,3 @@ def construct_feature_matrix(variant_stream, n_samples, feature_type, sampling_m
     feature_matrix = accumulator.transform(extractor)
 
     return feature_matrix
-

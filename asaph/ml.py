@@ -1,4 +1,8 @@
 """
+This module provides machine learning utilities for population genetics analysis
+including logistic regression models, likelihood ratio tests, statistical tests for
+genotype associations, and feature upsampling techniques for handling missing genotype data.
+
 Copyright 2015 Ronald J. Nowling
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,21 +18,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from collections import defaultdict
-import random
-
 import numpy as np
-import numpy.linalg as la
 
 from scipy.stats import chi2
 from scipy.stats import shapiro
 from scipy.stats import ttest_1samp
 
-from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
 from sklearn.linear_model import SGDRegressor
 from sklearn.metrics import log_loss
-from sklearn.preprocessing import LabelEncoder
 
 def estimate_lr_iter(n_samples):
     return max(20,
@@ -42,12 +40,12 @@ def upsample_features(labels, features):
     training_labels = np.zeros(N_COPIES * n_samples)
     training_features = np.zeros((N_COPIES * n_samples, n_features))
 
-    for i in xrange(n_samples):
+    for i in range(n_samples):
         gt = None
         if features[i, :].sum() > 0:
             gt = features[i, :].argmax()
 
-        for j in xrange(N_COPIES):
+        for j in range(N_COPIES):
             idx = N_COPIES * i + j
             training_labels[idx] = labels[i]
 
@@ -60,7 +58,7 @@ def upsample_features(labels, features):
 
 def lin_reg_log_likelihood(lr, X, y):
     pred_y = lr.predict(X)
-    N, n_params = X.shape
+    N, _ = X.shape
 
     # estimate variance (sigma2)
     avg_y = np.mean(y)
@@ -71,9 +69,9 @@ def lin_reg_log_likelihood(lr, X, y):
     # residual sum of squares
     error = y - pred_y
     error2 = np.dot(error, error)
-    
+
     log_likelihood = -N * np.log(2. * np.pi * sigma2) / 2. - error2 / (2.0 * sigma2)
-    
+
     return log_likelihood
 
 def lin_reg_lrtest(X, y, n_iter, g_scaling_factor=1.0):
@@ -182,7 +180,7 @@ def likelihood_ratio_test(features_alternate, labels, lr_model, set_intercept=Tr
                  training_labels,
                  intercept_init = intercept_init)
     alt_prob = lr_model.predict_proba(testing_features)
-        
+
     alt_log_likelihood = -log_loss(testing_labels,
                                    alt_prob,
                                    normalize=False)
@@ -191,7 +189,7 @@ def likelihood_ratio_test(features_alternate, labels, lr_model, set_intercept=Tr
                                     normalize=False)
 
     G = g_scaling_factor * 2.0 * (alt_log_likelihood - null_log_likelihood)
-    
+
     # both models have intercepts so the intercepts cancel out
     df = training_features.shape[1]
     p_value = chi2.sf(G, df)

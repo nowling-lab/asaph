@@ -1,4 +1,8 @@
 """
+This module provides input/output utilities for reading and writing population genetics data
+including population labels, sample names, model serialization, and file format handling for the
+Asaph analysis pipeline.
+
 Copyright 2015 Ronald J. Nowling
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,10 +21,6 @@ limitations under the License.
 import pickle
 from collections import OrderedDict
 import os
-import struct
-
-import numpy as np
-from scipy import sparse
 
 from .models import *
 
@@ -46,7 +46,7 @@ def read_populations(flname):
     pop1,sample_1,sample_2
     pop2,sample_3,sample_4
     """
-    with open(flname) as fl:
+    with open(flname, encoding="utf-8") as fl:
         groups = OrderedDict()
         group_names = OrderedDict()
         for group_id, ln in enumerate(fl):

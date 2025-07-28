@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 
 """
+Command-line tool for generating synthetic genetic data for testing and validation purposes.
+This tool creates simulated VCF files with random genetic variants, population assignment files
+with specified numbers of populations, and phenotype label files for categorical traits.
+It provides configurable parameters for the number of individuals, SNPs, populations, and phenotypes,
+enabling the creation of controlled test datasets for evaluating genetic analysis pipelines
+and validating statistical methods on known data structures.
+
 Copyright 2017 Ronald J. Nowling
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,16 +27,16 @@ import argparse
 import gzip
 import random
 
-header_left = "#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT"
+HEADER_LEFT = "#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT"
 
 def snp_generator(n_individuals, n_snps):
-    for i in range(n_snps):
+    for _ in range(n_snps):
         yield [(random.randint(0, 1),
                 random.randint(0, 1))
                for j in range(n_individuals)]
 
 def generate_lines(n_individuals, n_snps):
-    header = [header_left]
+    header = [HEADER_LEFT]
     for i in range(n_individuals):
         header.append(str(i))
     header = "\t".join(header)
@@ -44,13 +51,13 @@ def generate_lines(n_individuals, n_snps):
         yield "\t".join(cols)
 
 def vcf_writer(flname, stream):
-    with open(flname, "w") as fl:
+    with open(flname, "w", encoding="utf-8") as fl:
         for ln in stream:
             fl.write(ln)
             fl.write("\n")
 
 def vcf_gz_writer(flname, stream):
-    with gzip.open(flname, "wt") as fl:
+    with gzip.open(flname, "wt", encoding="utf-8") as fl:
         for ln in stream:
             fl.write(ln)
             fl.write("\n")
@@ -60,12 +67,12 @@ def pops_writer(flname, n_individuals, n_populations):
     for i in range(n_populations):
         name = "population%s" % (i+1)
         pops[name ] = []
-        
+
     for i in range(n_individuals):
         pop = random.sample(pops.keys(), 1)[0]
         pops[pop].append(str(i))
 
-    with open(flname, "w") as fl:
+    with open(flname, "w", encoding="utf-8") as fl:
         for key, value in pops.items():
             fl.write(key)
             fl.write(",")
@@ -73,7 +80,7 @@ def pops_writer(flname, n_individuals, n_populations):
             fl.write("\n")
 
 def phenotype_labels_writer(flname, n_individuals, n_phenotypes):
-    with open(flname, "w") as fl:
+    with open(flname, "w", encoding="utf-8") as fl:
         # specify first column is sample id,
         # second is categorical
         fl.write("id\tc\n")
@@ -142,5 +149,3 @@ if __name__ == "__main__":
     elif args.output_vcf_gz:
         vcf_gz_writer(args.output_vcf_gz,
                       generate_lines(args.individuals, args.snps))
-
-
