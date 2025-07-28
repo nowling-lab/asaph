@@ -1,4 +1,9 @@
 """
+This module provides VCF file parsing and streaming functionality for population genetics
+analysis, including classes for reading compressed and uncompressed VCF files, filtering
+invariant sites, and converting genotype data into standardized formats for downstream
+processing.
+
 Copyright 2015 Ronald J. Nowling
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,13 +17,6 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-"""
-
-"""
-This module provides VCF file parsing and streaming functionality for population genetics
-analysis, including classes for reading compressed and uncompressed VCF files, filtering
-invariant sites, and converting genotype data into standardized formats for downstream
-processing.
 """
 
 import gzip

@@ -1,4 +1,8 @@
 """
+This module defines data structures and named tuples for representing project summaries,
+including feature counts, sample information, and dimensionality reduction parameters
+for population genetics analysis workflows.
+
 Copyright 2015 Ronald J. Nowling
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,12 +16,6 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-"""
-
-"""
-This module defines data structures and named tuples for representing project summaries,
-including feature counts, sample information, and dimensionality reduction parameters
-for population genetics analysis workflows.
 """
 
 from collections import namedtuple
