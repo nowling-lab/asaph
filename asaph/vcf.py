@@ -21,8 +21,6 @@ limitations under the License.
 
 import gzip
 
-import numpy as np
-
 from .newioutils import *
 from .models import ProjectSummary
 
@@ -73,7 +71,7 @@ def parse_vcf_line(ln, kept_pairs):
     variant_label = (cols[DEFAULT_COLUMNS["CHROM"]], cols[DEFAULT_COLUMNS["POS"]])
     return (variant_label, alleles, tuple(individual_genotypes))
 
-class VCFStreamer(object):
+class VCFStreamer:
     def __init__(self, flname, compressed, kept_individuals=None):
         self.flname = flname
         if kept_individuals:
@@ -89,7 +87,7 @@ class VCFStreamer(object):
                 column_names = ln[1:].strip().split()
                 self.individual_names = column_names[len(DEFAULT_COLUMNS):]
                 break
-            elif ln.startswith("#"):
+            if ln.startswith("#"):
                 continue
 
         self.kept_pairs = [(i, name) for i, name in enumerate(self.individual_names)
@@ -102,13 +100,11 @@ class VCFStreamer(object):
 
     def __open__(self):
         if self.compressed:
-            with gzip.open(self.flname, mode="rt") as fl:
-                for ln in fl:
-                    yield ln
+            with gzip.open(self.flname, mode="rt", encoding="utf-8") as fl:
+                yield from fl
         else:
-            with open(self.flname) as fl:
-                for ln in fl:
-                    yield ln
+            with open(self.flname, "rt", encoding="utf-8") as fl:
+                yield from fl
 
     def __iter__(self):
         for ln in self.stream:
@@ -117,6 +113,7 @@ class VCFStreamer(object):
                 yield parse_vcf_line(ln, self.kept_pairs)
 
 ## Filters
+
 def filter_invariants(min_percentage, stream):
     """
     Filter out variants where the least-frequently occurring allele occurs less than some threshold.
@@ -126,7 +123,7 @@ def filter_invariants(min_percentage, stream):
     for label, alleles, genotypes in stream:
         total_ref_count = 0
         total_alt_count = 0
-        for sample_name, (sample_ref_count, sample_alt_count) in genotypes:
+        for _, (sample_ref_count, sample_alt_count) in genotypes:
             total_ref_count += sample_ref_count
             total_alt_count += sample_alt_count
 
@@ -142,7 +139,7 @@ def filter_invariants(min_percentage, stream):
         if fraction >= min_percentage:
             yield (label, alleles, genotypes)
 
-class StreamCounter(object):
+class StreamCounter:
     def __init__(self, stream):
         self.count = 0
         self.stream = stream

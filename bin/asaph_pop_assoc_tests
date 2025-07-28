@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 
 """
+Command-line tool for performing population association tests on genetic variant data.
+This tool reads VCF files and population assignments, then performs chi-square contingency tests
+on each genetic variant to identify significant associations between allele frequencies and population
+structure. It filters invariant sites and outputs p-values for each variant, providing a statistical
+framework for detecting genetic differentiation between populations and identifying candidate loci
+underlying population structure or selection.
+
 Copyright 2017 Ronald J. Nowling
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,32 +23,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-"""
-Command-line tool for performing population association tests on genetic variant data.
-This tool reads VCF files and population assignments, then performs chi-square contingency tests
-on each genetic variant to identify significant associations between allele frequencies and population
-structure. It filters invariant sites and outputs p-values for each variant, providing a statistical
-framework for detecting genetic differentiation between populations and identifying candidate loci
-underlying population structure or selection.
-"""
-
 import argparse
 from collections import defaultdict
-import os
-import sys
 
-import joblib
 import numpy as np
 from scipy import stats
 
-from asaph.newioutils import deserialize
-from asaph.newioutils import PROJECT_SUMMARY_FLNAME
 from asaph.vcf import filter_invariants
 from asaph.vcf import VCFStreamer
 
 def read_sample_pops(flname):
     sample_pops = dict()
-    with open(flname) as fl:
+    with open(flname, "rt", encoding="utf-8") as fl:
         for ln in fl:
             cols = ln.strip().split(",")
             pop_name = cols[0]
@@ -51,36 +44,36 @@ def read_sample_pops(flname):
 
 def run_association_tests(variants, populations):
     for variant_label, _, genotypes in variants:
-            pair_counts = defaultdict(int)
-            all_pops = set()
-            for i, (sample_name, (ref_count, alt_count)) in enumerate(genotypes):
-                pop = populations[sample_name]
-                if (ref_count, alt_count) != (0, 0):
-                    pair_counts[(0, pop)] += 2.0 * ref_count
-                    pair_counts[(1, pop)] += 2.0 * alt_count
-                else:
-                    # 2 * 1,1 2,0  0,2 = 4, 4
-                    pair_counts[(0, pop)] += 4.0
-                    pair_counts[(1, pop)] += 4.0
-                all_pops.add(pop)
+        pair_counts = defaultdict(int)
+        all_pops = set()
+        for sample_name, (ref_count, alt_count) in genotypes:
+            pop = populations[sample_name]
+            if (ref_count, alt_count) != (0, 0):
+                pair_counts[(0, pop)] += 2.0 * ref_count
+                pair_counts[(1, pop)] += 2.0 * alt_count
+            else:
+                # 2 * 1,1 2,0  0,2 = 4, 4
+                pair_counts[(0, pop)] += 4.0
+                pair_counts[(1, pop)] += 4.0
+            all_pops.add(pop)
 
-            table = np.zeros((2, len(all_pops)))
-            for c, pop in enumerate(all_pops):
-                table[0, c] += pair_counts[(0, pop)]
-                table[1, c] += pair_counts[(1, pop)]
+        table = np.zeros((2, len(all_pops)))
+        for c, pop in enumerate(all_pops):
+            table[0, c] += pair_counts[(0, pop)]
+            table[1, c] += pair_counts[(1, pop)]
 
-            table /= 4.0
+        table /= 4.0
 
-            # divide by alleles
-            _, pvalue, _, _ = stats.chi2_contingency(table)
+        # divide by alleles
+        _, pvalue, _, _ = stats.chi2_contingency(table)
 
-            if np.isnan(pvalue) or np.isinf(pvalue):
-                pvalue = 1.0
+        if np.isnan(pvalue) or np.isinf(pvalue):
+            pvalue = 1.0
 
-            yield variant_label, pvalue
+        yield variant_label, pvalue
 
-def write_test_results(flname, test_stream):    
-    with open(flname, "w") as fl:
+def write_test_results(flname, test_stream):
+    with open(flname, "wt", encoding="utf-8") as fl:
         next_output = 1
 
         headers = ["component", "chrom", "pos", "pvalue"]
@@ -95,7 +88,7 @@ def write_test_results(flname, test_stream):
 
             fl.write("\t".join(["1", chrom, str(pos), "%.2E" % pvalue]))
             fl.write("\n")
-            
+
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph - Population Association Tests")
 
@@ -131,7 +124,7 @@ if __name__ == "__main__":
 
     sample_pops = read_sample_pops(args.population_fl)
     print(sample_pops)
-    
+
     stream = VCFStreamer(flname,
                          gzipped,
                          kept_individuals = list(sample_pops.keys()))

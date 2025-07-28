@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 """
+Command-line tool for performing supervised genotyping using machine learning approaches.
+This tool implements cross-fold validation with Random Forest classifiers to predict genetic
+genotypes from variant data, supporting various feature selection methods and dimensionality
+reduction techniques including PCA in both transductive and inductive contexts. It provides
+comprehensive evaluation metrics including accuracy, balanced accuracy, and confusion matrices
+for assessing genotype prediction performance on labeled training data.
+
 Copyright 2019 Ronald J. Nowling
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,20 +22,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-"""
-Command-line tool for performing supervised genotyping using machine learning approaches.
-This tool implements cross-fold validation with Random Forest classifiers to predict genetic
-genotypes from variant data, supporting various feature selection methods and dimensionality
-reduction techniques including PCA in both transductive and inductive contexts. It provides
-comprehensive evaluation metrics including accuracy, balanced accuracy, and confusion matrices
-for assessing genotype prediction performance on labeled training data.
-"""
-
 import argparse
 from collections import defaultdict
-import os
 import sys
-import warnings
 
 import numpy as np
 from scipy import stats
@@ -43,18 +39,15 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.random_projection import johnson_lindenstrauss_min_dim as jl_min_dim
 
 from asaph.feature_matrix_construction import construct_feature_matrix
-from asaph.feature_matrix_construction import COUNTS_FEATURE_TYPE
 from asaph.feature_matrix_construction import CATEGORIES_FEATURE_TYPE
-from asaph.feature_matrix_construction import RESERVOIR_SAMPLING
-from asaph.feature_matrix_construction import FEATURE_HASHING
-from asaph.feature_matrix_construction import BOTTOMK_SKETCHING
 from asaph.vcf import stream_vcf_variants
 
 def calculate_dimensions(n_samples, args):
+    n_dim = -1
     if args.num_dimensions is None and args.min_inversion_fraction is None:
         n_dim = jl_min_dim(n_samples, eps=0.1)
     elif args.min_inversion_fraction is not None:
-        if not (0.0 < args.min_inversion_fraction < 1.0):
+        if not 0.0 < args.min_inversion_fraction < 1.0:
             raise Exception("Minimum inversion fraction must be a number between 0 and 1 (exclusive).")
         n_dim = jl_min_dim(n_samples, eps=args.min_inversion_fraction)
     elif args.num_dimensions is not None:
@@ -65,11 +58,9 @@ def calculate_dimensions(n_samples, args):
 def read_labels(flname):
     sample_indices = dict()
 
-    with open(flname) as fl:
+    with open(flname, "rt", encoding="utf-8") as fl:
         for label_idx, ln in enumerate(fl):
             cols = ln.strip().split(",")
-
-            label = cols[0]
 
             for sample_name in cols[1:]:
                 sample_indices[sample_name] = label_idx
@@ -79,8 +70,8 @@ def read_labels(flname):
 def read_label_names(flname):
     sample_indices = dict()
 
-    with open(flname) as fl:
-        for label_idx, ln in enumerate(fl):
+    with open(flname, "rt", encoding="utf-8") as fl:
+        for ln in fl:
             cols = ln.strip().split(",")
 
             label = cols[0]
@@ -107,7 +98,6 @@ def crossfold_validation(labels_fl, vcf_fl, gzipped, min_allele_freq, sig_thresh
     encoder = LabelEncoder()
     y = encoder.fit_transform(text_labels)
 
-    n_samples = len(sample_names)
     counts = construct_feature_matrix(variant_stream,
                                       n_dim,
                                       CATEGORIES_FEATURE_TYPE,
@@ -194,18 +184,18 @@ def crossfold_validation(labels_fl, vcf_fl, gzipped, min_allele_freq, sig_thresh
     print("Balanced accuracy: {:.1%}".format(balanced_acc))
     print("Confusion matrix:")
     print(cm)
-        
+
 def parseargs():
     parser = argparse.ArgumentParser()
 
     format_group = parser.add_mutually_exclusive_group(required=True)
     format_group.add_argument("--vcf", type=str, help="VCF file to import")
     format_group.add_argument("--vcf-gz", type=str, help="Gzipped VCF file to import")
-    
+
     subparsers = parser.add_subparsers(dest="mode", required=True)
-    
+
     cross_parser = subparsers.add_parser("crossfold-validation")
-    
+
     cross_parser.add_argument("--labels-fl",
                               type=str,
                               required=True)
@@ -226,7 +216,7 @@ def parseargs():
     dimensions_group.add_argument("--min-inversion-fraction",
                                   type=float,
                                   help="Use minimum inversion size (in terms of fraction of SNPs) to estimate number of dimensions needed.")
-    
+
     cross_parser.add_argument("--sampling-method",
                               type=str,
                               choices=["feature-hashing",

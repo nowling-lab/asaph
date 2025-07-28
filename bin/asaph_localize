@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """
+Command-line tool for localizing chromosomal inversions and genetic variants using statistical association tests.
+This tool creates Manhattan plots and window plots to visualize genetic associations, detects inversion boundaries
+using statistical significance testing, evaluates predicted boundaries against known regions, and performs
+association tests between principal components and genetic variants. It provides comprehensive functionality for
+identifying and characterizing structural genetic variations in population genomic datasets.
+
 Copyright 2018 Ronald J. Nowling
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,14 +21,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-"""
-Command-line tool for localizing chromosomal inversions and genetic variants using statistical association tests.
-This tool creates Manhattan plots and window plots to visualize genetic associations, detects inversion boundaries
-using statistical significance testing, evaluates predicted boundaries against known regions, and performs
-association tests between principal components and genetic variants. It provides comprehensive functionality for
-identifying and characterizing structural genetic variations in population genomic datasets.
-"""
-
 import argparse
 from collections import defaultdict
 import os
@@ -33,7 +31,7 @@ matplotlib.use("PDF")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scipy.stats as stats
+from scipy import stats
 from sklearn.metrics import jaccard_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
@@ -127,7 +125,7 @@ def manhattan_plot(plot_fl, snp_pvalues, boundaries=None, y_limit=None,
     log10pvalues = -np.log10(df["pvalue"])
     max_value = max(log10pvalues)
 
-    if boundaries != None:
+    if boundaries is not None:
         left_boundary, right_boundary = boundaries
 
         plt.plot([left_boundary, left_boundary],
@@ -235,7 +233,7 @@ def window_plot(plot_fl, snp_pvalues, window_size, boundaries=None, highlights=N
 def read_pca_coordinates(flname):
     sample_coordinates = []
     sample_names = []
-    with open(flname) as fl:
+    with open(flname, "rt", encoding="utf-8") as fl:
         # skip header
         next(fl)
         for ln in fl:
@@ -271,7 +269,7 @@ def run_association_tests(variants, pc_coordinates, components):
             yield component, variant_label, pvalue
 
 def write_test_results(flname, test_stream):
-    with open(flname, "w") as fl:
+    with open(flname, "wt", encoding="utf-8") as fl:
         next_output = 1
 
         headers = ["component", "chrom", "pos", "pvalue"]

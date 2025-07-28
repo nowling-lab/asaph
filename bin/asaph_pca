@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 
 """
+Command-line tool for performing Principal Component Analysis (PCA) on genetic variation data.
+This tool constructs feature matrices from VCF files using various feature types and sampling methods,
+trains PCA models to reduce dimensionality while preserving genetic structure, and creates visualization
+plots of principal component projections. It supports both allele count and genotype category features,
+multiple sampling strategies for large datasets, and customizable dimensionality reduction parameters
+for population genetic analysis.
+
 Copyright 2015 Ronald J. Nowling
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,15 +21,6 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-"""
-
-"""
-Command-line tool for performing Principal Component Analysis (PCA) on genetic variation data.
-This tool constructs feature matrices from VCF files using various feature types and sampling methods,
-trains PCA models to reduce dimensionality while preserving genetic structure, and creates visualization
-plots of principal component projections. It supports both allele count and genotype category features,
-multiple sampling strategies for large datasets, and customizable dimensionality reduction parameters
-for population genetic analysis.
 """
 
 import argparse
@@ -39,11 +37,6 @@ from sklearn.decomposition import PCA
 from sklearn.random_projection import johnson_lindenstrauss_min_dim as jl_min_dim
 
 from asaph.feature_matrix_construction import construct_feature_matrix
-from asaph.feature_matrix_construction import COUNTS_FEATURE_TYPE
-from asaph.feature_matrix_construction import CATEGORIES_FEATURE_TYPE
-from asaph.feature_matrix_construction import RESERVOIR_SAMPLING
-from asaph.feature_matrix_construction import FEATURE_HASHING
-from asaph.feature_matrix_construction import BOTTOMK_SKETCHING
 from asaph.models import ProjectSummary
 from asaph.newioutils import COORDINATES_FLNAME
 from asaph.newioutils import FEATURES_FLNAME
@@ -58,10 +51,11 @@ from asaph.vcf import stream_vcf_variants
 plt.rcParams["savefig.dpi"] = 200
 
 def calculate_dimensions(n_samples, args):
+    n_dim = -1
     if args.num_dimensions is None and args.min_inversion_fraction is None:
         n_dim = jl_min_dim(n_samples, eps=0.05)
     elif args.min_inversion_fraction is not None:
-        if not (0.0 < args.min_inversion_fraction < 1.0):
+        if not 0.0 < args.min_inversion_fraction < 1.0:
             raise Exception("Minimum inversion fraction must be a number between 0 and 1 (exclusive).")
         n_dim = jl_min_dim(n_samples, eps=args.min_inversion_fraction)
     elif args.num_dimensions is not None:
@@ -87,7 +81,7 @@ def import_vcf(args):
     sampling_method = args.sampling_method
     if sampling_method == "none":
         sampling_method = None
-    
+
     feature_matrix = construct_feature_matrix(variant_stream,
                                               n_samples,
                                               args.feature_type,
@@ -129,7 +123,7 @@ def write_project(workdir, project_summary, pca_model, feature_matrix):
                        project_summary.sample_names)
 
 def train_pca(feature_matrix, project_summary, args):
-    print("Training PCA model with %s components" % args.n_components)
+    print(f"Training PCA model with {args.n_components} components")
     pca = PCA(n_components = args.n_components,
               whiten = True)
 
@@ -138,7 +132,7 @@ def train_pca(feature_matrix, project_summary, args):
     print("Explained variance ratios:", pca.explained_variance_ratio_)
     project_summary = project_summary._replace(explained_variance_ratios =
                                                pca.explained_variance_ratio_)
-    
+
     model = { MODEL_KEY : pca,
               PROJECTION_KEY : projections}
 
@@ -147,7 +141,7 @@ def train_pca(feature_matrix, project_summary, args):
 def output_coordinates(workdir, projections, sample_names):
     fl_path = os.path.join(workdir, COORDINATES_FLNAME)
     n_components = projections.shape[1]
-    with open(fl_path, "w") as fl:
+    with open(fl_path, "wt", encoding="utf-8") as fl:
         headers = ["sample"]
         headers.extend(map(str, range(1, n_components + 1)))
         fl.write("\t".join(headers))
@@ -166,7 +160,7 @@ def read_pca_coordinates(flname):
 
     sample_coordinates = []
     sample_names = []
-    with open(flname) as fl:
+    with open(flname, "rt", encoding="utf-8") as fl:
         # skip header
         next(fl)
         for ln in fl:
@@ -174,7 +168,7 @@ def read_pca_coordinates(flname):
 
             sample_name = cols[0]
             coordinates = list(map(float, cols[1:]))
-            
+
             sample_names.append(sample_name)
             sample_coordinates.append(coordinates)
 
@@ -185,7 +179,7 @@ def read_pca_coordinates(flname):
 def read_label_names(flname):
     sample_indices = dict()
 
-    with open(flname) as fl:
+    with open(flname, "rt", encoding="utf-8") as fl:
         for label_idx, ln in enumerate(fl):
             cols = ln.strip().split(",")
 
@@ -205,7 +199,7 @@ def pairwise(iterable):
             yield a, b
     except StopIteration:
         pass
-    
+
 def plot_projections(workdir, pairs, labels=None):
     coordinates_fl = os.path.join(workdir, "pca_coordinates.tsv")
     sample_names, coordinates = read_pca_coordinates(coordinates_fl)
@@ -222,7 +216,6 @@ def plot_projections(workdir, pairs, labels=None):
         fig_flname = os.path.join(dirname,
                                   "pca_projection_%s_%s.png" % (str(p1), str(p2)))
         plt.clf()
-        fig = plt.gcf()
 
         if labels is None:
             plt.scatter(coordinates[:, p1 - 1],
@@ -233,7 +226,7 @@ def plot_projections(workdir, pairs, labels=None):
                 label_name = labels[sample_name]
                 label_samples[label_name].append(idx)
 
-            for i, (label, samples) in enumerate(label_samples.items()):
+            for _, (label, samples) in enumerate(label_samples.items()):
                 if label != "-1":
                     plt.scatter(coordinates[samples, p1 - 1],
                                 coordinates[samples, p2 - 1],
@@ -251,7 +244,6 @@ def plot_projections(workdir, pairs, labels=None):
         plt.ylabel("Component %s" % p2, fontsize=16)
         plt.savefig(fig_flname)
 
-
 def parseargs():
     parser = argparse.ArgumentParser(description="Asaph")
 
@@ -264,7 +256,7 @@ def parseargs():
 
     pca_parser = subparsers.add_parser("pca",
                                           help="Run PCA")
-    
+
     pca_parser.add_argument("--n-components",
                             type=int,
                             default=10,
@@ -309,7 +301,7 @@ def parseargs():
 
     plot_parser = subparsers.add_parser("plot-projections",
                                         help="Plot PCA projections")
-    
+
     plot_parser.add_argument("--pairs",
                              nargs="+",
                              type=int,
@@ -318,7 +310,6 @@ def parseargs():
     plot_parser.add_argument("--labels-fl",
                              type=str,
                              help="Labels file to use in coloring points")
-
 
     return parser.parse_args()
 
