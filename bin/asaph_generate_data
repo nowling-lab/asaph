@@ -69,7 +69,7 @@ def pops_writer(flname, n_individuals, n_populations):
         pops[name ] = []
 
     for i in range(n_individuals):
-        pop = random.sample(pops.keys(), 1)[0]
+        pop = random.sample(list(pops.keys()), 1)[0]
         pops[pop].append(str(i))
 
     with open(flname, "w", encoding="utf-8") as fl:
