@@ -1,6 +1,6 @@
 # Installing Asaph
 
-Asaph requires Python 3.6 and above and the [numpy and scipy](http://www.numpy.org/), [matplotlib](http://matplotlib.org/), [scikit-learn](http://scikit-learn.org/stable/), [seaborn](https://seaborn.pydata.org/index.html), and [pandas](https://pandas.pydata.org/) libraries.
+Asaph requires Python 3.7 and above and the [numpy and scipy](http://www.numpy.org/), [matplotlib](http://matplotlib.org/), [scikit-learn](http://scikit-learn.org/stable/), [seaborn](https://seaborn.pydata.org/index.html), and [pandas](https://pandas.pydata.org/) libraries.
 
 ## Getting Asaph
 Download Asaph by cloning the git repository:
@@ -9,36 +9,50 @@ Download Asaph by cloning the git repository:
 $ git clone https://github.com/rnowling/asaph.git
 ```
 
-## Option 1. Install in Virtual Environment
-If you would prefer to use a virtual environment instead of installing system wide, you can:
+## Recommended: Install in Virtual Environment
+Using a virtual environment is the recommended approach to avoid conflicts with system packages:
 
 ```bash
 $ cd asaph
 $ python3 -m venv venv
 $ source venv/bin/activate
-$ pip3 install setuptools
-$ python3 setup.py install
+$ pip install -e .
 ```
 
-Asaph will install the scripts located under `venv/bin` system wide.  The binaries will be on your path when the virtual environment is activated.
+The `-e` flag installs Asaph in "editable" mode, which is useful for development. The scripts will be available on your path when the virtual environment is activated.
 
-## Option 2. Install System-Wide
-You can install Asaph using Python's setup tools:
+## Alternative: Install System-Wide
+You can install Asaph system-wide using pip:
 
 ```bash
 $ cd asaph
-$ sudo pip3 install setuptools
-$ sudo python3 setup.py install
+$ pip install .
 ```
 
-Asaph will install the scripts located under `bin/` system wide.
+For system-wide installation, you may need to use `sudo` depending on your system configuration.
 
-## Debugging Your installation
-
-If, for some reason, the installation of Asaph failed, install these libraries and try again:
+## Legacy Installation (Deprecated)
+The old setup.py approach still works but is deprecated:
 
 ```bash
-$ pip3 install -U numpy scipy scikit-learn matplotlib seaborn pandas
+$ cd asaph
+$ python3 setup.py install
+```
+
+This method will show deprecation warnings and should be avoided in favor of the modern pip-based installation.
+
+## Debugging Your Installation
+
+If the installation fails, it's usually due to missing dependencies. The modern pip installation should handle dependencies automatically, but you can manually install them if needed:
+
+```bash
+$ pip install -U numpy scipy scikit-learn matplotlib seaborn pandas mmh3 joblib
+```
+
+If you're still having issues, try updating pip itself:
+
+```bash
+$ pip install --upgrade pip
 ```
 
 

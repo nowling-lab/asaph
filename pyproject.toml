@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "asaph"
+version = "2.0.0"
+description = "SNP analysis"
+authors = [
+    {name = "Ronald J. Nowling", email = "rnowling@gmail.com"}
+]
+license = {text = "Apache License, Version 2.0"}
+requires-python = ">=3.7"
+dependencies = [
+    "numpy>=0.19.1",
+    "scipy>=0.19.1",
+    "matplotlib",
+    "seaborn",
+    "scikit-learn",
+    "joblib",
+    "pandas",
+    "mmh3"
+]
+
+[tool.setuptools]
+packages = ["asaph"]
+zip-safe = false
+script-files = [
+    "bin/asaph_pca",
+    "bin/asaph_query", 
+    "bin/asaph_localize",
+    "bin/asaph_genotype",
+    "bin/asaph_generate_data"
+]
