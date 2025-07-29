@@ -27,20 +27,20 @@ load model_setup_helper
 
     run asaph_localize \
 	--workdir ${WORKDIR_PATH} \
-        plot \
+        manhattan-plot \
 	--component 1 \
 	--chromosome 1 \
-	--n-windows -1
+	--y-limit 10
 
    [ "$status" -eq 0 ]
    [ -e "${WORKDIR_PATH}/plots/manhattan_pc1_chrom1.png" ]
 
     run asaph_localize \
         --workdir "${WORKDIR_PATH}" \
-	plot \
+	manhattan-plot \
 	--component 2 \
 	--chromosome 1 \
-	--n-windows -1
+	--y-limit 10
 
    [ "$status" -eq 0 ]
    [ -e "${WORKDIR_PATH}/plots/manhattan_pc2_chrom1.png" ]
@@ -61,20 +61,20 @@ load model_setup_helper
 
     run asaph_localize \
         --workdir ${COUNTS_WORKDIR_PATH} \
-	plot \
+	manhattan-plot \
 	--component 1 \
 	--chromosome 1 \
-	--n-windows -1
+	--y-limit 10
 
    [ "$status" -eq 0 ]
    [ -e "${COUNTS_WORKDIR_PATH}/plots/manhattan_pc1_chrom1.png" ]
 
     run asaph_localize \
         --workdir "${COUNTS_WORKDIR_PATH}" \
-	plot \
+	manhattan-plot \
 	--chromosome 1 \
 	--component 2 \
-	--n-windows -1
+	--y-limit 10
 
    [ "$status" -eq 0 ]
    [ -e "${COUNTS_WORKDIR_PATH}/plots/manhattan_pc2_chrom1.png" ]

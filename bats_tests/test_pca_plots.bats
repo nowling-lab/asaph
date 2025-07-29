@@ -33,7 +33,7 @@ load pca_setup_helper
     [ -e "${FULL_WORKDIR_PATH}/plots/pca_projection_1_2.png" ]
 }
 
-@test "plot projections (hashed)" {
+@test "plot projections with labels (hashed)" {
     run asaph_pca \
 	--workdir ${HASHED_WORKDIR_PATH} \
 	plot-projections \
